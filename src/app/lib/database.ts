@@ -4,7 +4,12 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/myapp';
 const MONGO_USER = process.env.MONGO_USER || 'yourUsername';
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || 'yourPassword';
 
-const cached = { connection: undefined, promise: undefined };
+interface CachedConnection {
+    connection?: typeof mongoose;
+    promise?: Promise<typeof mongoose>;
+}
+
+const cached: CachedConnection = {};
 
 export async function connectMongo() {
     if (!MONGO_URI || !MONGO_USER || !MONGO_PASSWORD) {
