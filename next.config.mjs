@@ -15,6 +15,14 @@ const nextConfig = {
                     from: './node_modules/webappalyzer-js/technologies',
                     to: './server/vendor-chunks/technologies',
                 },
+                {
+                    from: './node_modules/webappalyzer-js/categories.json',
+                    to: './server/chunks/categories.json',
+                },
+                {
+                    from: './node_modules/webappalyzer-js/technologies',
+                    to: './server/chunks/technologies',
+                },
             ],
         });
         config.plugins.push(newCopy);
