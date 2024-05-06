@@ -89,7 +89,7 @@ export function LoginForm() {
                     <Grid container justifyContent="flex-end">
                         <Grid item>
                             <Link href={'/signup'} variant="body2">
-                                Don't have an account yet? Sign up
+                                Don&apos;t have an account yet? Sign up
                             </Link>
                         </Grid>
                     </Grid>
