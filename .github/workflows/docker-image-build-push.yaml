@@ -40,7 +40,7 @@ jobs:
           password: ${{ secrets.CR_PASSWORD }}
       # Below secrets and step will only run for PRODUCTION, when release tag doesn't contain 'beta'
       - name: Build & Push
-        if: !contains(github.ref_name , 'beta') && github.ref == 'refs/heads/main'
+        if: contains(github.ref_name , 'beta') == false && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v3
         with:
           file: Dockerfile
@@ -51,7 +51,7 @@ jobs:
 
       # Below secrets and step will only run for STAGING, when release tag contains 'beta'
       - name: Build & Push
-        if: contains(github.ref_name , 'beta') && github.ref == 'refs/heads/staging'
+        if: contains(github.ref_name , 'beta') == true && github.ref == 'refs/heads/staging'
         uses: docker/build-push-action@v3
         with:
           file: Dockerfile
