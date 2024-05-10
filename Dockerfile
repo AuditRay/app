@@ -62,6 +62,9 @@ ENV PORT 3000
 # Grant 'R-X' permissions
 RUN chmod -R u+rx $SCRIPTS_PATH/*
 
+# Env variables
+ENV OPENAI_API_KEY="NA"
+
 
 RUN npm run build
 
