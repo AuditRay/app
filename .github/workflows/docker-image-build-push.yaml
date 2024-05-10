@@ -22,20 +22,20 @@ jobs:
       - name: Echo release and branch
         run: echo "Release = ${{ github.ref_name }}  |  Branch = ${{ github.event.base_ref }}"
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ${{ secrets.CR_ENDPOINT }}/${{ env.IMAGE_NAME }}
           tags: type=semver,pattern={{raw}}
       - name: Log into dockerhub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Log into registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ secrets.CR_ENDPOINT }}
           username: ${{ secrets.CR_USERNAME }}
@@ -43,7 +43,7 @@ jobs:
       # Below secrets and step will only run for PRODUCTION, when release tag doesn't contain 'beta'
       - name: Build & Push
         if: contains(github.ref_name , 'beta') == false && github.event.base_ref == 'refs/heads/main'
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           file: Dockerfile
           push: true
@@ -53,7 +53,7 @@ jobs:
       # Below secrets and step will only run for STAGING, when release tag contains 'beta'
       - name: Build & Push
         if: contains(github.ref_name , 'beta') == true && github.event.base_ref == 'refs/heads/staging'
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v5
         with:
           file: Dockerfile
           push: true
