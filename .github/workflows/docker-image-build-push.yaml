@@ -38,10 +38,6 @@ jobs:
           registry: ${{ secrets.CR_ENDPOINT }}
           username: ${{ secrets.CR_USERNAME }}
           password: ${{ secrets.CR_PASSWORD }}
-      - name: Get branch name
-        run: |
-          branch=$(git branch -r --contains ${{ github.ref }} --format "%(refname:lstrip=3)")
-          echo ::set-env name=BRANCH::$branch
       # Below secrets and step will only run for PRODUCTION, when release tag doesn't contain 'beta'
       - name: Build & Push
         if: !contains(github.ref_name , 'beta') && github.ref == 'refs/heads/main'
