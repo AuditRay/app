@@ -7,9 +7,6 @@ name: MonitDev App Docker Image Workflow
 
 on:
   push:
-    branches:    
-      - 'main'
-      - 'staging'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+-beta'
@@ -47,7 +44,7 @@ jobs:
           echo ::set-env name=BRANCH::$branch
       # Below secrets and step will only run for PRODUCTION, when release tag doesn't contain 'beta'
       - name: Build & Push
-        if: [ contains(github.ref_name , 'beta') == false ] && [ "${GITHUB_REF_NAME}" = "main" ]
+        if: contains(github.ref_name , 'beta') == false && [ "${GITHUB_REF_NAME}" = "main" ]
         uses: docker/build-push-action@v3
         with:
           file: Dockerfile
@@ -58,7 +55,7 @@ jobs:
 
       # Below secrets and step will only run for STAGING, when release tag contains 'beta'
       - name: Build & Push
-        if: [ contains(github.ref_name, 'beta') ] && [ "${GITHUB_REF_NAME}" = "staging" ]
+        if: contains(github.ref_name, 'beta') && [ "${GITHUB_REF_NAME}" = "staging" ]
         uses: docker/build-push-action@v3
         with:
           file: Dockerfile
