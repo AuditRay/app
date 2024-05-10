@@ -19,9 +19,9 @@ jobs:
     name: Build and push container image
     runs-on: ubuntu-latest
     steps:
+      - name: echo
+        run: echo "${{ github.ref_name }}  |  ${{ github.ref }}"
       - name: Checkout repository
-        run: echo "${{ github.ref_name }}"
-        run: echo "${{ github.ref }}"
         uses: actions/checkout@v3
       - name: Docker meta
         id: meta
