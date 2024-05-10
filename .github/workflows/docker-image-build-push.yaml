@@ -52,7 +52,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
       # Below secrets and step will only run for STAGING, when release tag contains 'beta'
       - name: Build & Push
-        if: contains(github.ref_name , 'beta') == true && github.event.base_ref == 'refs/heads/staging'
+        if: contains(github.ref_name , 'beta') == true
         uses: docker/build-push-action@v5
         with:
           file: Dockerfile
