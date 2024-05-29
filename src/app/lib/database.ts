@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/myapp';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/monit-next';
 const MONGO_USER = process.env.MONGO_USER || 'yourUsername';
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || 'yourPassword';
 
@@ -28,7 +28,7 @@ export async function connectMongo() {
             authSource: 'admin',
         };
 
-        cached.promise = mongoose.connect(MONGO_URI, opts);
+        cached.promise = mongoose.connect(MONGO_URI);
     }
 
     try {

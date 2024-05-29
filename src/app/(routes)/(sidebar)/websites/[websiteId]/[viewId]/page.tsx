@@ -1,5 +1,4 @@
 'use server'
-import {getUser} from "@/app/actions/getUser";
 import {Link} from "@/app/ui/Link";
 import {Grid, Paper, Box, Tabs, Tab} from "@mui/material";
 import * as React from "react";
@@ -9,18 +8,37 @@ import Typography from "@mui/material/Typography";
 import LaunchIcon from "@mui/icons-material/Launch";
 import Divider from '@mui/material/Divider';
 import WebsiteConnectionTokenModal from "@/app/ui/WebsiteConnectionModal";
-import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import dayjs from "dayjs";
 import CollapseMD from "@/app/ui/CollapseMD.jsx";
 import WebsitesGrid from "@/app/ui/WebsiteTabs";
+import {DataSources} from "@/app/models/WebsiteInfo";
+import ViewItem from "@/app/ui/ViewItem";
+import ViewGrid from "@/app/ui/ViewGrid";
 import WebsitesTabs from "@/app/ui/WebsiteTabs";
+import {redirect} from "next/navigation";
 
-export default async function WebsitePage({ params }: { params: { websiteId: string }}) {
-    const { websiteId } = params;
+export default async function WebsitePage({ params }: { params: { websiteId: string, viewId: string } }) {
+    const { websiteId, viewId } = params;
     const website = await getWebsite(websiteId);
     const websiteViews = await getWebsiteViews(websiteId);
+    const websiteView = websiteViews.find((view) => view.id === viewId);
     const websiteInfo = await fetchUpdates(websiteId);
-
+    const formattedData: DataSources['data'] = [];
+    if (websiteView) {
+        for (const dataSource of websiteView.dataSources) {
+            const websiteViewData = websiteInfo?.dataSourcesInfo.find((ds) => ds.id === dataSource.id);
+            if (websiteViewData?.data) {
+                for (const data of websiteViewData.data) {
+                    if(dataSource.fields.includes(data.id)) {
+                        formattedData.push(data);
+                    }
+                }
+            }
+        }
+    } else {
+        // redirect to update page
+        redirect(`/websites/${websiteId}`)
+    }
     return (
         <>
             <Grid item xs={8}>
@@ -54,44 +72,16 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                     {website && websiteInfo ? (
                         <div>
                             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: '20px' }}>
-                                <WebsitesTabs website={website} views={websiteViews} selectedViewId='' websiteInfo={websiteInfo}/>
+                                <WebsitesTabs website={website} views={websiteViews} selectedViewId={viewId} websiteInfo={websiteInfo} />
                             </Box>
                             <Box sx={{display: 'flex', width: '100%'}}>
-                                <Box>
-                                    {website.aiSummary && (
-                                        <CollapseMD title={'Updates Summary'} md={website.aiSummary}/>
-                                    )}
-                                </Box>
                                 <Box sx={{textAlign: 'right', ml: 'auto'}}>
                                     <Typography variant={'overline'} sx={{mb: '20px'}}>
                                         Last Update: {dayjs(websiteInfo.updatedAt).format('DD MMM YYYY HH:mm:ss')}
                                     </Typography>
                                 </Box>
                             </Box>
-                            {websiteInfo.frameworkInfo && (
-                                <Box sx={{mb: '50px'}}>
-                                    <Typography variant={'h2'} sx={{mb: '20px'}}>
-                                        Main Framework
-                                    </Typography>
-                                    <div>
-                                        <Box component={'div'}>
-                                            <Typography variant={'subtitle1'}>
-                                                <Box component={'img'} src={`/tech/${website.type.icon}`}
-                                                     alt={website.type.name}
-                                                     sx={{width: '20px', verticalAlign: 'text-bottom', mr:'10px'}}/> {website.type.name}</Typography>
-                                        </Box>
-                                        <WebsitesInfoGrid websiteInfo={[websiteInfo.frameworkInfo]}/>
-                                    </div>
-                                </Box>
-                            )}
-                            {websiteInfo.websiteComponentsInfo && (
-                                <>
-                                    <Typography variant={'h2'} sx={{mb: '20px'}}>
-                                        Website Components
-                                    </Typography>
-                                    <WebsitesInfoGrid websiteInfo={websiteInfo.websiteComponentsInfo}/>
-                                </>
-                            )}
+                            <ViewGrid ViewItems={formattedData} website={website}/>
                         </div>
                     ) : (
                         <div>
@@ -143,11 +133,11 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                 <Typography variant={'h2'}>
                                     Tech Stack
                                 </Typography>
-                                <Box component={'div'} sx={{width: '20px'}}>
+                                <Box key={`${website.type.slug}-wrapper`} component={'div'} sx={{width: '20px'}}>
                                     <Box component={'img'}  src={`/tech/${website.type.icon}`} alt={website.type.name} sx={{width: '100%' }} />
                                 </Box>
                                 {website.type.subTypes?.length > 0 && website.type.subTypes.map((subType) => (
-                                    <Box key={`ts-${subType.slug}-wrapper`} component={'div'} sx={{width: '20px'}}>
+                                    <Box key={`${subType.slug}-wrapper`} component={'div'} sx={{width: '20px'}}>
                                         <Box component={'img'} key={subType.slug} src={`/tech/${subType.icon}`} alt={subType.name} sx={{width: '100%' }}/>
                                     </Box>
                                 ))}
@@ -175,13 +165,13 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                         Main Technology
                                     </Typography>
                                     <div>
-                                        <Box component={'div'}>
+                                        <Box key={`${website.type.slug}-wrapper`} component={'div'}>
                                             <Typography variant={'subtitle1'}>
                                                 <Box component={'img'} src={`/tech/${website.type.icon}`}
                                                      alt={website.type.name}
                                                      sx={{width: '20px', verticalAlign: 'text-bottom', mr:'10px'}}/> {website.type.name}</Typography>
                                         </Box>
-                                        <Box component={'div'}>
+                                        <Box key={`${website.type.slug}-wrapper`} component={'div'}>
                                             <Typography variant={'body2'}>{website.type.description}</Typography>
                                         </Box>
                                     </div>
@@ -197,13 +187,13 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                         return (
                                             <Box key={tech.slug}>
                                                 <Box  sx={{mb: '20px', mt: '20px'}}>
-                                                    <Box component={'div'}>
+                                                    <Box key={`${tech.slug}-wrapper`} component={'div'}>
                                                         <Typography variant={'subtitle1'}>
                                                             <Box component={'img'} src={`/tech/${tech.icon}`}
                                                                  alt={tech.name}
                                                                  sx={{width: '20px', verticalAlign: 'text-bottom', mr:'10px'}}/> {tech.name}</Typography>
                                                     </Box>
-                                                    <Box component={'div'}>
+                                                    <Box key={`${tech.slug}-wrapper`} component={'div'}>
                                                         <Typography variant={'body2'}>{tech.description}</Typography>
                                                     </Box>
                                                 </Box>

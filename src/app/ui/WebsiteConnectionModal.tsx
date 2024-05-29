@@ -22,8 +22,6 @@ export default function WebsiteConnectionTokenModal({websiteId}: {websiteId: str
 
     useEffect(() => {
         async function checkToken(){
-
-            console.log('hello', websiteId);
             const website = await getWebsite(websiteId);
             if(!website) return '';
             if (!website.token) {

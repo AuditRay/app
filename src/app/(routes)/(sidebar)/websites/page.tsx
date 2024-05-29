@@ -30,8 +30,12 @@ export default async function Home() {
             >
                 {websites.length > 0 && (
                     <div>
-                        <AddWebsiteModal></AddWebsiteModal>
-                        <h1>Your Websites</h1>
+                        <Box sx={{display: 'flex', alignItems: 'center'}}>
+                            <h1>Your Websites</h1>
+                            <Box sx={{ml: 'auto'}}>
+                                <AddWebsiteModal></AddWebsiteModal>
+                            </Box>
+                        </Box>
                         <WebsitesGrid websites={WebsiteRows}/>
                     </div>
                 )}

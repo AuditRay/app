@@ -34,6 +34,11 @@ export interface IWebsite {
     attributes: object;
     metadata: any;
     technologies: WebsiteTechnology[];
+    defaultViewsConfiguration: {
+        id: string;
+        weight: number;
+        enabled: boolean;
+    }[];
 }
 
 const ModelSchema = new Schema<IWebsite>(
@@ -49,6 +54,7 @@ const ModelSchema = new Schema<IWebsite>(
         technologies: [],
         metadata: {},
         attributes: {},
+        defaultViewsConfiguration: {},
     },
     {
         timestamps: true,

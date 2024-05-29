@@ -2,6 +2,7 @@
 
 import MaterialLink from "@mui/material/Link";
 import NextLink from "next/link";
+import React from "react";
 
 type props = typeof MaterialLink.arguments & typeof NextLink.arguments
 export function Link(props: props) {

@@ -46,7 +46,7 @@ export default function WebsitesInfoGrid(props: { websiteInfo: WebsiteInfoRow[] 
                         paginationModel: { page: 0, pageSize: 20 },
                     },
                 }}
-                pageSizeOptions={[5, 200]}
+                pageSizeOptions={[5, 20]}
                 autosizeOptions={{
                     includeHeaders: true,
                     includeOutliers: true,

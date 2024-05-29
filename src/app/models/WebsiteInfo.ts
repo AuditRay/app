@@ -14,12 +14,34 @@ export type UpdateInfo = {
     }[]
 }
 
+export type DataSources = {
+    id: string;
+    label: string;
+    description: string;
+    data: {
+        id: string;
+        title: string;
+        resultStatus: string;
+        resultStatusMessage: string;
+        helpText: string[];
+        description: string;
+        namespace: string;
+        details: {
+            type?: string;
+            value?: string;
+            items?: string[];
+        }[];
+        findings: string[] | {};
+    }[]
+}
+
 export interface IWebsiteInfo {
     id: string;
     website: typeof Schema.Types.ObjectId;
     configData: Record<string, any>;
     frameworkInfo: UpdateInfo;
     websiteComponentsInfo: UpdateInfo[];
+    dataSourcesInfo: DataSources[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -30,6 +52,7 @@ const ModelSchema = new Schema<IWebsiteInfo>(
         configData: {},
         frameworkInfo: {},
         websiteComponentsInfo: [],
+        dataSourcesInfo: [],
     },
     {
         timestamps: true,

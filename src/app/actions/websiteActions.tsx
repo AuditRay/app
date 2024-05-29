@@ -1,5 +1,5 @@
 'use server'
-import {IWebsite, Website, WebsiteTechnology} from "@/app/models/Website";
+import {IWebsite, Website} from "@/app/models/Website";
 import urlMetadata from "url-metadata";
 import {CreateWebsiteSchema, CreateWebsiteState} from "@/app/lib/definitions";
 import {connectMongo} from "@/app/lib/database";
@@ -8,9 +8,12 @@ import {revalidatePath} from "next/cache";
 // @ts-ignore
 import * as WebappalyzerJS from 'webappalyzer-js';
 import {jwtVerify, SignJWT} from "jose";
-import {IWebsiteInfo, WebsiteInfo} from "@/app/models/WebsiteInfo";
+import {DataSources, IWebsiteInfo, WebsiteInfo} from "@/app/models/WebsiteInfo";
 import {diff} from 'deep-object-diff';
 import OpenAI from 'openai';
+import {DefaultView, IWebsiteView, WebsiteView} from "@/app/models/WebsiteView";
+import defaultViews from "@/app/views";
+import {Model} from "mongoose";
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
@@ -149,81 +152,132 @@ export async function generateWebsiteAISeoSummary(websiteId: string) {
     await website.save();
 }
 
-export async function fetchUpdates(websiteId: string): Promise<IWebsiteInfo | null> {
+export async function fetchUpdates(websiteId: string, sync: boolean = false): Promise<IWebsiteInfo | null> {
     const user = await getUser();
     const website = await Website.findOne({_id: websiteId, user: user.id});
+    //get existing WebsiteInfo components
+    const websiteLatestInfo = await WebsiteInfo.findOne({website: websiteId}).sort({createdAt: -1});
     if (!website || !website.url || !website.token) {
         return null;
     }
-    //check if the website url ends with a slash, if not add a slash
-    const websiteUrl= website.url.endsWith('/') ? website.url : `${website.url}/`;
-    // Fetch updates from the website url using fetch library on the route /monit/health,
-    // try to use the website.url if it's not working then website.url/web, use post method with body as form data
-    let response = await fetch(`${websiteUrl}monit/health`, {
-        method: 'POST',
-        body: new URLSearchParams({
-            token: website.token,
-        }),
-    });
+    async function getWebsiteInfo(websiteId: string) {
+        const website = await Website.findOne({_id: websiteId, user: user.id});
+        const websiteLatestInfo = await WebsiteInfo.findOne({website: websiteId}).sort({createdAt: -1});
+        if (!website || !website.url || !website.token) {
+            return null;
+        }
 
-    if (response.status === 404) {
-        response = await fetch(`${websiteUrl}web/monit/health`, {
+        //check if the website url ends with a slash, if not add a slash
+        const websiteUrl= website.url.endsWith('/') ? website.url : `${website.url}/`;
+        // Fetch updates from the website url using fetch library on the route /monit/health,
+        // try to use the website.url if it's not working then website.url/web, use post method with body as form data
+        let response = await fetch(`${websiteUrl}monit/health`, {
             method: 'POST',
             body: new URLSearchParams({
                 token: website.token,
             }),
         });
-    }
 
-    if (response.status !== 200) {
-        console.log('Failed to fetch updates', response.status);
-        return null;
-    }
-
-    const data = await response.json();
-
-    const preparedData = {
-        website: websiteId,
-        configData: {},
-        frameworkInfo: data.framework_info,
-        websiteComponentsInfo: data.website_components,
-    }
-    //get existing WebsiteInfo components
-    const websiteLatestInfo = await WebsiteInfo.findOne({website: websiteId}).sort({createdAt: -1});
-    if(websiteLatestInfo) {
-        if(!website.aiSummary) {
-            generateWebsiteAIUpdatesSummary(websiteId).then(() => {
-                revalidatePath(`/website/${websiteId}`);
+        if (response.status === 404) {
+            response = await fetch(`${websiteUrl}web/monit/health`, {
+                method: 'POST',
+                body: new URLSearchParams({
+                    token: website.token,
+                }),
             });
         }
-        if(!website.aiSEOSummary) {
-            generateWebsiteAISeoSummary(websiteId).then(() => {
-                revalidatePath(`/website/${websiteId}`);
-            });
-        }
-        const infoObj = websiteLatestInfo.toJSON();
-        const compare = diff({
-            website: infoObj.website,
-            configData: infoObj.configData || {},
-            frameworkInfo: infoObj.frameworkInfo,
-            websiteComponentsInfo: infoObj.websiteComponentsInfo,
-        }, preparedData);
 
-        if(Object.keys(compare).length) {
+        if (response.status !== 200) {
+            console.log('Failed to fetch updates', response.status);
+            return websiteLatestInfo?.toJSON() ?? null;
+        }
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (error) {
+            return websiteLatestInfo?.toJSON() ?? null;
+        }
+
+
+        const dataSources: Record<string, any> = {
+            ...data
+        }
+        //remove available_updates from dataSources
+        delete dataSources.available_updates;
+        //format dataSources
+        const formattedDataSources: DataSources[] = Object.keys(dataSources).map((key) => {
+            return {
+                id: key,
+                label: dataSources[key].label,
+                description: dataSources[key].description,
+                data: dataSources[key].data.map((data: any) => {
+                    const newData = {...data};
+                    delete newData.time;
+                    return newData;
+                })
+            }
+        });
+
+        const preparedData = {
+            website: websiteId,
+            configData: {},
+            frameworkInfo: data.available_updates.data.framework_info,
+            websiteComponentsInfo: data.available_updates.data.website_components,
+            dataSourcesInfo: formattedDataSources,
+        }
+        if(websiteLatestInfo) {
+
+            if(!website.aiSummary) {
+                generateWebsiteAIUpdatesSummary(websiteId).then(() => {
+                    revalidatePath(`/website/${websiteId}`);
+                }).catch((error) => {
+                    console.error('Failed to generate AI Summary', error);
+                });
+            }
+
+            if(!website.aiSEOSummary) {
+                generateWebsiteAISeoSummary(websiteId).then(() => {
+                    revalidatePath(`/website/${websiteId}`);
+                }).catch((error) => {
+                    console.error('Failed to generate AI Summary', error);
+                });
+            }
+            const infoObj = websiteLatestInfo.toJSON();
+            const compare = diff({
+                website: infoObj.website,
+                configData: infoObj.configData || {},
+                frameworkInfo: infoObj.frameworkInfo,
+                websiteComponentsInfo: infoObj.websiteComponentsInfo,
+                dataSourcesInfo: infoObj.dataSourcesInfo,
+            }, preparedData);
+
+            if(Object.keys(compare).length) {
+                const newWebsiteInfo = new WebsiteInfo(preparedData);
+                await newWebsiteInfo.save();
+                generateWebsiteAIUpdatesSummary(websiteId).then(() => {
+                    revalidatePath(`/website/${websiteId}`);
+                });
+                return newWebsiteInfo.toJSON();
+            } else {
+                websiteLatestInfo.set('updatedAt', new Date());
+                const updatedWebsiteInfo = await websiteLatestInfo.save();
+                return updatedWebsiteInfo.toJSON();
+            }
+        } else {
             const newWebsiteInfo = new WebsiteInfo(preparedData);
             await newWebsiteInfo.save();
-            generateWebsiteAIUpdatesSummary(websiteId).then(() => {
-                revalidatePath(`/website/${websiteId}`);
-            });
             return newWebsiteInfo.toJSON();
-        } else {
-            const updatedWebsiteInfo = await websiteLatestInfo.save();
-            return updatedWebsiteInfo.toJSON();
         }
+    }
+
+    if (sync) {
+        return await getWebsiteInfo(websiteId);
     } else {
-        const newWebsiteInfo = new WebsiteInfo(preparedData);
-        await newWebsiteInfo.save();
-        return newWebsiteInfo.toJSON();
+        getWebsiteInfo(websiteId).then(() => {
+            revalidatePath(`/website/${websiteId}`);
+        });
+        return websiteLatestInfo?.toJSON() ?? null;
     }
 }
 
@@ -258,6 +312,26 @@ export async function getWebsites(userId: string): Promise<IWebsite[]> {
     const websites = await Website.find({user: userId});
     return websites.map(website => website.toJSON());
 }
+
+export async function getWebsiteViews(websiteId: string): Promise<DefaultView[]> {
+    const website = await Website.findOne({_id: websiteId});
+    if (!website) return [];
+    const websiteViews = await WebsiteView.find({website: websiteId});
+    const websiteViewsData = websiteViews.map(websiteView => websiteView.toJSON());
+    const defaultViewsData = defaultViews.map(view => {
+        const config = website.defaultViewsConfiguration?.find((defaultView) => defaultView.id === view.id);
+        if (!config) return view;
+        return {
+            ...view,
+            enabled: config.enabled,
+            weight: config.weight,
+        }
+    });
+    const viewsData = [...defaultViewsData, ...websiteViewsData];
+    const filteredViewsData = viewsData.filter(view => view.enabled);
+    return filteredViewsData.sort((a, b) => a.weight - b.weight);
+}
+
 
 export async function createWebsite(state: CreateWebsiteState, formData: FormData) {
     const user = await getUser();

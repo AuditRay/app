@@ -43,7 +43,7 @@ export default function AddWebsiteModal() {
     }, [isSaving]);
     return (
         <div>
-            <Button onClick={handleOpen}>Add New Website</Button>
+            <Button onClick={handleOpen} variant={'contained'}>Add New Website</Button>
             <Dialog
                 open={open}
                 onClose={() => {
@@ -80,7 +80,7 @@ export default function AddWebsiteModal() {
                 <DialogActions>
                     <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>
                     <Box sx={{ m: 1, position: 'relative' }}>
-                        <Button disabled={isSaving} type="submit">{isSaving ? 'Saving...' : 'Add'} </Button>
+                        <Button disabled={isSaving} type="submit" variant={'contained'}>{isSaving ? 'Saving...' : 'Add'} </Button>
                         {isSaving && (
                             <CircularProgress
                                 size={24}

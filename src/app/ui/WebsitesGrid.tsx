@@ -57,10 +57,10 @@ export default function WebsitesGrid(props: { websites: GridRow[] }) {
                 columns={columns}
                 initialState={{
                     pagination: {
-                        paginationModel: { page: 0, pageSize: 5 },
-                    },
+                        paginationModel: { page: 0, pageSize: 20 },
+                    }
                 }}
-                pageSizeOptions={[5, 10]}
+                pageSizeOptions={[5, 20]}
                 checkboxSelection
             />
         </div>
