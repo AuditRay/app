@@ -8,7 +8,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
-import {Link} from "@/app/ui/Link";
+import Link from "@/app/ui/Link";
 import Container from "@mui/material/Container";
 
 export function SignupButton() {

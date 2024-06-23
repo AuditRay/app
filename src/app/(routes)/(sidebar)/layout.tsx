@@ -1,16 +1,9 @@
 'use client'
 import * as React from "react";
-import {Box, Container, Grid, Paper} from "@mui/material";
+import {Box, Container, Grid, IconButton, Typography, Divider, List, Toolbar} from "@mui/material";
 import {AppBar, Drawer} from "@/app/ui/NavBar";
-import Toolbar from "@mui/material/Toolbar";
-import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
-import Typography from "@mui/material/Typography";
-import Badge from "@mui/material/Badge";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import Divider from "@mui/material/Divider";
-import List from "@mui/material/List";
 import {MainListItems} from "@/app/ui/ListItems";
 import {usePathname} from "next/navigation"
 import {getFiltersViews} from "@/app/actions/filterViewsActions";

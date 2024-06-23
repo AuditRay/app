@@ -5,7 +5,7 @@ import NextLink from "next/link";
 import React from "react";
 
 type props = typeof MaterialLink.arguments & typeof NextLink.arguments
-export function Link(props: props) {
+export default function Link (props: props) {
     return (
         <MaterialLink component={NextLink} {...props}>
             {props.children}

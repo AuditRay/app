@@ -1,18 +1,14 @@
 'use server'
-import {Link} from "@/app/ui/Link";
-import {Grid, Paper, Box, Tabs, Tab} from "@mui/material";
+import Link from "@/app/ui/Link";
+import {Grid, Paper, Box, Typography, Divider} from "@mui/material";
 import * as React from "react";
 import {fetchUpdates, getWebsite, getWebsiteViews} from "@/app/actions/websiteActions";
 import Markdown from 'react-markdown'
-import Typography from "@mui/material/Typography";
 import LaunchIcon from "@mui/icons-material/Launch";
-import Divider from '@mui/material/Divider';
 import WebsiteConnectionTokenModal from "@/app/ui/WebsiteConnectionModal";
 import dayjs from "dayjs";
 import CollapseMD from "@/app/ui/CollapseMD.jsx";
-import WebsitesGrid from "@/app/ui/WebsiteTabs";
 import {DataSources} from "@/app/models/WebsiteInfo";
-import ViewItem from "@/app/ui/ViewItem";
 import ViewGrid from "@/app/ui/ViewGrid";
 import WebsitesTabs from "@/app/ui/WebsiteTabs";
 import {redirect} from "next/navigation";
