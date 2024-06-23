@@ -80,10 +80,10 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
         websiteInfo.dataSourcesInfo.forEach((item) => {
             items.push({
                 id: item.id,
-                label: item.label,
+                label: item.label || '',
                 children: item.data?.map((child) => ({
                     id: child.id,
-                    label: child.title,
+                    label: child.label || child.id,
                     parentId: item.id,
                 })),
             });

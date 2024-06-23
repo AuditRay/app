@@ -7,8 +7,10 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import LanguageIcon from '@mui/icons-material/Language';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import {useRouter} from "next/navigation";
+import {IFiltersView} from "@/app/models/FiltersView";
+import {Box} from "@mui/material";
 
-export const MainListItems = () => {
+export const MainListItems = ({filtersViews} : {filtersViews: IFiltersView[]}) => {
     const router = useRouter()
     return (
         <>
@@ -24,6 +26,13 @@ export const MainListItems = () => {
                 </ListItemIcon>
                 <ListItemText primary="Websites"/>
             </ListItemButton>
+            {filtersViews && filtersViews.map((filterView) => (
+                <ListItemButton key={filterView.id} onClick={() => router.push(`/websites?filterView=${filterView.id}`)}>
+                    <ListItemIcon>
+                    </ListItemIcon>
+                    <ListItemText primary={`- ${filterView.title}`} sx={{color: 'gray'}}/>
+                </ListItemButton>
+            ))}
         </>
     );
 }

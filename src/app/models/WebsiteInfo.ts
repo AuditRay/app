@@ -20,18 +20,21 @@ export type DataSources = {
     description: string;
     data: {
         id: string;
-        title: string;
-        resultStatus: string;
-        resultStatusMessage: string;
-        helpText: string[];
+        label: string;
         description: string;
+        status: string;
+        statusDescription: string;
         namespace: string;
-        details: {
+        detailsTitle: string;
+        detailsText: string[];
+        detailsFindings: {
             type?: string;
             value?: string;
             items?: string[];
         }[];
-        findings: string[] | {};
+        detailsExtra: {
+            [key: string]: string[];
+        };
     }[]
 }
 

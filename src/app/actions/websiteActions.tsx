@@ -1,5 +1,5 @@
 'use server'
-import {IWebsite, Website} from "@/app/models/Website";
+import {IWebsite, Website, WebsiteType} from "@/app/models/Website";
 import urlMetadata from "url-metadata";
 import {CreateWebsiteSchema, CreateWebsiteState} from "@/app/lib/definitions";
 import {connectMongo} from "@/app/lib/database";
@@ -228,21 +228,21 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         }
         if(websiteLatestInfo) {
 
-            if(!website.aiSummary) {
-                generateWebsiteAIUpdatesSummary(websiteId).then(() => {
-                    revalidatePath(`/website/${websiteId}`);
-                }).catch((error) => {
-                    console.error('Failed to generate AI Summary', error);
-                });
-            }
-
-            if(!website.aiSEOSummary) {
-                generateWebsiteAISeoSummary(websiteId).then(() => {
-                    revalidatePath(`/website/${websiteId}`);
-                }).catch((error) => {
-                    console.error('Failed to generate AI Summary', error);
-                });
-            }
+            // if(!website.aiSummary) {
+            //     generateWebsiteAIUpdatesSummary(websiteId).then(() => {
+            //         revalidatePath(`/website/${websiteId}`);
+            //     }).catch((error) => {
+            //         console.error('Failed to generate AI Summary', error);
+            //     });
+            // }
+            //
+            // if(!website.aiSEOSummary) {
+            //     generateWebsiteAISeoSummary(websiteId).then(() => {
+            //         revalidatePath(`/website/${websiteId}`);
+            //     }).catch((error) => {
+            //         console.error('Failed to generate AI Summary', error);
+            //     });
+            // }
             const infoObj = websiteLatestInfo.toJSON();
             const compare = diff({
                 website: infoObj.website,
@@ -255,9 +255,9 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             if(Object.keys(compare).length) {
                 const newWebsiteInfo = new WebsiteInfo(preparedData);
                 await newWebsiteInfo.save();
-                generateWebsiteAIUpdatesSummary(websiteId).then(() => {
-                    revalidatePath(`/website/${websiteId}`);
-                });
+                // generateWebsiteAIUpdatesSummary(websiteId).then(() => {
+                //     revalidatePath(`/website/${websiteId}`);
+                // });
                 return newWebsiteInfo.toJSON();
             } else {
                 websiteLatestInfo.set('updatedAt', new Date());
@@ -295,9 +295,9 @@ export async function getWebsite(websiteId: string): Promise<IWebsite | null> {
     const user = await getUser();
     const website = await Website.findOne({_id: websiteId, user: user.id});
     if(website && !website.aiSEOSummary) {
-        generateWebsiteAISeoSummary(websiteId).then(() => {
-            revalidatePath(`/website/${websiteId}`);
-        });
+        // generateWebsiteAISeoSummary(websiteId).then(() => {
+        //     revalidatePath(`/website/${websiteId}`);
+        // });
     }
     return website?.toJSON() ?? null;
 }
@@ -306,7 +306,150 @@ export async function getWebsiteInfo(websiteId: string): Promise<IWebsite | null
     const websiteInfo = await WebsiteInfo.findOne({_id: websiteId}).sort({createdAt: -1});
     return websiteInfo?.toJSON() ?? null;
 }
+export type frameWorkUpdateStatus = 'Up to Date' | 'Needs Update' | 'Security Update' | 'Revoked' | 'Unknown' | 'Not Supported';
+export type tableSourceField = {
+    type: 'string' | 'boolean' | 'version' | 'status',
+    status?: string,
+    value?: string,
+    info?: string,
+}
+export type IWebsiteTable = IWebsite & {
+    componentsNumber: number;
+    componentsUpdatedNumber: number;
+    componentsWithUpdatesNumber: number;
+    componentsWithSecurityUpdatesNumber: number;
+    frameWorkUpdateStatus: frameWorkUpdateStatus;
+    [key: string]: string | number | string[] | frameWorkUpdateStatus | tableSourceField | any;
+}
+const versionTypeMapping = {
+    NOT_CURRENT: 'Needs Update',
+    CURRENT: 'Up to Date',
+    NOT_SECURE: 'Security Update',
+    REVOKED: 'Revoked',
+    UNKNOWN: 'Unknown',
+    NOT_SUPPORTED: 'Not Supported',
+}
+export async function getWebsitesTable(userId: string): Promise<{
+    data: IWebsiteTable[]
+    extraHeaders: { id: string, label: string}[]
+}> {
+    const websites = await Website.find({user: userId});
+    const websitesData: IWebsiteTable[] = [];
+    const extraHeaders: { id: string, label: string}[] = [
+        {id: 'frameworkVersion', label: 'Framework'},
+    ];
+    for (const website of websites) {
+        const websiteInfo = await WebsiteInfo.findOne({website: website._id}).sort({createdAt: -1});
+        if(websiteInfo?.websiteComponentsInfo) {
+            for (const component of websiteInfo.websiteComponentsInfo) {
+                if (!extraHeaders.find((header) => header.id === component.name)) {
+                    extraHeaders.push({id: component.name, label: component.title});
+                }
+            }
+        }
 
+        if(websiteInfo?.dataSourcesInfo) {
+            for (const component of websiteInfo.dataSourcesInfo) {
+                if(component.data) {
+                    for (const data of component.data) {
+                        if (!extraHeaders.find((header) => header.id === data.id)) {
+                            extraHeaders.push({id: data.id, label: `${component.label} - ${data.label}`});
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for (const website of websites) {
+        const websiteObj = website.toJSON();
+        const websiteInfo = await WebsiteInfo.findOne({website: websiteObj.id}).sort({createdAt: -1});
+        const componentsNumber = websiteInfo?.websiteComponentsInfo.length || 0;
+        const componentsUpdatedNumber = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'CURRENT').length || 0;
+        const componentsWithUpdatesNumber = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_CURRENT').length || 0;
+        const componentsWithSecurityUpdatesNumber = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_SECURE').length || 0;
+        const frameWorkUpdateStatus = websiteInfo?.frameworkInfo.type || "UNKNOWN";
+        let status: IWebsiteTable['frameWorkUpdateStatus'] = "Up to Date";
+        if(componentsWithUpdatesNumber || frameWorkUpdateStatus === "NOT_CURRENT") {
+            status = "Needs Update";
+        }
+        if(componentsWithSecurityUpdatesNumber || frameWorkUpdateStatus === "NOT_SECURE") {
+            status = "Security Update";
+        }
+        if(frameWorkUpdateStatus === "REVOKED") {
+            status = "Revoked";
+        }
+        if(frameWorkUpdateStatus === "UNKNOWN") {
+            status = "Unknown";
+        }
+        if(frameWorkUpdateStatus === "NOT_SUPPORTED") {
+            status = "Not Supported";
+        }
+        const siteData: IWebsiteTable = {
+            ...websiteObj,
+            componentsNumber,
+            componentsUpdatedNumber,
+            componentsWithUpdatesNumber,
+            componentsWithSecurityUpdatesNumber,
+            frameWorkUpdateStatus: status
+        }
+        if(websiteInfo?.frameworkInfo){
+            siteData.frameworkVersion = {
+                type: "version",
+                status: versionTypeMapping[websiteInfo.frameworkInfo?.type] || 'Unknown',
+                value: websiteInfo.frameworkInfo.current_version || 'N/A',
+            }
+        }
+        if(websiteInfo?.websiteComponentsInfo) {
+            for (const header of extraHeaders) {
+                const component = websiteInfo.websiteComponentsInfo.find((component) => component.name === header.id);
+                if(!component) continue;
+                siteData[header.id] = {
+                    type: "version",
+                    status: versionTypeMapping[component?.type] || 'Unknown',
+                    value: component?.current_version || 'N/A',
+                };
+            }
+        }
+        if(websiteInfo?.dataSourcesInfo) {
+            for (const dataSource of websiteInfo.dataSourcesInfo) {
+                if(dataSource.data) {
+                    for (const header of extraHeaders) {
+                        const data = dataSource.data.find((data) => data.id === header.id);
+                        if(data?.status) {
+                            siteData[header.id] = {
+                                type: "status",
+                                status: data.status,
+                                value: data.status === 'success' ? "Success" : data.status === 'warning' ? "Warning" : "Error",
+                            };
+                            if(data?.detailsFindings) {
+                                siteData[header.id]['info'] = data.detailsFindings.map((finding) => finding.value).join(' ');
+                            }
+                        } else if(data?.detailsFindings) {
+                            siteData[header.id] = {
+                                type: "text",
+                                value: data.detailsFindings.map((finding) => finding.value).join(' '),
+                            };
+                        }
+                    }
+                }
+            }
+        }
+
+        for (const header of extraHeaders) {
+            if(!siteData[header.id]) {
+                siteData[header.id] = {
+                    type: "text",
+                    value: 'N/A',
+                }
+            }
+        }
+        websitesData.push(siteData);
+    }
+    return {
+        data: websitesData,
+        extraHeaders: extraHeaders
+    };
+}
 
 export async function getWebsites(userId: string): Promise<IWebsite[]> {
     const websites = await Website.find({user: userId});
@@ -338,6 +481,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
     console.log('user', user);
     const validatedFields = CreateWebsiteSchema.safeParse({
         url: formData.get('url'),
+        tags: formData.get('tags'),
     })
 
     // If any form fields are invalid, return early
@@ -347,8 +491,9 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         }
     }
 
-    const { url } = validatedFields.data
+    const { url, tags } = validatedFields.data
 
+    console.log('tags', tags);
     await connectMongo();
 
     const options = {
@@ -371,6 +516,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
 
     let website = new Website({
         url,
+        tags: tags || [],
         user: user.id,
     });
 
@@ -477,9 +623,9 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
                 }
             }
 
-            generateWebsiteAISeoSummary(updatedWebsite.id).then(() => {
-                revalidatePath(`/website/${updatedWebsite.id}`);
-            });
+            // generateWebsiteAISeoSummary(updatedWebsite.id).then(() => {
+            //     revalidatePath(`/website/${updatedWebsite.id}`);
+            // });
 
             await updatedWebsite.save();
         }

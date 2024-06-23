@@ -13,11 +13,13 @@ import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
 import {MainListItems} from "@/app/ui/ListItems";
 import {usePathname} from "next/navigation"
+import {getFiltersViews} from "@/app/actions/filterViewsActions";
+import {IFiltersView} from "@/app/models/FiltersView";
 
 export default function DashboardLayout({children,}: {
     children: React.ReactNode
 }) {
-
+    const [filterViews, setFilterViews] = React.useState<IFiltersView[]>([]);
     const pathname = usePathname();
     console.log(pathname);
     const TitlesMap: Record<string, string> = {
@@ -29,6 +31,11 @@ export default function DashboardLayout({children,}: {
     const toggleDrawer = () => {
         setOpen(!open);
     };
+    React.useEffect(() => {
+        getFiltersViews().then((filtersViews) => {
+            setFilterViews(filtersViews);
+        });
+    }, []);
     return (
         <Box sx={{ display: 'flex' }}>
             <AppBar position="absolute" open={open}>
@@ -56,13 +63,13 @@ export default function DashboardLayout({children,}: {
                         noWrap
                         sx={{ flexGrow: 1 }}
                     >
-                        {TitlesMap[pathname] ? TitlesMap[pathname] : ''}
+                        {TitlesMap[pathname] ? TitlesMap[pathname] : pathname.includes('/websites') ? 'Website' : 'Dashboard'}
                     </Typography>
-                    <IconButton color="inherit">
-                        <Badge badgeContent={4} color="secondary">
-                            <NotificationsIcon />
-                        </Badge>
-                    </IconButton>
+                    {/*<IconButton color="inherit">*/}
+                    {/*    <Badge badgeContent={4} color="secondary">*/}
+                    {/*        <NotificationsIcon />*/}
+                    {/*    </Badge>*/}
+                    {/*</IconButton>*/}
                 </Toolbar>
             </AppBar>
             <Drawer variant="permanent" open={open}>
@@ -80,7 +87,7 @@ export default function DashboardLayout({children,}: {
                 </Toolbar>
                 <Divider />
                 <List component="nav">
-                    <MainListItems />
+                    <MainListItems filtersViews={filterViews} />
                 </List>
             </Drawer>
             <Box
@@ -96,7 +103,7 @@ export default function DashboardLayout({children,}: {
                 }}
             >
                 <Toolbar />
-                <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+                <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
                     <Grid container spacing={3}>
                         {children}
                     </Grid>

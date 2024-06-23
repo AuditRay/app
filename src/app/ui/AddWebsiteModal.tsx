@@ -14,11 +14,13 @@ import {CreateWebsiteState} from "@/app/lib/definitions";
 import {useEffect} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
+import {Autocomplete, Chip} from "@mui/material";
 
 export default function AddWebsiteModal() {
     const [state, action, isPending] = useFormState(createWebsite, undefined)
     const [open, setOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [tags, setTags] = useState<string[]>([]);
     const [formCurrentState, setFormCurrentState] = useState<CreateWebsiteState>(state);
     const { pending } = useFormStatus();
     const handleOpen = () => {
@@ -46,6 +48,8 @@ export default function AddWebsiteModal() {
             <Button onClick={handleOpen} variant={'contained'}>Add New Website</Button>
             <Dialog
                 open={open}
+                fullWidth={true}
+                maxWidth={'sm'}
                 onClose={() => {
                     !isSaving && handleClose();
                 }}
@@ -54,6 +58,7 @@ export default function AddWebsiteModal() {
                     action: (e: FormData) => {
                         setFormCurrentState({});
                         setIsSaving(true);
+                        e.append('tags', JSON.stringify(tags));
                         setTimeout(() => action(e));
                     }
                 }}
@@ -74,7 +79,36 @@ export default function AddWebsiteModal() {
                         label="Website Url"
                         type="url"
                         fullWidth
-                        variant="standard"
+                        variant="outlined"
+                    />
+                    <Autocomplete
+                        multiple
+                        id="tags"
+                        options={[]}
+                        autoSelect={true}
+                        freeSolo
+                        onChange={(event, newValue) => {
+                            setTags(newValue);
+                        }}
+                        renderTags={(value: readonly string[], getTagProps) =>
+                            value.map((option: string, index: number) => {
+                                const { key, ...tagProps } = getTagProps({ index });
+                                return (
+                                    <Chip variant="outlined" label={option} key={key} {...tagProps} />
+                                );
+                            })
+                        }
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                disabled={isSaving}
+                                error={!!formCurrentState?.errors?.tags}
+                                helperText={formCurrentState?.errors?.tags}
+                                variant="outlined"
+                                label="Tags"
+                                placeholder="Tags"
+                            />
+                        )}
                     />
                 </DialogContent>
                 <DialogActions>

@@ -31,23 +31,33 @@ export default function ViewItem(props: { data: DataSources['data'][0], key: str
     }
     return isReady && (
         <Box key={key} sx={{mb: '20px'}}>
-            <Typography variant={'h2'}>
-                {data.title}
-            </Typography>
-            {data.helpText.map((help, idx) => {
+            {data.detailsTitle && (
+                <p
+                    key={'detailsTitle'}
+                    dangerouslySetInnerHTML={{__html: data.detailsTitle}}
+                    onClick={(e: any) => {
+                        e.preventDefault();
+                        if (e.target?.tagName === 'A') {
+                            //check if the link is external and open in new tab else append site url
+                            openLink(e)
+                        }
+                    }}
+                ></p>
+            )}
+            {data.detailsText.map((help, idx) => {
                 return <p
                     key={idx}
                     dangerouslySetInnerHTML={{__html: help}}
                     onClick={(e: any) => {
                         e.preventDefault();
-                        if(e.target?.tagName === 'A') {
+                        if (e.target?.tagName === 'A') {
                             //check if the link is external and open in new tab else append site url
                             openLink(e)
                         }
                     }}
                 ></p>
             })}
-            {data.details.map((d, idx) => {
+            {data.detailsFindings.map((d, idx) => {
                 if(!d.items?.length) {
                     return (
                         d.value && <p

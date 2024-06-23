@@ -12,7 +12,6 @@ import WebsiteConnectionTokenModal from "@/app/ui/WebsiteConnectionModal";
 import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import dayjs from "dayjs";
 import CollapseMD from "@/app/ui/CollapseMD.jsx";
-import WebsitesGrid from "@/app/ui/WebsiteTabs";
 import WebsitesTabs from "@/app/ui/WebsiteTabs";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string }}) {

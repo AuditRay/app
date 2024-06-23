@@ -31,6 +31,7 @@ export interface IWebsite {
     token?: string;
     aiSummary?: string;
     aiSEOSummary?: string;
+    tags?: string[];
     attributes: object;
     metadata: any;
     technologies: WebsiteTechnology[];
@@ -49,6 +50,7 @@ const ModelSchema = new Schema<IWebsite>(
         token: String,
         aiSummary: String,
         aiSEOSummary: String,
+        tags: [String],
         user: {type: Schema.Types.ObjectId, ref: 'User'},
         type: {},
         technologies: [],

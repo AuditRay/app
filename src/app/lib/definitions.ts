@@ -1,16 +1,39 @@
 import { z } from 'zod'
 import {IWebsite} from "@/app/models/Website";
+import {IFiltersView} from "@/app/models/FiltersView";
 
 export const CreateWebsiteSchema = z.object({
     url: z.string().url({ message: 'Please enter a valid url.'}).trim(),
+    tags: z.preprocess((input) => {
+        const {data} = z.string().safeParse(input);
+        if (data) {
+            try {
+                const processed: string[] = JSON.parse(data);
+                return processed ? processed : input;
+            }catch (e) {
+                return input;
+            }
+        }
+        return input;
+    }, z.array(z.string().min(0, {message: 'Invalid tag'})).or(z.string().length(0))),
 })
 
 export type CreateWebsiteState = | {
     errors?: {
         url?: string[]
+        tags?: string[]
     } | undefined
     message?: string
     data?: IWebsite
+} | undefined
+
+export type CreateFilterViewState = | {
+    errors?: {
+        title?: string[]
+        filters?: string[]
+    } | undefined
+    message?: string
+    data?: IFiltersView
 } | undefined
 
 export const LoginFormSchema = z.object({
@@ -56,5 +79,4 @@ export type FormState =
         password?: string[]
     }
     message?: string
-}
-    | undefined
+} | undefined

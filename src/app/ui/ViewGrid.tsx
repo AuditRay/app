@@ -15,16 +15,17 @@ import DialogActions from "@mui/material/DialogActions";
 import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import {styled} from "@mui/material/styles";
+import Typography from "@mui/material/Typography";
 
 export type GridRow = DataSources['data'][0];
 const columns = (viewDetails: (data: GridRow) => void): GridColDef[] => {
     return [
-        { field: 'resultStatusMessage', headerName: 'Message', width: 600},
+        { field: 'detailsTitle', headerName: 'Message', width: 600},
         {
             field: 'details',
             headerName: 'Details',
             width: 90,
-            renderCell: (params: GridRenderCellParams<GridRow, GridRow['details']>) => (
+            renderCell: (params: GridRenderCellParams<GridRow, GridRow['detailsTitle']>) => (
                 <Link onClick={() => viewDetails(params.row)} sx={{cursor: 'pointer'}}>
                     <InfoIcon />
                 </Link>
@@ -91,9 +92,10 @@ export default function ViewGrid(props: { ViewItems: DataSources['data'], websit
                     loadingOverlay: LinearProgress as GridSlots['loadingOverlay'],
                 }}
                 checkboxSelection={false}
+                rowSelection={false}
                 loading={props.ViewItems.length === 0}
                 rows={props.ViewItems}
-                getRowClassName={(params) => `status-${params.row.resultStatus}`}
+                getRowClassName={(params) => `status-${params.row.status}`}
                 columns={columns(viewDetails)}
                 initialState={{
                     pagination: {
@@ -109,7 +111,11 @@ export default function ViewGrid(props: { ViewItems: DataSources['data'], websit
                     maxWidth={'md'}
                     onClose={handleClose}
                 >
-                    <DialogTitle>{data.resultStatusMessage}</DialogTitle>
+                    <DialogTitle>
+                        <Typography variant={'h2'}>
+                            {data.label}
+                        </Typography>
+                    </DialogTitle>
                     <DialogContent>
                         <ViewItem data={data} key={data.id} websiteUrl={props.website.url} />
                     </DialogContent>
