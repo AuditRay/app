@@ -27,7 +27,25 @@ export const SecurityReview: DefaultView = {
                 "monit_security_review_admin_permissions",
                 "monit_security_review_views_access",
                 "monit_security_review_error_reporting",
-                "monit_security_review_trusted_hosts"
+                "monit_security_review_trusted_hosts",
+                "monit_security_review_security_review-headers",
+                "monit_security_review_security_review-input_formats",
+                "monit_security_review_security_review-fields",
+                "monit_security_review_security_review-failed_logins",
+                "monit_security_review_security_review-temporary_files",
+                "monit_security_review_security_review-upload_extensions",
+                "monit_security_review_security_review-private_files",
+                "monit_security_review_security_review-query_errors",
+                "monit_security_review_security_review-file_permissions",
+                "monit_security_review_security_review-vendor_directory",
+                "monit_security_review_security_review-name_passwords",
+                "monit_security_review_security_review-last_cron_run",
+                "monit_security_review_security_review-admin_user",
+                "monit_security_review_security_review-executable_php",
+                "monit_security_review_security_review-admin_permissions",
+                "monit_security_review_security_review-views_access",
+                "monit_security_review_security_review-error_reporting",
+                "monit_security_review_security_review-trusted_hosts"
             ]
         }
     ]
