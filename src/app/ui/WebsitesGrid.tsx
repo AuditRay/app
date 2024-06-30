@@ -26,6 +26,7 @@ import {headers} from "next/headers";
 import {tableSourceField} from "@/app/actions/websiteActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import UpdateFilterViewModal from "@/app/ui/UpdateFilterViewModal";
+import useRightDrawerStore from "@/app/lib/uiStore";
 
 export type GridRow = {
     id: number|string;
@@ -54,7 +55,8 @@ const columnsVisibility = (headers?: { id: string, label: string}[]) => {
     return cols;
 }
 
-const prepareColumns = (headers?: { id: string, label: string}[]): GridColDef[] => {
+const prepareColumns = (viewMore: (title: string, content: string) => void, headers?: { id: string, label: string}[]): GridColDef[] => {
+
     const cols: GridColDef[] = [
         { field: 'siteName', headerName: 'Website Name', flex: 1, minWidth: 450,
             renderCell: (params: GridRenderCellParams<GridRow, GridRow['siteName']>) => (
@@ -165,6 +167,7 @@ const prepareColumns = (headers?: { id: string, label: string}[]): GridColDef[] 
             flex: 1,
             renderCell: (params: GridRenderCellParams<GridRow, GridRow[0]>) => {
                 const rawData = params.row[`${value.id}_raw`] as tableSourceField;
+
                 if(typeof rawData !== 'object') {
                     return rawData;
                 }
@@ -177,24 +180,61 @@ const prepareColumns = (headers?: { id: string, label: string}[]): GridColDef[] 
                             sx={{bgcolor: rawData.status === 'success' ? 'green' : rawData.status === 'warning' ? 'orange' : 'red', color: 'white'}}
                             label={rawData.value}
                             title={rawData.info}
+                            onClick={() => rawData.value && rawData.info && viewMore(rawData.value, rawData.info)}
                         />
                     )
                 } else if (rawData.type === 'version') {
                     if (rawData.status === 'Up to Date') {
-                        return <Chip sx={{bgcolor: 'green', color: 'white'}} title={rawData.status} label={rawData.value}></Chip>
+                        return <Chip
+                            sx={{bgcolor: 'green', color: 'white'}}
+                            title={rawData.status}
+                            label={rawData.value}
+                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                        ></Chip>
                     } else if (rawData.status === 'Needs Update') {
-                        return <Chip sx={{bgcolor: 'orange', color: 'white'}} title={rawData.status} label={rawData.value}/>
+                        return <Chip
+                            sx={{bgcolor: 'orange', color: 'white'}}
+                            title={rawData.status}
+                            label={rawData.value}
+                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                        />
                     } else if (rawData.status === 'Not Supported') {
-                        return <Chip sx={{bgcolor: 'darkkhaki', color: 'white'}} title={rawData.status} label={rawData.value}/>
+                        return <Chip
+                            sx={{bgcolor: 'darkkhaki', color: 'white'}}
+                            title={rawData.status}
+                            label={rawData.value}
+                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                        />
                     } else if (rawData.status === 'Revoked') {
-                        return <Chip sx={{bgcolor: 'brown', color: 'white'}} title={rawData.status} label={rawData.value}/>
+                        return <Chip
+                            sx={{bgcolor: 'brown', color: 'white'}}
+                            title={rawData.status}
+                            label={rawData.value}
+                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                        />
                     } else if (rawData.status === 'Security Update') {
-                        return <Chip sx={{bgcolor: 'red', color: 'white'}} title={rawData.status} label={rawData.value}/>
+                        return <Chip
+                            sx={{bgcolor: 'red', color: 'white'}}
+                            title={rawData.status}
+                            label={rawData.value}
+                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                        />
                     } else {
-                        return <Chip sx={{bgcolor: 'yellowgreen', color: 'white'}} title={rawData.status} label={rawData.value}/>
+                        return <Chip
+                            sx={{bgcolor: 'yellowgreen', color: 'white'}}
+                            title={rawData.status}
+                            label={rawData.value}
+                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                        />
                     }
                 } else {
-                    return rawData.value;
+                    return (
+                        <Box
+                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                        >
+                            {rawData.value}
+                        </Box>
+                    );
                 }
             },
             type: 'string',
@@ -212,6 +252,7 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
     const [columns, setColumns] = React.useState<GridColumnVisibilityModel>();
     const [isSaveOpened, setIsSaveOpened] = React.useState<boolean>(false);
     const [isUpdateOpened, setIsUpdateOpened] = React.useState<boolean>(false);
+    const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
     const CustomToolbar = useCallback(() => {
         const filterViewParam = searchParams.get('filterView');
         let enableSave = false;
@@ -230,7 +271,7 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
                 <GridToolbarColumnsButton />
                 <GridToolbarFilterButton />
                 <GridToolbarExport />
-                {!filterViewParam && enableSave && (
+                {!filterViewParam && (
                     <Button variant={'contained'} onClick={() => setIsSaveOpened(true)}>
                         Save View
                     </Button>
@@ -242,7 +283,7 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
                 )}
             </GridToolbarContainer>
         );
-    }, [searchParams, filters, columns, filtersView?.filters, filtersView?.columns, props.extraHeader])
+    }, [searchParams, filters, columns, filtersView, props.extraHeader])
 
     useEffect(() => {
         const filterView = searchParams.get('filterView');
@@ -273,7 +314,7 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
                 }}
                 loading={props.websites.length === 0}
                 rows={props.websites}
-                columns={prepareColumns(props.extraHeader)}
+                columns={prepareColumns(openRightDrawer, props.extraHeader)}
                 rowSelection={false}
                 onFilterModelChange={(model) => {
                     setFilters(model);

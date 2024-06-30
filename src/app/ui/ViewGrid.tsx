@@ -16,6 +16,7 @@ import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import {styled} from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
+import useRightDrawerStore from "@/app/lib/uiStore";
 
 export type GridRow = DataSources['data'][0];
 const columns = (viewDetails: (data: GridRow) => void): GridColDef[] => {
@@ -77,13 +78,13 @@ const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
 export default function ViewGrid(props: { ViewItems: DataSources['data'], website: IWebsite }) {
     const [open, setOpen] = React.useState(false);
     const [data, setData] = React.useState<GridRow | null>(null);
+    const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
+    const clearRightDrawer = useRightDrawerStore((state) => state.clearRightDrawer);
     function viewDetails(data: GridRow) {
-        setData(data);
-        setOpen(true);
+        openRightDrawer(data.label, <ViewItem data={data} key={data.id} websiteUrl={props.website.url} />);
     }
     function handleClose() {
-        setData(null);
-        setOpen(false);
+        clearRightDrawer();
     }
     return (
         <div style={{ width: '100%' }}>

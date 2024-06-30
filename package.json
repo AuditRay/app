@@ -26,6 +26,7 @@
     "deep-object-diff": "^1.1.9",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "gleap": "^13.7.3",
     "jose": "^5.2.4",
     "mongoose": "^8.3.2",
     "next": "14.2.2",
@@ -37,7 +38,8 @@
     "url-metadata": "^4.1.0",
     "utf-8-validate": "^6.0.3",
     "webappalyzer-js": "^1.0.4",
-    "zod": "^3.23.4"
+    "zod": "^3.23.4",
+    "zustand": "^4.5.4"
   },
   "devDependencies": {
     "@types/express": "^4",

@@ -9,7 +9,7 @@ import {usePathname} from "next/navigation"
 import {getFiltersViews} from "@/app/actions/filterViewsActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import { LicenseInfo } from '@mui/x-license';
-
+import Gleap from 'gleap';
 LicenseInfo.setLicenseKey('d180cacff967bbf4eb0152899dacbe68Tz05MzI0OCxFPTE3NTEwNDc4MDIwMDAsUz1wcm8sTE09c3Vic2NyaXB0aW9uLEtWPTI=');
 
 export default function DashboardLayout({children,}: {
@@ -31,6 +31,10 @@ export default function DashboardLayout({children,}: {
         getFiltersViews().then((filtersViews) => {
             setFilterViews(filtersViews);
         });
+    }, []);
+    React.useEffect(() => {
+        // Run within useEffect to execute this code on the frontend.
+        Gleap.initialize("OSiO40QAObCvUHbraB791AyK5GqygSCL");
     }, []);
     return (
         <Box sx={{ display: 'flex' }}>

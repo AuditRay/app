@@ -6,6 +6,8 @@ import {getWebsitesTable} from "@/app/actions/websiteActions";
 import WebsitesGrid, {GridRow} from "@/app/ui/WebsitesGrid";
 import AddWebsiteModal from "@/app/ui/AddWebsiteModal";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
+import RightDrawer from "@/app/ui/RightDrawer";
+import Typography from "@mui/material/Typography";
 
 export default async function Websites({searchParams}: {searchParams: Record<string, string>}) {
     const user = await getUser()
@@ -77,6 +79,7 @@ export default async function Websites({searchParams}: {searchParams: Record<str
                         You have no websites yet <AddWebsiteModal></AddWebsiteModal>
                     </Box>
                 )}
+                <RightDrawer></RightDrawer>
             </Paper>
         </Grid>
     );

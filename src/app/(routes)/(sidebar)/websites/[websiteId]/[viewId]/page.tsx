@@ -12,6 +12,7 @@ import {DataSources} from "@/app/models/WebsiteInfo";
 import ViewGrid from "@/app/ui/ViewGrid";
 import WebsitesTabs from "@/app/ui/WebsiteTabs";
 import {redirect} from "next/navigation";
+import RightDrawer from "@/app/ui/RightDrawer";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string, viewId: string } }) {
     const { websiteId, viewId } = params;
@@ -203,6 +204,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                     )}
                 </Paper>
             </Grid>
+            <RightDrawer></RightDrawer>
         </>
     );
 }
