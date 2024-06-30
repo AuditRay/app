@@ -28,7 +28,7 @@ export async function connectMongo() {
             authSource: 'admin',
         };
 
-        cached.promise = mongoose.connect(MONGO_URI);
+        cached.promise = mongoose.connect(MONGO_URI, opts);
     }
 
     try {
