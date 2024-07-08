@@ -3,7 +3,7 @@ import {Model, model, models, Schema} from 'mongoose';
 export type UpdateInfo = {
     title: string;
     name: string;
-    type: "NOT_SECURE" | "REVOKED" | "NOT_SUPPORTED" | "NOT_CURRENT" | "CURRENT";
+    type: "NOT_SECURE" | "REVOKED" | "NOT_SUPPORTED" | "NOT_CURRENT" | "CURRENT" | "UNKNOWN";
     current_version: string;
     latest_version: string;
     recommended_version:string;
@@ -69,5 +69,7 @@ const ModelSchema = new Schema<IWebsiteInfo>(
         },
     },
 );
+
+ModelSchema.index({ website: -1});
 
 export const WebsiteInfo = (models?.WebsiteInfo || model('WebsiteInfo', ModelSchema)) as Model<IWebsiteInfo>;

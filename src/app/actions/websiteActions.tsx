@@ -156,13 +156,13 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
     const user = await getUser();
     const website = await Website.findOne({_id: websiteId, user: user.id});
     //get existing WebsiteInfo components
-    const websiteLatestInfo = await WebsiteInfo.findOne({website: websiteId}).sort({createdAt: -1});
+    const websiteLatestInfos = await WebsiteInfo.find({website: websiteId}).sort({createdAt: -1}).limit(1);
+    const websiteLatestInfo = websiteLatestInfos[0];
     if (!website || !website.url || !website.token) {
         return null;
     }
     async function getWebsiteInfo(websiteId: string) {
         const website = await Website.findOne({_id: websiteId, user: user.id});
-        const websiteLatestInfo = await WebsiteInfo.findOne({website: websiteId}).sort({createdAt: -1});
         if (!website || !website.url || !website.token) {
             return null;
         }
@@ -333,23 +333,28 @@ export async function getWebsitesTable(userId: string): Promise<{
     data: IWebsiteTable[]
     extraHeaders: { id: string, label: string}[]
 }> {
+    console.time('getWebsitesTable');
     const websites = await Website.find({user: userId});
     const websitesData: IWebsiteTable[] = [];
     const extraHeaders: { id: string, label: string}[] = [
         {id: 'frameworkVersion', label: 'Framework'},
     ];
+    const websiteInfos: Record<string, IWebsiteInfo> = {};
     for (const website of websites) {
-        const websiteInfo = await WebsiteInfo.findOne({website: website._id}).sort({createdAt: -1});
-        if(websiteInfo?.websiteComponentsInfo) {
-            for (const component of websiteInfo.websiteComponentsInfo) {
+        const websiteInfo = await WebsiteInfo.find({website: website._id}).sort({createdAt: -1}).limit(1);
+        if(websiteInfo[0]){
+            websiteInfos[website._id.toString()] = websiteInfo[0];
+        }
+        if(websiteInfo[0]?.websiteComponentsInfo) {
+            for (const component of websiteInfo[0].websiteComponentsInfo) {
                 if (!extraHeaders.find((header) => header.id === component.name)) {
                     extraHeaders.push({id: component.name, label: component.title});
                 }
             }
         }
 
-        if(websiteInfo?.dataSourcesInfo) {
-            for (const component of websiteInfo.dataSourcesInfo) {
+        if(websiteInfo[0]?.dataSourcesInfo) {
+            for (const component of websiteInfo[0].dataSourcesInfo) {
                 if(component.data) {
                     for (const data of component.data) {
                         if (!extraHeaders.find((header) => header.id === data.id)) {
@@ -360,9 +365,10 @@ export async function getWebsitesTable(userId: string): Promise<{
             }
         }
     }
+    console.timeEnd('getWebsitesTable');
     for (const website of websites) {
         const websiteObj = website.toJSON();
-        const websiteInfo = await WebsiteInfo.findOne({website: websiteObj.id}).sort({createdAt: -1});
+        const websiteInfo = websiteInfos[websiteObj.id.toString()];
         const componentsNumber = websiteInfo?.websiteComponentsInfo.length || 0;
         const componentsUpdatedNumber = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'CURRENT').length || 0;
         const componentsWithUpdatesNumber = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_CURRENT').length || 0;

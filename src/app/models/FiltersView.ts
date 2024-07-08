@@ -1,23 +1,5 @@
 import {Model, model, models, Schema} from 'mongoose';
 
-export type DataSource = {
-    id: string;
-    fields: string[];
-}
-
-export type DefaultView = {
-    id: string;
-    isDefault?: boolean;
-    website?: typeof Schema.Types.ObjectId;
-    user?: typeof Schema.Types.ObjectId;
-    weight: number;
-    enabled: boolean;
-    title: string;
-    dataSources: DataSource[];
-    createdAt?: Date;
-    updatedAt?: Date;
-}
-
 export interface IFiltersView {
     id: string;
     user: typeof Schema.Types.ObjectId;
@@ -47,5 +29,7 @@ const ModelSchema = new Schema<IFiltersView>(
         },
     },
 );
+
+ModelSchema.index({ user: -1});
 
 export const FiltersView = (models?.FiltersView || model('FiltersView', ModelSchema)) as Model<IFiltersView>;

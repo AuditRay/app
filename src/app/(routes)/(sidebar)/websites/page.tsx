@@ -12,8 +12,10 @@ import Typography from "@mui/material/Typography";
 export default async function Websites({searchParams}: {searchParams: Record<string, string>}) {
     const user = await getUser()
     const {data: websites, extraHeaders} = await getWebsitesTable(user.id);
+    console.time('Websites');
     const filterViewId = searchParams['filterView'] || '';
     const filterView = filterViewId ? await getFiltersView(filterViewId) : {title: ''};
+    console.timeEnd('Websites');
     const WebsiteRows: GridRow[] = websites.map((website) => {
         const websiteData: GridRow = {
             id: website.id,

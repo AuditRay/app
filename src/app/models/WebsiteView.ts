@@ -63,4 +63,6 @@ const ModelSchema = new Schema<IWebsiteView>(
     },
 );
 
+ModelSchema.index({ website: -1});
+ModelSchema.index({ user: -1});
 export const WebsiteView = (models?.WebsiteView || model('WebsiteView', ModelSchema)) as Model<IWebsiteView>;
