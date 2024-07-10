@@ -10,7 +10,10 @@ export type UpdateInfo = {
     available_releases: {
         name: string;
         version: string;
-        attributes: object;
+        attributes?: {
+            terms?: Record<string, string[]>
+            security?: string
+        };
     }[]
 }
 

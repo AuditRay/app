@@ -23,7 +23,7 @@ export default function RightDrawer (props: props) {
             onClose={clearRightDrawer}
         >
             <Box sx={{width: "50vw", marginTop: 10, padding: 5}}>
-                <Typography variant="h1">
+                <Typography variant="h1" sx={{mb: 2}}>
                     {rightDrawerTitle}
                 </Typography>
                 {rightDrawerContent || props.children}

@@ -25,11 +25,16 @@ export default async function Websites({searchParams}: {searchParams: Record<str
             type: website.type,
             types:  website.type ? [website.type.name, ...(website.type.subTypes.map((subType) => subType.name))] : [],
             tags: website.tags || [],
-            componentsNumber: website.componentsNumber,
-            componentsUpdatedNumber: website.componentsUpdatedNumber,
-            componentsWithUpdatesNumber: website.componentsWithUpdatesNumber,
-            componentsWithSecurityUpdatesNumber: website.componentsWithSecurityUpdatesNumber,
+            components: website.components,
+            componentsNumber: website.components.length,
+            componentsUpdated: website.componentsUpdated,
+            componentsUpdatedNumber: website.componentsUpdated.length,
+            componentsWithUpdates: website.componentsWithUpdates,
+            componentsWithUpdatesNumber: website.componentsWithUpdates.length,
+            componentsWithSecurityUpdates: website.componentsWithSecurityUpdates,
+            componentsWithSecurityUpdatesNumber: website.componentsWithSecurityUpdates.length,
             frameWorkUpdateStatus: website.frameWorkUpdateStatus,
+            frameworkVersion: website.frameworkVersion,
         }
         for (const [key, value] of Object.entries(website)) {
             if(!websiteData[key]) {

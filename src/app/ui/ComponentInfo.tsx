@@ -2,15 +2,12 @@
 
 import * as React from 'react';
 import {DataGrid, GridColDef, GridRenderCellParams, GridSlots} from '@mui/x-data-grid';
-import {Box, LinearProgress, Link} from "@mui/material";
+import {Box, Chip, LinearProgress, Link} from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import {IWebsiteInfo, UpdateInfo} from "@/app/models/WebsiteInfo";
-import useRightDrawerStore from "@/app/lib/uiStore";
-import ComponentInfo from "@/app/ui/ComponentInfo";
 
 export type WebsiteInfoRow = Partial<UpdateInfo>
 const columns: GridColDef[] = [
-    { field: 'title', headerName: 'Name', flex: 1},
     { field: 'type', headerName: 'Status', flex: 1,
         valueGetter: (value: WebsiteInfoRow['type']) => {
             if (value === 'CURRENT') {
@@ -49,31 +46,19 @@ const columns: GridColDef[] = [
 ];
 
 
-export default function WebsitesInfoGrid(props: { websiteInfo: WebsiteInfoRow[], enableRightDrawer?: boolean }) {
-    const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
+export default function ComponentInfo(props: { component: WebsiteInfoRow }) {
     return (
-        <div style={{ width: '100%' }}>
+        <div style={{ width: '100%', marginTop: '10px' }}>
             <DataGrid
                 slots={{
                     loadingOverlay: LinearProgress as GridSlots['loadingOverlay'],
                 }}
-                loading={props.websiteInfo.length === 0}
-                rows={props.websiteInfo}
+                rows={[props.component]}
                 getRowId={(row) => row.name}
                 columns={columns}
                 rowSelection={false}
-                onRowClick={(params) => {
-                    console.log('props.enableRightDrawer', props.enableRightDrawer);
-                    if (props.enableRightDrawer) {
-                        openRightDrawer(params.row.title, <ComponentInfo component={params.row}/>)
-                    }
-                }}
-                initialState={{
-                    pagination: {
-                        paginationModel: { page: 0, pageSize: 20 },
-                    },
-                }}
-                pageSizeOptions={[5, 20]}
+                hideFooter={true}
+                hideFooterPagination={true}
                 autosizeOptions={{
                     includeHeaders: true,
                     includeOutliers: true,
@@ -81,6 +66,37 @@ export default function WebsitesInfoGrid(props: { websiteInfo: WebsiteInfoRow[],
                     expand: true
                 }}
             />
+            {props.component.available_releases && (
+                <Box>
+                    <h3>Available Releases</h3>
+                    <ul>
+                        {props.component.available_releases.map((release, idx) => {
+                            return (
+                                <li key={idx}>
+                                    {release.version}
+                                    {release.version === props.component.current_version && (
+                                        <Chip color={'primary'} label="Current Version" sx={{mx: 1}}/>
+                                    )}
+                                    {release.attributes?.security && (
+                                        <Box sx={{fontSize: '10px', color: release.attributes.security.includes("not covered") ? 'red' : 'green'}}>
+                                            {release.attributes.security}
+                                        </Box>
+                                    )}
+                                    <Box sx={{fontSize: '12px', mb: 2}}>
+                                        {release.attributes?.terms && Object.entries(release.attributes.terms).map(([key, value]) => {
+                                            return (
+                                                <span key={key}>
+                                                    {key}: {value.join(', ')}
+                                                </span>
+                                            )
+                                        })}
+                                    </Box>
+                                </li>
+                            )
+                        })}
+                    </ul>
+                </Box>
+            )}
         </div>
     );
 }

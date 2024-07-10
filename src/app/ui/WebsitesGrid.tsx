@@ -27,6 +27,11 @@ import {tableSourceField} from "@/app/actions/websiteActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import UpdateFilterViewModal from "@/app/ui/UpdateFilterViewModal";
 import useRightDrawerStore from "@/app/lib/uiStore";
+import ViewItem from "@/app/ui/ViewItem";
+import Typography from "@mui/material/Typography";
+import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
+import ComponentInfo from "@/app/ui/ComponentInfo";
+import {IWebsiteInfo, UpdateInfo} from "@/app/models";
 
 export type GridRow = {
     id: number|string;
@@ -35,19 +40,24 @@ export type GridRow = {
     siteName: string;
     type: IWebsite['type'];
     tags: string[];
+    components: UpdateInfo[];
     componentsNumber: number;
+    componentsUpdated: UpdateInfo[];
     componentsUpdatedNumber: number;
+    componentsWithUpdates: UpdateInfo[];
     componentsWithUpdatesNumber: number;
+    componentsWithSecurityUpdates: UpdateInfo[];
     componentsWithSecurityUpdatesNumber: number;
     frameWorkUpdateStatus: 'Up to Date' | 'Needs Update' | 'Security Update' | 'Revoked' | 'Unknown' | 'Not Supported';
-    [key: string]: string | number | string[] | IWebsite['type'] | boolean | tableSourceField
+    frameworkVersion?: tableSourceField;
+    [key: string]: string | number | string[] | IWebsite['type'] | boolean | tableSourceField | UpdateInfo[] | undefined
 };
 const columnsVisibility = (headers?: { id: string, label: string}[]) => {
     const cols: { [key: string]: boolean } = {
         componentsNumber: true,
         componentsUpdatedNumber: true,
-        componentsWithUpdatesNumber: false,
-        componentsWithSecurityUpdatesNumber: false,
+        componentsWithUpdatesNumber: true,
+        componentsWithSecurityUpdatesNumber: true,
     }
     for (const [key, value] of Object.entries(headers || {})) {
         cols[value.id] = false;
@@ -55,10 +65,12 @@ const columnsVisibility = (headers?: { id: string, label: string}[]) => {
     return cols;
 }
 
-const prepareColumns = (viewMore: (title: string, content: string) => void, headers?: { id: string, label: string}[]): GridColDef[] => {
+const prepareColumns = (viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string}[]): GridColDef[] => {
 
     const cols: GridColDef[] = [
         { field: 'siteName', headerName: 'Website Name', flex: 1, minWidth: 450,
+            align: 'left',
+            headerAlign: 'left',
             renderCell: (params: GridRenderCellParams<GridRow, GridRow['siteName']>) => (
                 params.value && (
                     <>
@@ -80,6 +92,8 @@ const prepareColumns = (viewMore: (title: string, content: string) => void, head
             flex: 1,
             minWidth: 150,
             sortable: false,
+            align: 'left',
+            headerAlign: 'left',
             filterOperators: getGridStringOperators().filter((operator) => operator.value === 'contains').map((operator) => {
                 return operator;
             }),
@@ -93,7 +107,10 @@ const prepareColumns = (viewMore: (title: string, content: string) => void, head
             field: 'types',
             headerName: 'Type',
             flex: 1,
+            minWidth: 120,
             sortable: false,
+            align: 'left',
+            headerAlign: 'left',
             filterOperators: getGridStringOperators().filter((operator) => operator.value === 'contains').map((operator) => {
               return operator;
             }),
@@ -117,54 +134,193 @@ const prepareColumns = (viewMore: (title: string, content: string) => void, head
             field: 'frameWorkUpdateStatus',
             headerName: 'Status',
             flex: 1,
+            minWidth: 150,
+            align: 'left',
+            headerAlign: 'left',
             valueOptions: ['Up to Date', 'Needs Update', 'Security Update', 'Revoked', 'Unknown', 'Not Supported'],
             renderCell: (params: GridRenderCellParams<GridRow, GridRow['frameWorkUpdateStatus']>) => {
+                const rawData = params.row.frameworkVersion;
+                const updatedComponents = params.row.components;
+                const componentsWithUpdates = params.row.componentsWithUpdates;
+                const componentsWithSecurityUpdates = params.row.componentsWithSecurityUpdates;
+
                 if (params.value === 'Up to Date') {
-                    return <Chip sx={{bgcolor: 'green', color: 'white'}} label={'Up to Date'} />
+                    return <Chip sx={{bgcolor: 'green', color: 'white'}} label={'Up to Date'} onClick={() => rawData?.component && params.value && viewMore(params.value,  <WebsitesInfoGrid websiteInfo={updatedComponents}/>)}/>
                 } else if (params.value === 'Needs Update') {
-                    return <Chip sx={{bgcolor: 'orange', color: 'white'}} label={'Needs Update'} />
+                    return <Chip sx={{bgcolor: 'orange', color: 'white'}} label={'Needs Update'} onClick={() => rawData?.component && params.value && viewMore(params.value,  <WebsitesInfoGrid websiteInfo={componentsWithUpdates}/>)}/>
                 } else if (params.value === 'Not Supported') {
-                    return <Chip sx={{bgcolor: 'darkkhaki', color: 'white'}} label={'Not Supported'} />
+                    return <Chip sx={{bgcolor: 'darkkhaki', color: 'white'}} label={'Not Supported'} onClick={() => rawData?.component && params.value && viewMore(params.value,  <WebsitesInfoGrid websiteInfo={componentsWithUpdates}/>)}/>
                 } else if (params.value === 'Revoked') {
-                    return <Chip sx={{bgcolor: 'brown', color: 'white'}} label={'Revoked'} />
+                    return <Chip sx={{bgcolor: 'brown', color: 'white'}} label={'Revoked'} onClick={() => rawData?.component && params.value && viewMore(params.value,  <WebsitesInfoGrid websiteInfo={componentsWithUpdates}/>)}/>
                 } else if (params.value === 'Security Update') {
-                    return <Chip sx={{bgcolor: 'red', color: 'white'}} label={'Security Update'} />
+                    return <Chip sx={{bgcolor: 'red', color: 'white'}} label={'Security Update'} onClick={() => rawData?.component && params.value && viewMore(params.value,  <WebsitesInfoGrid websiteInfo={componentsWithSecurityUpdates}/>)}/>
                 } else {
-                    return <Chip sx={{bgcolor: 'yellowgreen', color: 'white'}} label={'Unknown'} />
+                    return <Chip sx={{bgcolor: 'yellowgreen', color: 'white'}} label={'Unknown'} onClick={() => rawData?.component && params.value && viewMore(params.value,  <WebsitesInfoGrid websiteInfo={updatedComponents}/>)}/>
                 }
             },
             type: 'singleSelect',
         },
         {
             field: 'componentsNumber',
-            headerName: 'Components',
+            headerName: 'Total Components',
             flex: 1,
+            minWidth: 160,
             type: 'number',
+            align: 'left',
+            headerAlign: 'left',
+            renderCell: (params: GridRenderCellParams<GridRow, GridRow['frameWorkUpdateStatus']>) => {
+                const rawData = params.row.frameworkVersion;
+                const updatedComponents = params.row.components;
+                return <Chip label={params.value} onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={updatedComponents}/>)}/>
+            },
         },
         {
             field: 'componentsUpdatedNumber',
             headerName: 'Up to Date',
             flex: 1,
+            minWidth: 120,
             type: 'number',
+            align: 'left',
+            headerAlign: 'left',
+            renderCell: (params: GridRenderCellParams<GridRow, GridRow['frameWorkUpdateStatus']>) => {
+                const rawData = params.row.frameworkVersion;
+                const components = params.row.componentsUpdated;
+                return <Chip
+                    sx={{bgcolor: 'green', color: 'white'}}
+                    label={params.value}
+                    onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
+                />
+            },
         },
         {
             field: 'componentsWithUpdatesNumber',
             headerName: 'Needs Updates',
             flex: 1,
+            minWidth: 180,
             type: 'number',
+            align: 'left',
+            headerAlign: 'left',
+            renderCell: (params: GridRenderCellParams<GridRow, GridRow['frameWorkUpdateStatus']>) => {
+                const rawData = params.row.frameworkVersion;
+                const components = params.row.componentsWithUpdates;
+                return <Chip
+                    sx={{bgcolor: 'orange', color: 'white'}}
+                    label={params.value}
+                    onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
+                />
+            },
         },
         {
             field: 'componentsWithSecurityUpdatesNumber',
             headerName: 'Security Updates',
             flex: 1,
+            minWidth: 160,
             type: 'number',
+            align: 'left',
+            headerAlign: 'left',
+            renderCell: (params: GridRenderCellParams<GridRow, GridRow['frameWorkUpdateStatus']>) => {
+                const rawData = params.row.frameworkVersion;
+                const components = params.row.componentsWithSecurityUpdates;
+                return <Chip
+                    sx={{bgcolor: 'red', color: 'white'}}
+                    label={params.value}
+                    onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
+                />
+            },
         }
     ]
+    const containsOperator = getGridStringOperators().find((operator) => operator.value === 'contains');
     for (const [key, value] of Object.entries(headers || {})) {
         cols.push({
             field: value.id,
             headerName: value.label,
             flex: 1,
+            minWidth: 160,
+            align: 'left',
+            headerAlign: 'left',
+            filterOperators: [
+                {
+                    ...containsOperator!,
+                    label: 'Contains',
+                    getApplyFilterFn: (filterItem, column) => {
+                        if (!filterItem.field || !filterItem.value || !filterItem.operator) {
+                            return null;
+                        }
+                        if (typeof filterItem.value !== 'string') {
+                            return null;
+                        }
+                        return (value, row, column, apiRef) => {
+                            let check = false;
+                            if(typeof value === 'string') {
+                                check ||= (value.toLowerCase()).includes(filterItem.value.toLowerCase());
+                            }
+                            if (value?.value && typeof value?.value  === 'string') {
+                                check ||= (value?.value.toLowerCase()).includes(filterItem.value.toLowerCase());
+                            }
+                            if (value?.status && typeof value?.status  === 'string') {
+                                check ||= (value?.status.toLowerCase()).includes(filterItem.value.toLowerCase());
+                            }
+                            if (value?.component?.title && typeof value?.component?.title  === 'string') {
+                                check ||= (value?.component?.title.toLowerCase()).includes(filterItem.value.toLowerCase());
+                            }
+                            return check;
+                        };
+                    },
+                },
+                {
+                    ...containsOperator!,
+                    label: 'Does not contain',
+                    value: 'notContains',
+                    getApplyFilterFn: (filterItem, column) => {
+                        if (!filterItem.field || !filterItem.value || !filterItem.operator) {
+                            return null;
+                        }
+                        if (typeof filterItem.value !== 'string') {
+                            return null;
+                        }
+
+                        return (value, row, column, apiRef) => {
+                            if(typeof value === 'string') {
+                                return !(value.toLowerCase()).includes(filterItem.value.toLowerCase());
+                            }
+                            if (value?.component?.title && typeof value?.component?.title  === 'string') {
+                                return !(value?.component?.title.toLowerCase()).includes(filterItem.value.toLowerCase());
+                            }
+                            if (value?.value && typeof value?.value  === 'string') {
+                                return !(value?.value.toLowerCase()).includes(filterItem.value.toLowerCase());
+                            }
+                            if (value?.status && typeof value?.status  === 'string') {
+                                return !(value?.status.toLowerCase()).includes(filterItem.value.toLowerCase());
+                            }
+                            return true;
+                        };
+                    },
+                },
+                {
+                    label: 'Empty',
+                    value: 'empty',
+                    getApplyFilterFn: (filterItem, column) => {
+                        return (value, row, column, apiRef) => {
+                            if(typeof value === 'string') {
+                                return !value || value === 'N/A';
+                            }
+                            return false
+                        };
+                    },
+                },
+                {
+                    label: 'Not Empty',
+                    value: 'notEmpty',
+                    getApplyFilterFn: (filterItem, column) => {
+                        return (value, row, column, apiRef) => {
+                            if(typeof value === 'string') {
+                                return !!value && value !== 'N/A';
+                            }
+                            return true
+                        };
+                    },
+                }
+            ],
             renderCell: (params: GridRenderCellParams<GridRow, GridRow[0]>) => {
                 const rawData = params.row[`${value.id}_raw`] as tableSourceField;
 
@@ -180,7 +336,16 @@ const prepareColumns = (viewMore: (title: string, content: string) => void, head
                             sx={{bgcolor: rawData.status === 'success' ? 'green' : rawData.status === 'warning' ? 'orange' : 'red', color: 'white'}}
                             label={rawData.value}
                             title={rawData.info}
-                            onClick={() => rawData.value && rawData.info && viewMore(rawData.value, rawData.info)}
+                            onClick={() => rawData.raw && viewMore(
+                                <Typography variant={'h2'}>
+                                    <Chip
+                                        sx={{bgcolor: rawData.status === 'success' ? 'green' : rawData.status === 'warning' ? 'orange' : 'red', color: 'white', mr: 2}}
+                                        label={rawData.value}
+                                    />
+                                    {rawData.raw.label}
+                                </Typography>,
+                                <ViewItem data={rawData.raw} key={rawData.raw.id} websiteUrl={rawData.url} />
+                            )}
                         />
                     )
                 } else if (rawData.type === 'version') {
@@ -189,48 +354,48 @@ const prepareColumns = (viewMore: (title: string, content: string) => void, head
                             sx={{bgcolor: 'green', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
                         ></Chip>
                     } else if (rawData.status === 'Needs Update') {
                         return <Chip
                             sx={{bgcolor: 'orange', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
                         />
                     } else if (rawData.status === 'Not Supported') {
                         return <Chip
                             sx={{bgcolor: 'darkkhaki', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
                         />
                     } else if (rawData.status === 'Revoked') {
                         return <Chip
                             sx={{bgcolor: 'brown', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
                         />
                     } else if (rawData.status === 'Security Update') {
                         return <Chip
                             sx={{bgcolor: 'red', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
                         />
                     } else {
                         return <Chip
                             sx={{bgcolor: 'yellowgreen', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
                         />
                     }
                 } else {
                     return (
                         <Box
-                            onClick={() => rawData.value && rawData.status && viewMore(rawData.status, rawData.value)}
+                            onClick={() => rawData.value && viewMore(value.label, rawData.value)}
                         >
                             {rawData.value}
                         </Box>
@@ -258,12 +423,10 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
         let enableSave = false;
         if (filters) {
             const compare = diff(filters, filtersView?.filters || { items: [] });
-            console.log('filters compare', compare);
             enableSave = compare && Object.keys(compare).length > 0;
         }
         if(columns) {
             const compare = diff(columns, filtersView?.columns || columnsVisibility(props.extraHeader));
-            console.log('columns compare', compare);
             enableSave = compare && Object.keys(compare).length > 0;
         }
         return (

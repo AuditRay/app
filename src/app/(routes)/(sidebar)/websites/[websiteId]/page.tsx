@@ -10,6 +10,7 @@ import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import dayjs from "dayjs";
 import CollapseMD from "@/app/ui/CollapseMD.jsx";
 import WebsitesTabs from "@/app/ui/WebsiteTabs";
+import RightDrawer from "@/app/ui/RightDrawer";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string }}) {
     const { websiteId } = params;
@@ -76,7 +77,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                                      alt={website.type.name}
                                                      sx={{width: '20px', verticalAlign: 'text-bottom', mr:'10px'}}/> {website.type.name}</Typography>
                                         </Box>
-                                        <WebsitesInfoGrid websiteInfo={[websiteInfo.frameworkInfo]}/>
+                                        <WebsitesInfoGrid websiteInfo={[websiteInfo.frameworkInfo]} enableRightDrawer={true}/>
                                     </div>
                                 </Box>
                             )}
@@ -85,7 +86,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                     <Typography variant={'h2'} sx={{mb: '20px'}}>
                                         Website Components
                                     </Typography>
-                                    <WebsitesInfoGrid websiteInfo={websiteInfo.websiteComponentsInfo}/>
+                                    <WebsitesInfoGrid websiteInfo={websiteInfo.websiteComponentsInfo} enableRightDrawer={true}/>
                                 </>
                             )}
                         </div>
@@ -213,6 +214,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                     )}
                 </Paper>
             </Grid>
+            <RightDrawer></RightDrawer>
         </>
     );
 }

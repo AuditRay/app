@@ -8,7 +8,7 @@ import {revalidatePath} from "next/cache";
 // @ts-ignore
 import * as WebappalyzerJS from 'webappalyzer-js';
 import {jwtVerify, SignJWT} from "jose";
-import {DataSources, IWebsiteInfo, WebsiteInfo} from "@/app/models/WebsiteInfo";
+import {DataSources, IWebsiteInfo, UpdateInfo, WebsiteInfo} from "@/app/models/WebsiteInfo";
 import {diff} from 'deep-object-diff';
 import OpenAI from 'openai';
 import {DefaultView, IWebsiteView, WebsiteView} from "@/app/models/WebsiteView";
@@ -312,14 +312,17 @@ export type tableSourceField = {
     status?: string,
     value?: string,
     info?: string,
+    raw: DataSources['data'][0]
+    component?: IWebsiteInfo['websiteComponentsInfo'][0]
+    url: string
 }
 export type IWebsiteTable = IWebsite & {
-    componentsNumber: number;
-    componentsUpdatedNumber: number;
-    componentsWithUpdatesNumber: number;
-    componentsWithSecurityUpdatesNumber: number;
+    components: UpdateInfo[];
+    componentsUpdated: UpdateInfo[];
+    componentsWithUpdates: UpdateInfo[];
+    componentsWithSecurityUpdates: UpdateInfo[];
     frameWorkUpdateStatus: frameWorkUpdateStatus;
-    [key: string]: string | number | string[] | frameWorkUpdateStatus | tableSourceField | any;
+    [key: string]: string | number | string[] | frameWorkUpdateStatus | tableSourceField | UpdateInfo[] | any;
 }
 const versionTypeMapping = {
     NOT_CURRENT: 'Needs Update',
@@ -369,16 +372,16 @@ export async function getWebsitesTable(userId: string): Promise<{
     for (const website of websites) {
         const websiteObj = website.toJSON();
         const websiteInfo = websiteInfos[websiteObj.id.toString()];
-        const componentsNumber = websiteInfo?.websiteComponentsInfo.length || 0;
-        const componentsUpdatedNumber = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'CURRENT').length || 0;
-        const componentsWithUpdatesNumber = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_CURRENT').length || 0;
-        const componentsWithSecurityUpdatesNumber = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_SECURE').length || 0;
+        const components = websiteInfo?.websiteComponentsInfo || [];
+        const componentsUpdated = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'CURRENT') || [];
+        const componentsWithUpdates = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_CURRENT') || [];
+        const componentsWithSecurityUpdates = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_SECURE') || [];
         const frameWorkUpdateStatus = websiteInfo?.frameworkInfo.type || "UNKNOWN";
         let status: IWebsiteTable['frameWorkUpdateStatus'] = "Up to Date";
-        if(componentsWithUpdatesNumber || frameWorkUpdateStatus === "NOT_CURRENT") {
+        if(componentsWithUpdates?.length || frameWorkUpdateStatus === "NOT_CURRENT") {
             status = "Needs Update";
         }
-        if(componentsWithSecurityUpdatesNumber || frameWorkUpdateStatus === "NOT_SECURE") {
+        if(componentsWithSecurityUpdates?.length || frameWorkUpdateStatus === "NOT_SECURE") {
             status = "Security Update";
         }
         if(frameWorkUpdateStatus === "REVOKED") {
@@ -392,10 +395,10 @@ export async function getWebsitesTable(userId: string): Promise<{
         }
         const siteData: IWebsiteTable = {
             ...websiteObj,
-            componentsNumber,
-            componentsUpdatedNumber,
-            componentsWithUpdatesNumber,
-            componentsWithSecurityUpdatesNumber,
+            components,
+            componentsUpdated,
+            componentsWithUpdates,
+            componentsWithSecurityUpdates,
             frameWorkUpdateStatus: status
         }
         if(websiteInfo?.frameworkInfo){
@@ -403,6 +406,7 @@ export async function getWebsitesTable(userId: string): Promise<{
                 type: "version",
                 status: versionTypeMapping[websiteInfo.frameworkInfo?.type] || 'Unknown',
                 value: websiteInfo.frameworkInfo.current_version || 'N/A',
+                component: websiteInfo.frameworkInfo,
             }
         }
         if(websiteInfo?.websiteComponentsInfo) {
@@ -413,6 +417,7 @@ export async function getWebsitesTable(userId: string): Promise<{
                     type: "version",
                     status: versionTypeMapping[component?.type] || 'Unknown',
                     value: component?.current_version || 'N/A',
+                    component: component,
                 };
             }
         }
@@ -426,6 +431,8 @@ export async function getWebsitesTable(userId: string): Promise<{
                                 type: "status",
                                 status: data.status,
                                 value: data.status === 'success' ? "Success" : data.status === 'warning' ? "Warning" : "Error",
+                                raw: data,
+                                url: websiteObj.url,
                             };
                             if(data?.detailsFindings) {
                                 siteData[header.id]['info'] = data.detailsFindings.map((finding) => finding.value).join(' ');
@@ -434,6 +441,8 @@ export async function getWebsitesTable(userId: string): Promise<{
                             siteData[header.id] = {
                                 type: "text",
                                 value: data.detailsFindings.map((finding) => finding.value).join(' '),
+                                raw: data,
+                                url: websiteObj.url,
                             };
                         }
                     }
@@ -484,7 +493,6 @@ export async function getWebsiteViews(websiteId: string): Promise<DefaultView[]>
 
 export async function createWebsite(state: CreateWebsiteState, formData: FormData) {
     const user = await getUser();
-    console.log('user', user);
     const validatedFields = CreateWebsiteSchema.safeParse({
         url: formData.get('url'),
         tags: formData.get('tags'),
@@ -499,7 +507,6 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
 
     const { url, tags } = validatedFields.data
 
-    console.log('tags', tags);
     await connectMongo();
 
     const options = {
