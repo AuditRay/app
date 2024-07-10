@@ -23,7 +23,7 @@ import SaveFilterViewModal from "@/app/ui/SaveFilterViewModal";
 import {useSearchParams} from "next/navigation";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
 import {headers} from "next/headers";
-import {tableSourceField} from "@/app/actions/websiteActions";
+import {getWebsitesTable, tableSourceField} from "@/app/actions/websiteActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import UpdateFilterViewModal from "@/app/ui/UpdateFilterViewModal";
 import useRightDrawerStore from "@/app/lib/uiStore";
@@ -32,6 +32,7 @@ import Typography from "@mui/material/Typography";
 import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import ComponentInfo from "@/app/ui/ComponentInfo";
 import {IWebsiteInfo, UpdateInfo} from "@/app/models";
+import {getUser} from "@/app/actions/getUser";
 
 export type GridRow = {
     id: number|string;
@@ -409,14 +410,17 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
 };
 
 
-export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?: { id: string, label: string}[]}) {
+export default function WebsitesGrid() {
     const searchParams = useSearchParams();
     const [filters, setFilters] = React.useState<GridFilterModel>();
     const [isFiltersLoaded, setIsFiltersLoaded] = React.useState<boolean>(false);
+    const [isWebsitesLoading, setIsWebsitesLoading] = React.useState<boolean>(false);
     const [filtersView, setFiltersView] = React.useState<IFiltersView>();
     const [columns, setColumns] = React.useState<GridColumnVisibilityModel>();
     const [isSaveOpened, setIsSaveOpened] = React.useState<boolean>(false);
     const [isUpdateOpened, setIsUpdateOpened] = React.useState<boolean>(false);
+    const [websites, setWebsites] = React.useState<GridRow[]>([])
+    const [extraHeader, setExtraHeader] = React.useState<{ id: string, label: string}[]>([]);
     const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
     const CustomToolbar = useCallback(() => {
         const filterViewParam = searchParams.get('filterView');
@@ -426,7 +430,7 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
             enableSave = compare && Object.keys(compare).length > 0;
         }
         if(columns) {
-            const compare = diff(columns, filtersView?.columns || columnsVisibility(props.extraHeader));
+            const compare = diff(columns, filtersView?.columns || columnsVisibility(extraHeader));
             enableSave = compare && Object.keys(compare).length > 0;
         }
         return (
@@ -446,8 +450,58 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
                 )}
             </GridToolbarContainer>
         );
-    }, [searchParams, filters, columns, filtersView, props.extraHeader])
+    }, [searchParams, filters, columns, filtersView, extraHeader])
+    useEffect(() => {
+        setIsWebsitesLoading(true);
+        const getWebsites = async () => {
+            const {data: websites, extraHeaders} = await getWebsitesTable();
+            const WebsiteRows: GridRow[] = websites.map((website) => {
+                const websiteData: GridRow = {
+                    id: website.id,
+                    url: website.url,
+                    favicon: website.favicon,
+                    siteName: website.title ? website.title : website.url,
+                    type: website.type,
+                    types:  website.type ? [website.type.name, ...(website.type.subTypes.map((subType) => subType.name))] : [],
+                    tags: website.tags || [],
+                    components: website.components,
+                    componentsNumber: website.components.length,
+                    componentsUpdated: website.componentsUpdated,
+                    componentsUpdatedNumber: website.componentsUpdated.length,
+                    componentsWithUpdates: website.componentsWithUpdates,
+                    componentsWithUpdatesNumber: website.componentsWithUpdates.length,
+                    componentsWithSecurityUpdates: website.componentsWithSecurityUpdates,
+                    componentsWithSecurityUpdatesNumber: website.componentsWithSecurityUpdates.length,
+                    frameWorkUpdateStatus: website.frameWorkUpdateStatus,
+                    frameworkVersion: website.frameworkVersion,
+                }
+                for (const [key, value] of Object.entries(website)) {
+                    if(!websiteData[key]) {
+                        if(typeof value === 'object') {
+                            switch (value.type) {
+                                case 'text':
+                                    websiteData[key] = value.value
+                                    break
+                                case 'status':
+                                    websiteData[key] = value.status === 'success' ? "Success" : value.status === 'warning' ? "Warning" : "Error"
+                                    break
+                                case 'version':
+                                    websiteData[key] = value.value
+                                    break
+                            }
+                            websiteData[`${key}_raw`] = value;
+                        }
+                    }
+                }
+                return websiteData;
+            });
+            setWebsites(WebsiteRows);
+            setExtraHeader(extraHeaders);
+            setIsWebsitesLoading(false);
+        }
 
+        getWebsites();
+    }, [])
     useEffect(() => {
         const filterView = searchParams.get('filterView');
         if (filterView) {
@@ -459,10 +513,10 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
             })
         } else {
             setFilters({ items: [] });
-            setColumns(columnsVisibility(props.extraHeader));
+            setColumns(columnsVisibility(extraHeader));
             setFiltersView(undefined);
         }
-    }, [props.extraHeader, searchParams]);
+    }, [extraHeader, searchParams]);
 
     return (
         <div style={{ width: '100%' }}>
@@ -475,9 +529,9 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
                     loadingOverlay: LinearProgress as GridSlots['loadingOverlay'],
                     toolbar: CustomToolbar,
                 }}
-                loading={props.websites.length === 0}
-                rows={props.websites}
-                columns={prepareColumns(openRightDrawer, props.extraHeader)}
+                loading={isWebsitesLoading}
+                rows={websites}
+                columns={prepareColumns(openRightDrawer, extraHeader)}
                 rowSelection={false}
                 onFilterModelChange={(model) => {
                     setFilters(model);
@@ -492,7 +546,7 @@ export default function WebsitesGrid(props: { websites: GridRow[], extraHeader?:
                         paginationModel: { page: 0, pageSize: 20 },
                     },
                     columns: {
-                        columnVisibilityModel: columnsVisibility(props.extraHeader),
+                        columnVisibilityModel: columnsVisibility(extraHeader),
                     },
                 }}
                 pageSizeOptions={[5, 20]}

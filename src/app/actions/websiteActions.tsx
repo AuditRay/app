@@ -338,10 +338,17 @@ const versionTypeMapping = {
     UNKNOWN: 'Unknown',
     NOT_SUPPORTED: 'Not Supported',
 }
-export async function getWebsitesTable(userId: string): Promise<{
+export async function countWebsites(userId: string): Promise<number> {
+    return Website.countDocuments({user: userId});
+}
+export async function getWebsitesTable(userId?: string): Promise<{
     data: IWebsiteTable[]
     extraHeaders: { id: string, label: string}[]
 }> {
+    if(!userId) {
+        const user = await getUser();
+        userId = user.id;
+    }
     console.time('getWebsitesTable');
     const websites = await Website.find({user: userId});
     const websitesData: IWebsiteTable[] = [];
