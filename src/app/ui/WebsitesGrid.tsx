@@ -33,6 +33,7 @@ import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import ComponentInfo from "@/app/ui/ComponentInfo";
 import {IWebsiteInfo, UpdateInfo} from "@/app/models";
 import {getUser} from "@/app/actions/getUser";
+import {styled} from "@mui/material/styles";
 
 export type GridRow = {
     id: number|string;
@@ -409,12 +410,17 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
     return cols;
 };
 
+function CustomNoRowsOverlay() {
+    return (
+        <Box sx={{ mt: 2 }}>Loading Data</Box>
+    );
+}
 
 export default function WebsitesGrid() {
     const searchParams = useSearchParams();
     const [filters, setFilters] = React.useState<GridFilterModel>();
     const [isFiltersLoaded, setIsFiltersLoaded] = React.useState<boolean>(false);
-    const [isWebsitesLoading, setIsWebsitesLoading] = React.useState<boolean>(false);
+    const [isWebsitesLoading, setIsWebsitesLoading] = React.useState<boolean>(true);
     const [filtersView, setFiltersView] = React.useState<IFiltersView>();
     const [columns, setColumns] = React.useState<GridColumnVisibilityModel>();
     const [isSaveOpened, setIsSaveOpened] = React.useState<boolean>(false);
@@ -525,9 +531,11 @@ export default function WebsitesGrid() {
                 <UpdateFilterViewModal open={isUpdateOpened} setOpen={setIsUpdateOpened} filtersView={filtersView} filtersModel={filters} columnsModel={columns}/>
             )}
             <DataGridPro
+                autoHeight={true}
+                sx={{ '--DataGrid-overlayHeight': '300px' }}
                 slots={{
                     loadingOverlay: LinearProgress as GridSlots['loadingOverlay'],
-                    toolbar: CustomToolbar,
+                    toolbar: CustomToolbar
                 }}
                 loading={isWebsitesLoading}
                 rows={websites}

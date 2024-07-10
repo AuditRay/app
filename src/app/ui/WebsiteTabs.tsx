@@ -76,7 +76,7 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
         //format websiteInfo.dataSourcesInfo to TreeViewBaseItem
         const items: TreeViewBaseItem[] = [];
         websiteInfo.dataSourcesInfo.forEach((item) => {
-            items.push({
+            items.unshift({
                 id: item.id,
                 label: item.label || '',
                 children: item.data?.map((child) => ({
@@ -409,7 +409,6 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
                         <RichTreeView
                             multiSelect
                             checkboxSelection
-                            expandedItems={expandedItems}
                             apiRef={apiRef}
                             items={items}
                             selectedItems={selectedItems}
