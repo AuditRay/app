@@ -157,7 +157,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 } else if (params.value === 'Security Update') {
                     return <Chip sx={{bgcolor: 'red', color: 'white'}} label={'Security Update'} onClick={() => rawData?.component && params.value && viewMore(params.value,  <WebsitesInfoGrid websiteInfo={componentsWithSecurityUpdates}/>)}/>
                 } else {
-                    return <Chip sx={{bgcolor: 'yellowgreen', color: 'white'}} label={'Unknown'} onClick={() => rawData?.component && params.value && viewMore(params.value,  <WebsitesInfoGrid websiteInfo={updatedComponents}/>)}/>
+                    return <Chip label={'Unknown'} onClick={() => rawData?.component && params.value && viewMore(params.value,  <WebsitesInfoGrid websiteInfo={updatedComponents}/>)}/>
                 }
             },
             type: 'singleSelect',
