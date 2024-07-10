@@ -9,7 +9,7 @@ import {revalidatePath} from "next/cache";
 import * as WebappalyzerJS from 'webappalyzer-js';
 import {jwtVerify, SignJWT} from "jose";
 import {DataSources, IWebsiteInfo, UpdateInfo, WebsiteInfo} from "@/app/models/WebsiteInfo";
-import {diff} from 'deep-object-diff';
+import {detailedDiff, diff} from 'deep-object-diff';
 import OpenAI from 'openai';
 import {DefaultView, IWebsiteView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
@@ -244,7 +244,8 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             //     });
             // }
             const infoObj = websiteLatestInfo.toJSON();
-            const compare = diff({
+
+            const compare = detailedDiff({
                 website: infoObj.website,
                 configData: infoObj.configData || {},
                 frameworkInfo: infoObj.frameworkInfo,
@@ -252,7 +253,12 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
                 dataSourcesInfo: infoObj.dataSourcesInfo,
             }, preparedData);
 
-            if(Object.keys(compare).length) {
+            const added = Object.keys(compare.added).length;
+            const deleted = Object.keys(compare.deleted).length;
+            const updated = Object.keys(compare.updated).length;
+            const updatedKeys = Object.keys(compare.updated);
+            const newVersion = added > 0 || deleted > 0 || updatedKeys.includes('frameworkInfo') || updatedKeys.includes('websiteComponentsInfo') || (updated > 2 && updatedKeys.includes('dataSourcesInfo'));
+            if(newVersion) {
                 const newWebsiteInfo = new WebsiteInfo(preparedData);
                 await newWebsiteInfo.save();
                 // generateWebsiteAIUpdatesSummary(websiteId).then(() => {
@@ -345,6 +351,7 @@ export async function getWebsitesTable(userId: string): Promise<{
     const websiteInfos: Record<string, IWebsiteInfo> = {};
     for (const website of websites) {
         const websiteInfo = await WebsiteInfo.find({website: website._id}).sort({createdAt: -1}).limit(1);
+
         if(websiteInfo[0]){
             websiteInfos[website._id.toString()] = websiteInfo[0];
         }
@@ -460,6 +467,7 @@ export async function getWebsitesTable(userId: string): Promise<{
         }
         websitesData.push(siteData);
     }
+
     return {
         data: websitesData,
         extraHeaders: extraHeaders

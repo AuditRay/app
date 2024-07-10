@@ -52,13 +52,24 @@ export interface IWebsiteInfo {
     updatedAt: Date;
 }
 
-const ModelSchema = new Schema<IWebsiteInfo>(
+export interface IWebsiteInfoInternal {
+    id: string;
+    website: typeof Schema.Types.ObjectId;
+    configData: Record<string, any>;
+    frameworkInfo: string;
+    websiteComponentsInfo: string;
+    dataSourcesInfo: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+const ModelSchema = new Schema<IWebsiteInfoInternal>(
     {
         website: {type: Schema.Types.ObjectId, ref: 'Website'},
         configData: {},
         frameworkInfo: {},
-        websiteComponentsInfo: [],
-        dataSourcesInfo: [],
+        websiteComponentsInfo: {},
+        dataSourcesInfo: {},
     },
     {
         timestamps: true,
@@ -72,6 +83,38 @@ const ModelSchema = new Schema<IWebsiteInfo>(
         },
     },
 );
+
+ModelSchema.post('find', function(WebsiteInfos: any[]) {
+    WebsiteInfos.forEach((WebsiteInfo) => {
+        WebsiteInfo.set('frameworkInfo', JSON.parse(WebsiteInfo.frameworkInfo));
+        WebsiteInfo.set('websiteComponentsInfo', JSON.parse(WebsiteInfo.websiteComponentsInfo));
+        WebsiteInfo.set('dataSourcesInfo', JSON.parse(WebsiteInfo.dataSourcesInfo));
+    });
+    return WebsiteInfos;
+});
+
+ModelSchema.post('findOne', function(WebsiteInfo: any) {
+    WebsiteInfo.set('frameworkInfo', JSON.parse(WebsiteInfo.frameworkInfo));
+    WebsiteInfo.set('websiteComponentsInfo', JSON.parse(WebsiteInfo.websiteComponentsInfo));
+    WebsiteInfo.set('dataSourcesInfo', JSON.parse(WebsiteInfo.dataSourcesInfo));
+
+    return WebsiteInfo;
+});
+
+ModelSchema.post('save', function(WebsiteInfo: any) {
+    WebsiteInfo.set('frameworkInfo', JSON.parse(WebsiteInfo.frameworkInfo));
+    WebsiteInfo.set('websiteComponentsInfo', JSON.parse(WebsiteInfo.websiteComponentsInfo));
+    WebsiteInfo.set('dataSourcesInfo', JSON.parse(WebsiteInfo.dataSourcesInfo));
+
+    return WebsiteInfo;
+});
+
+ModelSchema.pre('save', function(next) {
+    this.set('frameworkInfo', JSON.stringify(this.frameworkInfo));
+    this.set('websiteComponentsInfo', JSON.stringify(this.websiteComponentsInfo));
+    this.set('dataSourcesInfo', JSON.stringify(this.dataSourcesInfo));
+    next();
+});
 
 ModelSchema.index({ website: -1});
 
