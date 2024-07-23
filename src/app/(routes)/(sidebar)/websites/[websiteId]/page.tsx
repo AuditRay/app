@@ -11,13 +11,29 @@ import dayjs from "dayjs";
 import CollapseMD from "@/app/ui/CollapseMD.jsx";
 import WebsitesTabs from "@/app/ui/WebsiteTabs";
 import RightDrawer from "@/app/ui/RightDrawer";
+import EditWebsiteModal from "@/app/ui/EditWebsiteModal";
+import {FieldsTemplate} from "@/app/models";
+import UpdateWebsiteFieldValuesModal from "@/app/ui/UpdateWebsiteFieldValuesModal";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string }}) {
     const { websiteId } = params;
     const website = await getWebsite(websiteId);
     const websiteViews = await getWebsiteViews(websiteId);
     const websiteInfo = await fetchUpdates(websiteId);
-
+    let websiteFields = [];
+    if(website && website.fieldsTemplate) {
+        const websiteFieldsTemplate = await FieldsTemplate.findOne({_id: website.fieldsTemplate});
+        const websiteFieldsTemplateData = websiteFieldsTemplate?.toJSON();
+        if(websiteFieldsTemplateData?.fields) {
+            for (const field of websiteFieldsTemplateData.fields) {
+                const fieldValue = website.fieldValues?.find((fieldValue) => fieldValue.id === field.id);
+                websiteFields.push({
+                    ...field,
+                    value: fieldValue?.value
+                });
+            }
+        }
+    }
     return (
         <>
             <Grid item xs={8}>
@@ -29,7 +45,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                     }}
                 >
                     {website && (
-                        <div>
+                        <Box>
                             <Typography variant={'h1'}>
                                 <Box component={'img'}  src={`${website.favicon}`} alt={website.title} sx={{width: '30px', verticalAlign: 'middle', mr: '10px'}} />
                                 {website.title}
@@ -37,7 +53,22 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                     <LaunchIcon fontSize={'small'} sx={{verticalAlign: 'middle', ml: '5px'}}></LaunchIcon>
                                 </Link>
                             </Typography>
-                        </div>
+                        </Box>
+                    )}
+                    {website && website.fieldsTemplate && websiteFields && websiteFields.length && (
+                        <>
+                            <Box sx={{mt: 2}}>
+                                {websiteFields.map((field) => (
+                                    // print as field label: value
+                                    <Typography key={field.id} variant={'body1'}>
+                                        {field.title}: {field.value}
+                                    </Typography>
+                                ))}
+                            </Box>
+                            <Box sx={{textAlign: 'right'}}>
+                                <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={website.fieldsTemplate}></UpdateWebsiteFieldValuesModal>
+                            </Box>
+                        </>
                     )}
                 </Paper>
                 <Paper
@@ -112,6 +143,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                 >
                     {website && (
                         <div>
+                            <EditWebsiteModal websiteId={website.id}/>
                             <WebsiteConnectionTokenModal websiteId={website.id}/>
                         </div>
                     )}

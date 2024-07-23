@@ -8,7 +8,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import {createKey, getWebsite, updateWebsite} from "@/app/actions/websiteActions";
 import {useEffect} from "react";
-import {IWebsite} from "@/app/models/Website";
 
 export default function WebsiteConnectionTokenModal({websiteId}: {websiteId: string}) {
     const [open, setOpen] = useState(false);

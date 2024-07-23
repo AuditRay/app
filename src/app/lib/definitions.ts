@@ -16,6 +16,7 @@ export const CreateWebsiteSchema = z.object({
         }
         return input;
     }, z.array(z.string().min(0, {message: 'Invalid tag'})).or(z.string().length(0))),
+    fieldsTemplate: z.string().optional()
 })
 
 export type CreateWebsiteState = | {

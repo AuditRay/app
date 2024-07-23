@@ -294,7 +294,9 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
         return null;
     }
     website.set(updateData);
-    return website.save();
+    const updatedWebsite = await website.save();
+    revalidatePath(`/website/${websiteId}`);
+    return updatedWebsite.toJSON();
 }
 
 export async function getWebsite(websiteId: string): Promise<IWebsite | null> {
@@ -505,12 +507,12 @@ export async function getWebsiteViews(websiteId: string): Promise<DefaultView[]>
     return filteredViewsData.sort((a, b) => a.weight - b.weight);
 }
 
-
 export async function createWebsite(state: CreateWebsiteState, formData: FormData) {
     const user = await getUser();
     const validatedFields = CreateWebsiteSchema.safeParse({
         url: formData.get('url'),
         tags: formData.get('tags'),
+        fieldsTemplate: formData.get('fields-template'),
     })
 
     // If any form fields are invalid, return early
@@ -520,7 +522,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         }
     }
 
-    const { url, tags } = validatedFields.data
+    const { url, tags, fieldsTemplate } = validatedFields.data
 
     await connectMongo();
 
@@ -546,6 +548,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         url,
         tags: tags || [],
         user: user.id,
+        fieldsTemplate: fieldsTemplate,
     });
 
     try {

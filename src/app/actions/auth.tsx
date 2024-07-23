@@ -6,7 +6,6 @@ import { User } from '../models'
 import bcrypt from 'bcrypt';
 import { createSession } from "@/app/lib/session";
 import { redirect } from "next/navigation";
-import {Error} from "mongoose";
 
 export async function login(state: LoginFormState, formData: FormData) {
     const validatedFields = LoginFormSchema.safeParse({

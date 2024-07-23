@@ -247,7 +247,7 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
                                 }).catch((e) => {
                                     setIsSaving(false);
                                     console.error(e);
-                                    setError('Error creating view, please try again.');
+                                    setError('Error deleting view, please try again.');
                                 });
                             }}>{isSaving ? 'Deleting...' : 'Yes'} </Button>
                             {isSaving && (

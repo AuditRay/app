@@ -1,4 +1,5 @@
 import {Model, model, models, Schema} from 'mongoose';
+import {FieldValue} from "@/app/models/FieldsTemplate";
 
 export type WebsiteTechnology = {
     slug: string;
@@ -27,6 +28,8 @@ export interface IWebsite {
     title: string;
     type: WebsiteType;
     user: typeof Schema.Types.ObjectId;
+    fieldsTemplate?: string;
+    workspace?: typeof Schema.Types.ObjectId;
     favicon: string;
     token?: string;
     aiSummary?: string;
@@ -35,6 +38,7 @@ export interface IWebsite {
     attributes: object;
     metadata: any;
     technologies: WebsiteTechnology[];
+    fieldValues: FieldValue[];
     defaultViewsConfiguration: {
         id: string;
         weight: number;
@@ -52,6 +56,9 @@ const ModelSchema = new Schema<IWebsite>(
         aiSEOSummary: String,
         tags: [String],
         user: {type: Schema.Types.ObjectId, ref: 'User'},
+        workspace: {type: Schema.Types.ObjectId, ref: 'User'},
+        fieldsTemplate: {type: Schema.Types.ObjectId, ref: 'FieldsTemplate'},
+        fieldValues: [],
         type: {},
         technologies: [],
         metadata: {},
@@ -65,12 +72,17 @@ const ModelSchema = new Schema<IWebsite>(
             virtuals: true,
             transform: (_, ret) => {
                 ret.user = ret.user.toString();
+                ret.workspace = ret.workspace?.toString();
+                ret.fieldsTemplate = ret.fieldsTemplate?.toString();
                 delete ret._id;
             },
         },
     },
 );
 
-ModelSchema.index({ url: 1, user: 1}, { unique: true });
+ModelSchema.index({ url: 1, user: 1, workspace: 1}, { unique: true });
+ModelSchema.index({ workspace: 1 });
+ModelSchema.index({ user: 1 });
+ModelSchema.index({ createdAt: -1 });
 
 export const Website = (models?.Website || model('Website', ModelSchema)) as Model<IWebsite>;

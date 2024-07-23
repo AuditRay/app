@@ -1,6 +1,6 @@
 'use client'
 import * as React from "react";
-import {Box, Container, Grid, IconButton, Typography, Divider, List, Toolbar} from "@mui/material";
+import {Box, Container, Grid, IconButton, Typography, Divider, List, Toolbar, Badge} from "@mui/material";
 import {AppBar, Drawer} from "@/app/ui/NavBar";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
@@ -10,18 +10,24 @@ import {getFiltersViews} from "@/app/actions/filterViewsActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import { LicenseInfo } from '@mui/x-license';
 import Gleap from 'gleap';
+import AccountMenu from "@/app/ui/AccountMenu";
+import {IUser} from "@/app/models";
+import {getUser} from "@/app/actions/getUser";
 LicenseInfo.setLicenseKey('d180cacff967bbf4eb0152899dacbe68Tz05MzI0OCxFPTE3NTEwNDc4MDIwMDAsUz1wcm8sTE09c3Vic2NyaXB0aW9uLEtWPTI=');
 
 export default function DashboardLayout({children,}: {
     children: React.ReactNode
 }) {
     const [filterViews, setFilterViews] = React.useState<IFiltersView[]>([]);
+    const [user, setUser] = React.useState<IUser | null>(null);
     const pathname = usePathname();
-    console.log(pathname);
     const TitlesMap: Record<string, string> = {
         '/websites': 'Websites',
         '/': 'Dashboard',
         '/dashboard': 'Dashboard',
+        '/settings': 'Workspace Settings',
+        '/settings/field-templates': 'Workspace Settings',
+        '/settings/users': 'Workspace Settings',
     }
     const [open, setOpen] = React.useState(true);
     const toggleDrawer = () => {
@@ -30,6 +36,9 @@ export default function DashboardLayout({children,}: {
     React.useEffect(() => {
         getFiltersViews().then((filtersViews) => {
             setFilterViews(filtersViews);
+        });
+        getUser().then((user) => {
+            setUser(user);
         });
     }, []);
     React.useEffect(() => {
@@ -65,11 +74,7 @@ export default function DashboardLayout({children,}: {
                     >
                         {TitlesMap[pathname] ? TitlesMap[pathname] : pathname.includes('/websites') ? 'Website' : 'Dashboard'}
                     </Typography>
-                    {/*<IconButton color="inherit">*/}
-                    {/*    <Badge badgeContent={4} color="secondary">*/}
-                    {/*        <NotificationsIcon />*/}
-                    {/*    </Badge>*/}
-                    {/*</IconButton>*/}
+                    {user && (<AccountMenu user={user}></AccountMenu>)}
                 </Toolbar>
             </AppBar>
             <Drawer variant="permanent" open={open}>

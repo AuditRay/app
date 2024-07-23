@@ -14,6 +14,8 @@ import WebsitesTabs from "@/app/ui/WebsiteTabs";
 import {redirect} from "next/navigation";
 import RightDrawer from "@/app/ui/RightDrawer";
 import {Suspense} from "react";
+import UpdateWebsiteFieldValuesModal from "@/app/ui/UpdateWebsiteFieldValuesModal";
+import {FieldsTemplate} from "@/app/models";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string, viewId: string } }) {
     const { websiteId, viewId } = params;
@@ -37,6 +39,21 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
         // redirect to update page
         redirect(`/websites/${websiteId}`)
     }
+
+    const websiteFields = [];
+    if(website && website.fieldsTemplate) {
+        const websiteFieldsTemplate = await FieldsTemplate.findOne({_id: website.fieldsTemplate});
+        const websiteFieldsTemplateData = websiteFieldsTemplate?.toJSON();
+        if(websiteFieldsTemplateData?.fields) {
+            for (const field of websiteFieldsTemplateData.fields) {
+                const fieldValue = website.fieldValues?.find((fieldValue) => fieldValue.id === field.id);
+                websiteFields.push({
+                    ...field,
+                    value: fieldValue?.value
+                });
+            }
+        }
+    }
     return (
         <>
             <Suspense fallback={<p>Loading Data...</p>}>
@@ -58,6 +75,21 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                     </Link>
                                 </Typography>
                             </div>
+                        )}
+                        {website && website.fieldsTemplate && websiteFields && websiteFields.length && (
+                            <>
+                                <Box sx={{mt: 2}}>
+                                    {websiteFields.map((field) => (
+                                        // print as field label: value
+                                        <Typography key={field.id} variant={'body1'}>
+                                            {field.title}: {field.value}
+                                        </Typography>
+                                    ))}
+                                </Box>
+                                <Box sx={{textAlign: 'right'}}>
+                                    <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={website.fieldsTemplate}></UpdateWebsiteFieldValuesModal>
+                                </Box>
+                            </>
                         )}
                     </Paper>
                     <Paper

@@ -9,7 +9,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import {useFormState, useFormStatus} from "react-dom";
-import {createWebsite} from "@/app/actions/websiteActions";
+import {createKey, createWebsite, getWebsite, updateWebsite} from "@/app/actions/websiteActions";
 import {CreateWebsiteState} from "@/app/lib/definitions";
 import {useEffect} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
@@ -17,83 +17,57 @@ import { green } from '@mui/material/colors';
 import {Autocomplete, Chip, FormControl, InputLabel, Select} from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import * as React from "react";
-import {getFieldsTemplates} from "@/app/actions/fieldTemplateActions";
-import {IFieldsTemplate} from "@/app/models";
+import {getFieldsTemplates, updateFieldsTemplate} from "@/app/actions/fieldTemplateActions";
+import {IFieldsTemplate, IWebsite} from "@/app/models";
 
-export default function AddWebsiteModal() {
-    const [state, action, isPending] = useFormState(createWebsite, undefined)
-    const [open, setOpen] = useState(false);
+export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
     const [isSaving, setIsSaving] = useState(false);
-    const [tags, setTags] = useState<string[]>([]);
-    const [formCurrentState, setFormCurrentState] = useState<CreateWebsiteState>(state);
+    const [open, setOpen] = useState(false);
+    const [fieldsTemplate, setFieldsTemplate] = useState<string | undefined>();
+    const [fieldsTemplateError, setFieldsTemplateError] = useState<string | null>(null);
+    const [tags, setTags] = useState<string[] | undefined>([]);
+    const [tagsError, setTagsError] = useState<string | null>(null);
+    const [generalError, setGeneralError] = useState<string | null>(null);
     const [fieldTemplates, setFieldTemplates] = useState<IFieldsTemplate[]>([]);
-    const { pending } = useFormStatus();
     const handleOpen = () => {
-        setFormCurrentState(undefined);
         setOpen(true);
     }
     const handleClose = () => {
-        setFormCurrentState(undefined);
         setOpen(false);
     }
 
     useEffect(() => {
-        getFieldsTemplates().then((fieldTemplates) => {
+        async function getData(){
+            const website = await getWebsite(websiteId);
+            const fieldTemplates = await getFieldsTemplates();
             setFieldTemplates(fieldTemplates);
-        })
-        setFormCurrentState({...state});
-        if(!state?.errors) {
-            handleClose();
+            if(!website) return '';
+            setTags(website.tags);
+            setFieldsTemplate(website.fieldsTemplate);
         }
+        websiteId && getData();
         setIsSaving(false);
-    }, [state]);
+    }, [websiteId]);
 
     useEffect(() => {
         console.log('isPending', isSaving);
     }, [isSaving]);
     return (
         <div>
-            <Button onClick={handleOpen} variant={'contained'}>Add New Website</Button>
+            <Button onClick={handleOpen} variant={'contained'} fullWidth sx={{mb: 2}}>Edit Website ...</Button>
             <Dialog
                 open={open}
                 fullWidth={true}
                 maxWidth={'sm'}
-                onClose={() => {
-                    !isSaving && handleClose();
-                }}
-                PaperProps={{
-                    component: 'form',
-                    action: (e: FormData) => {
-                        setFormCurrentState({});
-                        setIsSaving(true);
-                        e.append('tags', JSON.stringify(tags));
-                        setTimeout(() => action(e));
-                    }
-                }}
             >
-                <DialogTitle>Add new website</DialogTitle>
+                <DialogTitle>Edit Website</DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        To Add a new website, please enter the website URL.
-                    </DialogContentText>
-                    <TextField
-                        autoFocus
-                        disabled={isSaving}
-                        error={!!formCurrentState?.errors?.url}
-                        helperText={formCurrentState?.errors?.url}
-                        margin="dense"
-                        id="name"
-                        name="url"
-                        label="Website Url"
-                        type="url"
-                        fullWidth
-                        variant="outlined"
-                    />
                     <Autocomplete
                         multiple
                         id="tags"
                         options={[]}
                         autoSelect={true}
+                        defaultValue={tags}
                         freeSolo
                         onChange={(event, newValue) => {
                             setTags(newValue);
@@ -108,10 +82,11 @@ export default function AddWebsiteModal() {
                         }
                         renderInput={(params) => (
                             <TextField
+                                margin="dense"
                                 {...params}
                                 disabled={isSaving}
-                                error={!!formCurrentState?.errors?.tags}
-                                helperText={formCurrentState?.errors?.tags}
+                                error={!!tagsError}
+                                helperText={tagsError}
                                 variant="outlined"
                                 label="Tags"
                                 placeholder="Tags"
@@ -125,6 +100,10 @@ export default function AddWebsiteModal() {
                                 id={`fields-template`}
                                 name={`fields-template`}
                                 label="Fields Template"
+                                value={fieldsTemplate}
+                                onChange={(e) => {
+                                    setFieldsTemplate(e.target.value as string);
+                                }}
                             >
                                 {fieldTemplates.length && (<MenuItem key={'none'} value={''}>None</MenuItem>)}
                                 {fieldTemplates.length && fieldTemplates.map((fieldTemplate) => (
@@ -140,7 +119,29 @@ export default function AddWebsiteModal() {
                 <DialogActions>
                     <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>
                     <Box sx={{ m: 1, position: 'relative' }}>
-                        <Button disabled={isSaving} type="submit" variant={'contained'}>{isSaving ? 'Saving...' : 'Add'} </Button>
+                        <Button
+                            disabled={isSaving}
+                            type="submit"
+                            variant={'contained'}
+                            onClick={() => {
+                                setIsSaving(true);
+                                async function save() {
+                                    await updateWebsite(websiteId, {
+                                        tags,
+                                        fieldsTemplate: fieldsTemplate || undefined
+                                    });
+                                }
+                                save().then(() => {
+                                    setIsSaving(false);
+                                    handleClose();
+                                    setTagsError('');
+                                    setFieldsTemplateError('');
+                                }).catch((e) => {
+                                    setIsSaving(false);
+                                    setGeneralError('Error updating the website. Please try again.');
+                                });
+                            }}
+                        >{isSaving ? 'Saving...' : 'Save'} </Button>
                         {isSaving && (
                             <CircularProgress
                                 size={24}
