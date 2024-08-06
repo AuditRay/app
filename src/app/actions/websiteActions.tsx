@@ -14,6 +14,7 @@ import OpenAI from 'openai';
 import {DefaultView, IWebsiteView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
 import {Model} from "mongoose";
+import {User} from "@/app/models";
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
@@ -341,18 +342,37 @@ const versionTypeMapping = {
     NOT_SUPPORTED: 'Not Supported',
 }
 export async function countWebsites(userId: string): Promise<number> {
-    return Website.countDocuments({user: userId});
+    let user = await getUser();
+    if(!userId) {
+        userId = user.id;
+    } else {
+        user = await User.findOne({_id: userId}) || user;
+    }
+    if(!user.currentSelectedWorkspace) {
+        return Website.countDocuments({user: userId});
+    } else {
+        return Website.countDocuments({user: userId, workspace: user.currentSelectedWorkspace});
+    }
 }
 export async function getWebsitesTable(userId?: string): Promise<{
     data: IWebsiteTable[]
     extraHeaders: { id: string, label: string}[]
 }> {
+    let user = await getUser();
     if(!userId) {
-        const user = await getUser();
         userId = user.id;
+    } else {
+        user = await User.findOne({_id: userId}) || user;
     }
+    console.log('user', user.currentSelectedWorkspace)
     console.time('getWebsitesTable');
-    const websites = await Website.find({user: userId});
+    let websites = await Website.find({
+        user: userId,
+        workspace: user.currentSelectedWorkspace
+    });
+    if(!user.currentSelectedWorkspace) {
+        websites = await Website.find({user: userId});
+    }
     const websitesData: IWebsiteTable[] = [];
     const extraHeaders: { id: string, label: string}[] = [
         {id: 'frameworkVersion', label: 'Framework'},
@@ -484,7 +504,14 @@ export async function getWebsitesTable(userId?: string): Promise<{
 }
 
 export async function getWebsites(userId: string): Promise<IWebsite[]> {
-    const websites = await Website.find({user: userId});
+    const user = await User.findOne({_id: userId});
+    if(!user) {
+        throw new Error('User not found');
+    }
+    let websites = await Website.find({user: userId, workspace: user.currentSelectedWorkspace});
+    if(!user.currentSelectedWorkspace) {
+        websites = await Website.find({user: userId});
+    }
     return websites.map(website => website.toJSON());
 }
 
@@ -549,6 +576,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         tags: tags || [],
         user: user.id,
         fieldsTemplate: fieldsTemplate,
+        workspace: user.currentSelectedWorkspace
     });
 
     try {

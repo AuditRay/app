@@ -1,11 +1,23 @@
 'use server'
 
-import { SignupFormSchema, FormState, LoginFormSchema, LoginFormState } from '@/app/lib/definitions'
+import {
+    SignupFormSchema,
+    FormState,
+    LoginFormSchema,
+    LoginFormState,
+    JoinFormState,
+    JoinFormSchema
+} from '@/app/lib/definitions'
 import { connectMongo } from '@/app/lib/database'
-import { User } from '../models'
+import {IUser, User} from '../models'
 import bcrypt from 'bcrypt';
 import { createSession } from "@/app/lib/session";
 import { redirect } from "next/navigation";
+
+export async function getUserByInviteToken(inviteToken: string): Promise<IUser | null> {
+    const user = await User.findOne({ inviteToken });
+    return user?.toJSON() || null;
+}
 
 export async function login(state: LoginFormState, formData: FormData) {
     const validatedFields = LoginFormSchema.safeParse({
@@ -77,6 +89,61 @@ export async function signup(state: FormState, formData: FormData) {
     }
     await createSession(savedUser.id)
     console.log('User created:', savedUser);
+    redirect('/');
+    // Call the provider or db to create a user...
+}
+
+export async function join(state: JoinFormState, formData: FormData) {
+    // Validate form fields
+    const validatedFields = JoinFormSchema.safeParse({
+        firstName: formData.get('firstName'),
+        lastName: formData.get('lastName'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+        inviteToken: formData.get('inviteToken'),
+    })
+
+    // If any form fields are invalid, return early
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+        }
+    }
+
+    await connectMongo();
+    const { firstName, lastName, email, password, inviteToken } = validatedFields.data
+    const currentUser =  await User.findOne({ inviteToken });
+    if (!currentUser) {
+        return {
+            message: 'Invalid Invite token',
+        }
+    }
+    // e.g. Hash the user's password before storing it
+    const hashedPassword = await bcrypt.hash(password, 10)
+    currentUser.set({
+        firstName,
+        lastName,
+        email,
+        password: hashedPassword,
+        inviteToken: undefined
+    })
+    let savedUser;
+    try {
+        savedUser = await currentUser.save();
+    } catch (error) {
+        if ((error as any).code === 11000) {
+            return {
+                errors: {
+                    email: ['Email already exists'],
+                },
+            }
+        }
+        return {
+            message: 'An error occurred',
+        }
+    }
+    await createSession(savedUser.id)
+    console.log('User updated:', savedUser);
     redirect('/');
     // Call the provider or db to create a user...
 }

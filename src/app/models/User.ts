@@ -7,8 +7,9 @@ export interface IUser {
     lastName: string;
     email: string;
     password: string;
-    currentSelectedWorkspace?: typeof Schema.Types.ObjectId;
-    roles?: (typeof Schema.Types.ObjectId)[];
+    inviteToken: string;
+    currentSelectedWorkspace?: string | typeof Schema.Types.ObjectId;
+    roles?: (string | typeof Schema.Types.ObjectId)[];
     workspaces?: IWorkspace[];
 }
 const ModelSchema = new Schema<IUser>(
@@ -17,6 +18,7 @@ const ModelSchema = new Schema<IUser>(
         lastName: String,
         email: {type: String, unique: true},
         password: String,
+        inviteToken: String,
         currentSelectedWorkspace: {type: Schema.Types.ObjectId, ref: 'Workspace'},
         roles: [{type: Schema.Types.ObjectId, ref: 'Role'}],
     },
@@ -28,6 +30,7 @@ const ModelSchema = new Schema<IUser>(
             transform: (_, ret) => {
                 ret.currentSelectedWorkspace = ret.currentSelectedWorkspace?.toString();
                 ret.roles = ret.roles?.map((role: any) => role.toString());
+                delete ret.password;
                 delete ret._id;
             },
         },

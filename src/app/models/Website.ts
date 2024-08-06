@@ -27,9 +27,9 @@ export interface IWebsite {
     url: string;
     title: string;
     type: WebsiteType;
-    user: typeof Schema.Types.ObjectId;
-    fieldsTemplate?: string;
-    workspace?: typeof Schema.Types.ObjectId;
+    user: string | typeof Schema.Types.ObjectId;
+    fieldsTemplate?: string | typeof Schema.Types.ObjectId;
+    workspace?: string | typeof Schema.Types.ObjectId;
     favicon: string;
     token?: string;
     aiSummary?: string;
@@ -56,7 +56,7 @@ const ModelSchema = new Schema<IWebsite>(
         aiSEOSummary: String,
         tags: [String],
         user: {type: Schema.Types.ObjectId, ref: 'User'},
-        workspace: {type: Schema.Types.ObjectId, ref: 'User'},
+        workspace: {type: Schema.Types.ObjectId, ref: 'Workspace'},
         fieldsTemplate: {type: Schema.Types.ObjectId, ref: 'FieldsTemplate'},
         fieldValues: [],
         type: {},

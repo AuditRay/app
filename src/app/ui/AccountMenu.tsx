@@ -16,6 +16,7 @@ import Logout from '@mui/icons-material/Logout';
 import {IUser} from "@/app/models";
 import { useRouter } from 'next/navigation';
 import AddWorkspaceModal from "@/app/ui/AddWorkspaceModal";
+import {setCurrentSelectedWorkspace} from "@/app/actions/workspaceActions";
 
 export default function AccountMenu({user}: {user: IUser | null}) {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -27,6 +28,13 @@ export default function AccountMenu({user}: {user: IUser | null}) {
     const handleClose = () => {
         setAnchorEl(null);
     };
+    const switchUserWorkSpace = (workspaceId?: string) => {
+        async function switchWorkspace() {
+            await setCurrentSelectedWorkspace(workspaceId);
+            window.location.href = '/';
+        }
+        switchWorkspace().then();
+    }
     const router = useRouter();
     //get initials from First Name and Last Name
     const initials = user ? user?.firstName?.charAt(0) + user?.lastName?.charAt(0) : '';
@@ -86,7 +94,7 @@ export default function AccountMenu({user}: {user: IUser | null}) {
                 <MenuItem disabled={true}>
                    Workspaces
                 </MenuItem>
-                <MenuItem key={'personal-workspace'} selected={!user?.workspaces?.length || !user?.currentSelectedWorkspace}>
+                <MenuItem key={'personal-workspace'} onClick={() => switchUserWorkSpace()} selected={!user?.workspaces?.length || !user?.currentSelectedWorkspace}>
                     <ListItemIcon>
                         <WorkspacesIcon />
                     </ListItemIcon>
@@ -94,7 +102,7 @@ export default function AccountMenu({user}: {user: IUser | null}) {
                 </MenuItem>
 
                 {user?.workspaces?.map((workspace) => (
-                    <MenuItem key={workspace.id}>
+                    <MenuItem key={workspace.id} onClick={() => switchUserWorkSpace(workspace.id)} selected={user?.currentSelectedWorkspace === workspace.id}>
                         <ListItemIcon>
                             <WorkspacesIcon />
                         </ListItemIcon>

@@ -19,8 +19,8 @@ export type FieldValue = {
 
 export interface IFieldsTemplate {
     id: string;
-    workspace: typeof Schema.Types.ObjectId;
-    user: typeof Schema.Types.ObjectId;
+    workspace: string | typeof Schema.Types.ObjectId;
+    user: string | typeof Schema.Types.ObjectId;
     enabled: boolean;
     title: string;
     fields: Field[];

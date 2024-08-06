@@ -2,10 +2,11 @@ import {Model, model, models, Schema} from 'mongoose';
 
 export interface IFiltersView {
     id: string;
-    user: typeof Schema.Types.ObjectId;
+    user: string | typeof Schema.Types.ObjectId;
     title: string;
     filters: any;
     columns: any;
+    workspace?: string | typeof Schema.Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -16,6 +17,7 @@ const ModelSchema = new Schema<IFiltersView>(
         title: String,
         filters: {},
         columns: {},
+        workspace: {type: Schema.Types.ObjectId, ref: 'Workspace'},
     },
     {
         timestamps: true,

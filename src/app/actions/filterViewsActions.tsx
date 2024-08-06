@@ -11,8 +11,13 @@ export async function getFiltersView(filtersViewID: string): Promise<IFiltersVie
 
 export async function getFiltersViews(): Promise<IFiltersView[]> {
     const user = await getUser();
-    const filterViews = await FiltersView.find({user: user.id});
-    return filterViews.map(filterView => filterView.toJSON());
+    if(user.currentSelectedWorkspace) {
+        const filterViews = await FiltersView.find({user: user.id, workspace: user.currentSelectedWorkspace});
+        return filterViews.map(filterView => filterView.toJSON());
+    } else {
+        const filterViews = await FiltersView.find({user: user.id});
+        return filterViews.map(filterView => filterView.toJSON());
+    }
 }
 
 
@@ -26,7 +31,8 @@ export async function createFiltersViews(filterData: Partial<IFiltersView>) {
         user: user.id,
         title: filterData.title,
         filters: filterData.filters,
-        columns: filterData.columns
+        columns: filterData.columns,
+        workspace: user.currentSelectedWorkspace
     });
 
     const savedFiltersView = await filtersView.save();
