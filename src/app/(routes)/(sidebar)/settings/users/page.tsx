@@ -105,7 +105,7 @@ export default function UsersSettings() {
                         <Typography variant={'h1'}>Users</Typography>
                     </Box>
                     <Box sx={{mb: 3}}>
-                        <Typography variant={'subtitle1'}>You can't add users to personal workspace, please switch workspace from user menu in header</Typography>
+                        <Typography variant={'subtitle1'}>You can&apos;t add users to personal workspace, please switch workspace from user menu in header</Typography>
                     </Box>
                 </>
             ) : (
