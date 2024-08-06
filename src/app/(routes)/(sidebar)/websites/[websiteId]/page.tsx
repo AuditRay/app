@@ -66,7 +66,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                 ))}
                             </Box>
                             <Box sx={{textAlign: 'right'}}>
-                                <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={website.fieldsTemplate}></UpdateWebsiteFieldValuesModal>
+                                <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={website.fieldsTemplate as string}></UpdateWebsiteFieldValuesModal>
                             </Box>
                         </>
                     )}

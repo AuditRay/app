@@ -43,7 +43,7 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
             setFieldTemplates(fieldTemplates);
             if(!website) return '';
             setTags(website.tags);
-            setFieldsTemplate(website.fieldsTemplate);
+            setFieldsTemplate(website.fieldsTemplate as string);
         }
         websiteId && getData();
         setIsSaving(false);
