@@ -6,6 +6,7 @@ const roboto = Roboto({ subsets:["latin"] ,weight: ["300", "400", "500", "700"] 
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '@/theme';
 import React from "react";
+import 'material-icons/iconfont/material-icons.css';
 
 
 export const metadata: Metadata = {

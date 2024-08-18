@@ -4,7 +4,7 @@ import {Grid, Paper, Box} from "@mui/material";
 import * as React from "react";
 import {countWebsites, getWebsitesTable} from "@/app/actions/websiteActions";
 import WebsitesGrid, {GridRow} from "@/app/ui/WebsitesGrid";
-import AddWebsiteModal from "@/app/ui/AddWebsiteModal";
+import AddWebsiteModal from "@/app/ui/Websites/AddWebsiteModal";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
 import RightDrawer from "@/app/ui/RightDrawer";
 import Typography from "@mui/material/Typography";

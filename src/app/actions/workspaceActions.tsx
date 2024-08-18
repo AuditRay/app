@@ -3,9 +3,20 @@
 import {getUser} from "@/app/actions/getUser";
 import {revalidatePath} from "next/cache";
 import {v4 as uuid4} from "uuid";
-import {IUser, IWorkspace, User, Workspace} from "@/app/models";
+import {
+    IMemberPopulated,
+    IRole,
+    ITeam,
+    IUser,
+    IWorkspace,
+    IWorkspacePopulated,
+    Team,
+    User,
+    Workspace
+} from "@/app/models";
 import {findOne} from "domutils";
 import {sendEmail} from "@/app/lib/email";
+import {getWorkspaceRoles} from "@/app/actions/rolesActions";
 // @ts-ignore
 
 export async function setCurrentSelectedWorkspace(workspaceId?: string): Promise<IUser> {
@@ -29,18 +40,65 @@ export async function getWorkspaces(userId?: string): Promise<IWorkspace[]> {
         const user = await getUser();
         userId = user.id;
     }
-    const workspaces = await Workspace.find({$or: [{owner: userId}, {users: userId}]});
+    const workspaces = await Workspace.find({$or: [{owner: userId}, {users: userId}, {"members.user": userId}]});
     return workspaces.map(workspace => workspace.toJSON());
 }
 
+export async function getWorkspaceMembers(): Promise<IMemberPopulated[]> {
+    const user = await getUser();
+    if(!user) {
+        throw new Error('User not found');
+    }
+    if(!user.currentSelectedWorkspace) {
+        throw new Error('Workspace not selected');
+    }
+    const workspaceId = user.currentSelectedWorkspace;
+    const workspace = await Workspace.findOne({_id: workspaceId});
+    if (workspace && workspace.members) {
+        const workspaceOwner = (await User.findOne({_id: workspace.owner}))?.toJSON() || user;
+        const members: IWorkspacePopulated['members'] = [{
+            user: workspaceOwner,
+            roles: [{
+                id: 'owner',
+                name: 'Owner',
+                permissions: {},
+                overrideId: "",
+                workspace: workspaceId,
+                isWorkspace: false
+            }]
+        }];
+        for (const member of workspace.members) {
+            const user = await User.findOne({_id: member.user});
+            let roles: IRole[] = [];
+            if(member.roles) {
+                for (const role of member.roles) {
+                    const roleData = await getWorkspaceRoles();
+                    const roleObj = roleData.find(r => r.id === role);
+                    if(roleObj) {
+                        roles.push(roleObj);
+                    }
+                }
+            }
+            if (user) {
+                members.push({
+                    user: user.toJSON(),
+                    roles: roles
+                });
+            }
+        }
+
+        return members;
+    }
+    return [];
+}
 export async function getWorkspaceUsers(): Promise<IUser[]> {
     const user = await getUser();
     const workspaceId = user.currentSelectedWorkspace;
     const workspace = await Workspace.findOne({_id: workspaceId});
     if (workspace) {
-
-        console.log('.workspace.users', workspace, workspace.users);
-        const users = await User.find({_id: {$in: [...workspace.users, workspace.owner]}});
+        const memberUsers = workspace.members?.map(member => member.user) || [];
+        const users = await User.find({_id: {$in: [...memberUsers, workspace.owner]}});
+        //map users to members and roles
         return users?.map(user => user.toJSON());
     }
     return [];
@@ -58,8 +116,7 @@ export async function removeUserFromWorkspace(workspaceId: string, userId: strin
     return workspace.toJSON();
 }
 
-
-export async function inviteWorkspaceUser(userData: {firstName: string, lastName: string, email: string}): Promise<IUser> {
+export async function inviteWorkspaceUser(userData: {firstName: string, lastName: string, email: string, role: string}): Promise<IUser> {
     const user = await getUser();
     console.log('user', user);
     if(!user.currentSelectedWorkspace) {
@@ -67,7 +124,7 @@ export async function inviteWorkspaceUser(userData: {firstName: string, lastName
     }
     const workspace = await Workspace.findOne({
         _id: user.currentSelectedWorkspace,
-        $or: [{owner: user.id}, {users: user.id}]
+        $or: [{owner: user.id}, {users: user.id}, {"members.user": user.id}]
     });
     if(!workspace) {
         throw new Error('Workspace not found');
@@ -75,12 +132,15 @@ export async function inviteWorkspaceUser(userData: {firstName: string, lastName
     const checkUser = await User.findOne({email: userData.email});
     if (checkUser) {
         //check if use isn't already in workspace then add the user to workspace
-        if (!workspace.users?.includes(checkUser.id)) {
-            if (!workspace.users) {
-                workspace.users = [];
+        if (!workspace.members?.find(member => member.user.toString() === checkUser.id)) {
+            if (!workspace.members) {
+                workspace.members = [];
             }
-            workspace.users.push(checkUser.id);
-            workspace.markModified('users');
+            workspace.members.push({
+                user: checkUser.id,
+                roles: [userData.role]
+            });
+            workspace.markModified('members');
             await workspace.save();
         }
         //send email to user
@@ -103,11 +163,14 @@ export async function inviteWorkspaceUser(userData: {firstName: string, lastName
             inviteToken: uuid4(),
         });
         const savedUser = await newUser.save();
-        if (!workspace.users) {
-            workspace.users = [];
+        if (!workspace.members) {
+            workspace.members = [];
         }
-        workspace.users.push(savedUser.id);
-        workspace.markModified('users');
+        workspace.members.push({
+            user: savedUser.id,
+            roles: [userData.role]
+        });
+        workspace.markModified('members');
         await workspace.save();
         //send email to user
         await sendEmail(
@@ -123,7 +186,6 @@ export async function inviteWorkspaceUser(userData: {firstName: string, lastName
         return savedUser.toJSON();
     }
 }
-
 
 export async function updateWorkspace(workspaceId: string, workspaceData: Partial<IWorkspace>) {
     const user = await getUser();

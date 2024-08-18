@@ -5,15 +5,16 @@ import * as React from "react";
 import {fetchUpdates, getWebsite, getWebsiteViews} from "@/app/actions/websiteActions";
 import Markdown from 'react-markdown'
 import LaunchIcon from "@mui/icons-material/Launch";
-import WebsiteConnectionTokenModal from "@/app/ui/WebsiteConnectionModal";
+import WebsiteConnectionTokenModal from "@/app/ui/Websites/WebsiteConnectionModal";
 import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import dayjs from "dayjs";
 import CollapseMD from "@/app/ui/CollapseMD.jsx";
 import WebsitesTabs from "@/app/ui/WebsiteTabs";
 import RightDrawer from "@/app/ui/RightDrawer";
-import EditWebsiteModal from "@/app/ui/EditWebsiteModal";
+import EditWebsiteModal from "@/app/ui/Websites/EditWebsiteModal";
 import {FieldsTemplate} from "@/app/models";
-import UpdateWebsiteFieldValuesModal from "@/app/ui/UpdateWebsiteFieldValuesModal";
+import UpdateWebsiteFieldValuesModal from "@/app/ui/FieldsTemplate/UpdateWebsiteFieldValuesModal";
+import {getWorkspaceFieldTemplate} from "@/app/actions/fieldTemplateActions";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string }}) {
     const { websiteId } = params;
@@ -21,12 +22,11 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
     const websiteViews = await getWebsiteViews(websiteId);
     const websiteInfo = await fetchUpdates(websiteId);
     let websiteFields = [];
-    if(website && website.fieldsTemplate) {
-        const websiteFieldsTemplate = await FieldsTemplate.findOne({_id: website.fieldsTemplate});
-        const websiteFieldsTemplateData = websiteFieldsTemplate?.toJSON();
-        if(websiteFieldsTemplateData?.fields) {
-            for (const field of websiteFieldsTemplateData.fields) {
-                const fieldValue = website.fieldValues?.find((fieldValue) => fieldValue.id === field.id);
+    const workspaceFieldTemplateData = await getWorkspaceFieldTemplate();
+    if(website && workspaceFieldTemplateData?.fields) {
+        for (const field of workspaceFieldTemplateData.fields) {
+            const fieldValue = website.fieldValues?.find((fieldValue) => fieldValue.id === field.id);
+            if(fieldValue?.value) {
                 websiteFields.push({
                     ...field,
                     value: fieldValue?.value
@@ -55,7 +55,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                             </Typography>
                         </Box>
                     )}
-                    {website && website.fieldsTemplate && websiteFields && websiteFields.length && (
+                    {website && workspaceFieldTemplateData.fields.length && websiteFields && websiteFields.length ? (
                         <>
                             <Box sx={{mt: 2}}>
                                 {websiteFields.map((field) => (
@@ -66,9 +66,13 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                 ))}
                             </Box>
                             <Box sx={{textAlign: 'right'}}>
-                                <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={website.fieldsTemplate as string}></UpdateWebsiteFieldValuesModal>
+                                <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id}></UpdateWebsiteFieldValuesModal>
                             </Box>
                         </>
+                    ) : website && workspaceFieldTemplateData.fields.length && (
+                        <Box sx={{textAlign: 'right'}}>
+                            <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id}></UpdateWebsiteFieldValuesModal>
+                        </Box>
                     )}
                 </Paper>
                 <Paper

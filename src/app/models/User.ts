@@ -1,5 +1,6 @@
 import {Model, model, models, Schema} from 'mongoose';
 import {IWorkspace} from "@/app/models/Workspace";
+import {IRole} from "@/app/models/Role";
 
 export interface IUser {
     id: string;
@@ -9,8 +10,8 @@ export interface IUser {
     password: string;
     inviteToken: string;
     currentSelectedWorkspace?: string | typeof Schema.Types.ObjectId;
-    roles?: (string | typeof Schema.Types.ObjectId)[];
     workspaces?: IWorkspace[];
+    roles?: IRole[];
 }
 const ModelSchema = new Schema<IUser>(
     {
@@ -19,8 +20,7 @@ const ModelSchema = new Schema<IUser>(
         email: {type: String, unique: true},
         password: String,
         inviteToken: String,
-        currentSelectedWorkspace: {type: Schema.Types.ObjectId, ref: 'Workspace'},
-        roles: [{type: Schema.Types.ObjectId, ref: 'Role'}],
+        currentSelectedWorkspace: {type: Schema.Types.ObjectId, ref: 'Workspace'}
     },
     {
         timestamps: true,
@@ -29,7 +29,6 @@ const ModelSchema = new Schema<IUser>(
             virtuals: true,
             transform: (_, ret) => {
                 ret.currentSelectedWorkspace = ret.currentSelectedWorkspace?.toString();
-                ret.roles = ret.roles?.map((role: any) => role.toString());
                 delete ret.password;
                 delete ret._id;
             },

@@ -14,7 +14,7 @@ import OpenAI from 'openai';
 import {DefaultView, IWebsiteView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
 import {Model} from "mongoose";
-import {User} from "@/app/models";
+import {IUser, User} from "@/app/models";
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
@@ -355,8 +355,8 @@ export async function countWebsites(userId: string): Promise<number> {
     }
 }
 export async function getWebsitesTable(userId?: string): Promise<{
-    data: IWebsiteTable[]
-    extraHeaders: { id: string, label: string}[]
+    data: IWebsiteTable[];
+    extraHeaders: { id: string, label: string }[];
 }> {
     let user = await getUser();
     if(!userId) {
@@ -503,14 +503,31 @@ export async function getWebsitesTable(userId?: string): Promise<{
     };
 }
 
-export async function getWebsites(userId: string): Promise<IWebsite[]> {
-    const user = await User.findOne({_id: userId});
+export async function getWebsites(userId?: string): Promise<IWebsite[]> {
+    let user: IUser | null = await getUser();
+    if(userId) {
+        user = await User.findOne({_id: userId});
+    }
     if(!user) {
         throw new Error('User not found');
     }
-    let websites = await Website.find({user: userId, workspace: user.currentSelectedWorkspace});
+    let websites = await Website.find({user: user.id, workspace: user.currentSelectedWorkspace});
+
+    console.log('websites', websites);
     if(!user.currentSelectedWorkspace) {
-        websites = await Website.find({user: userId});
+        websites = await Website.find({user: user.id});
+    }
+    return websites.map(website => website.toJSON());
+}
+
+export async function getWebsitesListing(): Promise<IWebsite[]> {
+    let user: IUser = await getUser();
+    if(!user) {
+        throw new Error('User not found');
+    }
+    let websites = await Website.find({user: user.id, workspace: user.currentSelectedWorkspace}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
+    if(!user.currentSelectedWorkspace) {
+        websites = await Website.find({user: user.id}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
     }
     return websites.map(website => website.toJSON());
 }
@@ -575,9 +592,11 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         url,
         tags: tags || [],
         user: user.id,
-        fieldsTemplate: fieldsTemplate,
+        fieldsTemplate: fieldsTemplate || undefined,
         workspace: user.currentSelectedWorkspace
     });
+
+    console.log('website', website);
 
     try {
         website = await website.save();

@@ -30,6 +30,7 @@
     "gleap": "^13.7.3",
     "jose": "^5.2.4",
     "mailgun.js": "^10.2.3",
+    "material-icons": "^1.13.12",
     "mongoose": "^8.3.2",
     "next": "14.2.2",
     "nodemailer": "^6.9.14",

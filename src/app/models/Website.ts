@@ -71,7 +71,7 @@ const ModelSchema = new Schema<IWebsite>(
             versionKey: false,
             virtuals: true,
             transform: (_, ret) => {
-                ret.user = ret.user.toString();
+                ret.user = ret.user?.toString();
                 ret.workspace = ret.workspace?.toString();
                 ret.fieldsTemplate = ret.fieldsTemplate?.toString();
                 delete ret._id;

@@ -16,26 +16,33 @@ import { green } from '@mui/material/colors';
 import {Autocomplete, Chip} from "@mui/material";
 import {createFiltersViews} from "@/app/actions/filterViewsActions";
 import {createWorkspace, inviteWorkspaceUser} from "@/app/actions/workspaceActions";
+import {IRole} from "@/app/models";
+import {getWorkspaceAllRoles, getWorkspaceRoles} from "@/app/actions/rolesActions";
 
 export default function InviteUserModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {
     const [isSaving, setIsSaving] = useState(false);
+    const [workspaceRoles, setWorkspaceRoles] = useState<IRole[]>([]);
     const [newUserData, setNewUserData] = useState<{
         firstName?: string;
         lastName?: string;
         email?: string;
+        role?: string;
     }>({
         firstName: '',
         lastName: '',
-        email: ''
+        email: '',
+        role: ''
     });
     const [newUserErrorData, setNewUserErrorData] = useState<{
         firstName?: string;
         lastName?: string;
         email?: string;
+        role?: string;
     }>({
         firstName: '',
         lastName: '',
-        email: ''
+        email: '',
+        role: 'default_member'
     });
     const [generalError, setGeneralError] = useState<string>('');
 
@@ -49,8 +56,12 @@ export default function InviteUserModal({open, setOpen}: {open: boolean, setOpen
     }
 
     useEffect(() => {
-        console.log('isPending', isSaving);
-    }, [isSaving]);
+        const fetchRoles = async () => {
+            const roles = await getWorkspaceRoles();
+            setWorkspaceRoles(roles);
+        }
+        fetchRoles().then(() => {}).catch((e) => {});
+    }, []);
     return (
         <Dialog
             open={open}
@@ -125,6 +136,25 @@ export default function InviteUserModal({open, setOpen}: {open: boolean, setOpen
                     fullWidth
                     variant="outlined"
                 />
+                <Autocomplete
+                    disablePortal
+                    fullWidth
+                    options={workspaceRoles}
+                    onChange={(e, value) => {
+                        if(!value) {
+                            //set default role
+                            value = workspaceRoles[1];
+                        }
+                        setNewUserData({
+                            ...newUserData,
+                            role: value.id
+                        })
+                    }}
+                    value={workspaceRoles.find((role) => role.id == newUserData.role)}
+                    getOptionLabel={(option) => option.name}
+                    defaultValue={workspaceRoles[1]}
+                    renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="Role" />}
+                />
             </DialogContent>
             <DialogActions>
                 <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>
@@ -159,12 +189,21 @@ export default function InviteUserModal({open, setOpen}: {open: boolean, setOpen
                                 setIsSaving(false);
                                 return;
                             }
+                            if(!newUserData.role) {
+                                setNewUserErrorData({
+                                    ...newUserErrorData,
+                                    role: 'Role is required'
+                                });
+                                setIsSaving(false);
+                                return;
+                            }
                             async function save() {
-                                if(newUserData.firstName && newUserData.lastName && newUserData.email) {
+                                if(newUserData.firstName && newUserData.lastName && newUserData.email && newUserData.role) {
                                     await inviteWorkspaceUser({
                                         firstName: newUserData.firstName,
                                         lastName: newUserData.lastName,
-                                        email: newUserData.email
+                                        email: newUserData.email,
+                                        role: newUserData.role
                                     });
                                 } else {
                                     throw new Error('Invalid data');

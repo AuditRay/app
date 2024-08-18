@@ -5,7 +5,16 @@ import {DefaultView, IWebsiteView, WebsiteView} from "@/app/models/WebsiteView";
 import {revalidatePath} from "next/cache";
 // @ts-ignore
 
-export async function deleteWebsiteView(viewId) {
+export async function getWebsiteViewsListing(websiteId) {
+    const user = await getUser();
+    if (!user) {
+        throw new Error('User not found');
+    }
+    const views = await WebsiteView.find({ website: websiteId });
+    return views.map(view => view.toJSON());
+}
+
+export async function deleteWebsiteView(viewId: string) {
     const user = await getUser();
     if (!user) {
         throw new Error('User not found');

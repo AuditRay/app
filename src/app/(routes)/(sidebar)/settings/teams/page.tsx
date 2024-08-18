@@ -1,25 +1,21 @@
 'use client'
 import * as React from "react";
-import {Box, IconButton, LinearProgress, Link} from "@mui/material";
+import {Box, IconButton, LinearProgress} from "@mui/material";
 import Typography from "@mui/material/Typography";
-import { useRouter } from 'next/navigation';
-import {IFieldsTemplate, IMemberPopulated, IUser, IWorkspacePopulated} from "@/app/models";
+import {ITeamPopulated, IUser} from "@/app/models";
 import {getUser} from "@/app/actions/getUser";
 import {DataGrid, GridSlots} from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
 import {styled} from "@mui/material/styles";
-import AddFieldsTemplateModal from "@/app/ui/FieldsTemplate/AddFieldsTemplateModal";
-import {getFieldsTemplates} from "@/app/actions/fieldTemplateActions";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import EditFieldsTemplateModal from "@/app/ui/FieldsTemplate/EditFieldsTemplateModal";
-import CloneFieldsTemplateModal from "@/app/ui/FieldsTemplate/CloneFieldsTemplateModal";
-import DeleteFieldsTemplateModal from "@/app/ui/FieldsTemplate/DeleteFieldsTemplateModal";
-import {getWorkspaceMembers, getWorkspaceUsers} from "@/app/actions/workspaceActions";
-import InviteUserModal from "@/app/ui/Users/InviteUserModal";
-import DeleteUserFromWorkspaceModal from "@/app/ui/Users/DeleteUserFromWorkspaceModal";
+import {getTeams} from "@/app/actions/teamActions";
+import AddTeamModal from "@/app/ui/Teams/AddTeamModal";
+import DeleteTeamFromWorkspaceModal from "@/app/ui/Teams/DeleteTeamFromWorkspaceModal";
+import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
+import EditTeamModal from "@/app/ui/Teams/EditTeamModal";
+import {deepOrange} from "@mui/material/colors";
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -64,27 +60,29 @@ function CustomNoRowsOverlay() {
                     d="M0 10C0 4.477 4.477 0 10 0h380c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 20 0 15.523 0 10ZM0 59c0-5.523 4.477-10 10-10h231c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 69 0 64.523 0 59ZM0 106c0-5.523 4.477-10 10-10h203c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 153c0-5.523 4.477-10 10-10h195.5c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 200c0-5.523 4.477-10 10-10h203c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 247c0-5.523 4.477-10 10-10h231c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10Z"
                 />
             </svg>
-            <Box sx={{ mt: 2 }}>No rows</Box>
+            <Box sx={{ mt: 2 }}>No teams found</Box>
         </StyledGridOverlay>
     );
 }
 
-export default function UsersSettings() {
+export default function TeamsSettings() {
     const [user, setUser] = React.useState<IUser | null>(null);
-    const [workspaceMembers, setWorkspaceMembers] = React.useState<IMemberPopulated[]>([]);
+    const [workspaceTeams, setWorkspaceTeams] = React.useState<ITeamPopulated[]>([]);
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
-    const [isLoading, setIsLoading] = React.useState<boolean>(false);
-    const [selectedWorkspaceMember, setSelectedWorkspaceMember] = React.useState<IMemberPopulated>();
+    const [isLoading, setIsLoading] = React.useState<boolean>(true);
+    const [selectedWorkspaceTeam, setSelectedWorkspaceTeam] = React.useState<ITeamPopulated>();
     const [isEditOpen, setIsEditOpen] = React.useState<boolean>(false);
-    const [isCloneOpen, setIsCloneOpen] = React.useState<boolean>(false);
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
 
+    const getInitials = (firstName: string, lastName: string) => {
+        return firstName?.charAt(0) + lastName?.charAt(0);
+    }
     const handleOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
         //reload
-        getWorkspaceMembers().then((members) => {
-            setWorkspaceMembers(members);
-        });
-        setSelectedWorkspaceMember(undefined);
+        getTeams().then((teams) => {
+            setWorkspaceTeams(teams);
+        })
+        setSelectedWorkspaceTeam(undefined);
         setIsOpen(isOpen);
     }
     React.useEffect(() => {
@@ -92,10 +90,11 @@ export default function UsersSettings() {
         getUser().then((user) => {
             setUser(user);
         });
-        getWorkspaceMembers().then((members) => {
-            setWorkspaceMembers(members);
+        getTeams().then((teams) => {
+            setWorkspaceTeams(teams);
+            console.log('teams', teams);
             setIsLoading(false);
-        });
+        })
     }, []);
 
     return (
@@ -103,10 +102,10 @@ export default function UsersSettings() {
             {user && !user?.currentSelectedWorkspace ? (
                 <>
                     <Box sx={{mb: 3}}>
-                        <Typography variant={'h1'}>Users</Typography>
+                        <Typography variant={'h1'}>Teams</Typography>
                     </Box>
                     <Box sx={{mb: 3}}>
-                        <Typography variant={'subtitle1'}>You can&apos;t add users to personal workspace, please switch workspace from user menu in header</Typography>
+                        <Typography variant={'subtitle1'}>You can&apos;t add teams to personal workspace, please switch workspace from user menu in header</Typography>
                     </Box>
                 </>
             ) : (
@@ -115,9 +114,9 @@ export default function UsersSettings() {
                         mb: 3,
                         display: 'flex'
                     }}>
-                        <Typography variant={'h1'} >Users</Typography>
+                        <Typography variant={'h1'} >Teams</Typography>
                         <Box sx={{ml: 'auto'}}>
-                            <Button onClick={() => setIsOpen(true)} variant={'contained'}>Invite New User</Button>
+                            <Button onClick={() => setIsOpen(true)} variant={'contained'}>Add New Team</Button>
                         </Box>
                     </Box>
                     <DataGrid
@@ -127,49 +126,52 @@ export default function UsersSettings() {
                             noRowsOverlay: CustomNoRowsOverlay
                         }}
                         loading={isLoading}
-                        rows={workspaceMembers}
-                        getRowId={(row) => row.user.id}
+                        rows={workspaceTeams}
+                        getRowId={(row) => row.id}
                         columns={[
+                            { field: 'name', headerName: 'Name', flex: 1 },
                             {
-                                field: 'name', headerName: 'Name', flex: 1, valueGetter: (value, row) => `${row.user.firstName} ${row.user.lastName}`,
+                                field: 'members', headerName: 'Members', flex: 1,
                                 renderCell: (params) => (
-                                    <>
-                                        {params.row.user.firstName} {params.row.user.lastName}
-                                        {params.row.user.id == user?.id && (
-                                            <Typography variant={'caption'} color={'green'}> (You)</Typography>
-                                        )}
-                                        {params.row.user.inviteToken && (
-                                            <Typography variant={'caption'} color={'gray'}> (Invited)</Typography>
-                                        )}
-                                    </>
+                                    <Box sx={{display: 'flex', alignItems: "center", height: "100%"}}>
+                                        <Tooltip
+                                            key={params.row.owner.id} title={`${params.row.owner.firstName} ${params.row.owner.lastName} <${params.row.owner.email}> (Owner)`}
+                                        >
+                                            <Avatar sx={{ bgcolor: deepOrange[500], mr: 1 }}>{getInitials(params.row.owner.firstName, params.row.owner.lastName)}</Avatar>
+                                        </Tooltip>
+                                        {params.row.members?.map((member: any) => (
+                                            <Tooltip
+                                                key={member.user.id} title={`${member.user.firstName} ${member.user.lastName} <${member.user.email}> (${member.role.name})`}
+                                            >
+                                                <Avatar sx={{ mr: 1}}>{getInitials(member.user.firstName, member.user.lastName)}</Avatar>
+                                            </Tooltip>
+                                        ))}
+                                    </Box>
                                 )
                             },
-                            { field: 'email', headerName: 'Email', flex: 1, valueGetter: (value, row) => row.user.email },
-                            { field: 'role', headerName: 'Roles', flex: 1, renderCell: (params) => (
-                                    <>
-                                        {params.row.roles?.find((r) => r.id == "owner") && (
-                                            <Typography variant={'caption'} color={'orange'}>Owner</Typography>
-                                        )}
-                                        {params.row.roles && !params.row.roles?.find((r) => r.id == "owner") && (
-                                            <Typography variant={'caption'} color={'black'}>{params.row.roles.map((r) => r.name).join(', ')}</Typography>
-                                        )}
-                                    </>
-                                ),
-                                valueGetter: (value, row) => row.roles.map((r) => r.name).join(', ') },
                             {
                                 field: 'ops', headerName: "", minWidth: 230,
                                 renderCell: (params) => (
                                     <>
-                                        {params.row.user.id != user?.id && !params.row.roles?.find((r) => r.id == "owner") && (
+                                        {params.row.id != user?.id && (
                                             <Box>
+                                                <IconButton onClick={() => {
+                                                    const workspaceTeam = workspaceTeams.find((team) => team.id == params.row.id )
+                                                    if (workspaceTeam) {
+                                                        setSelectedWorkspaceTeam({...workspaceTeam})
+                                                        setIsEditOpen(true);
+                                                    }
+                                                }}>
+                                                    <Tooltip title={"Edit"}><EditIcon></EditIcon></Tooltip>
+                                                </IconButton>
                                                 <IconButton color={"error"} onClick={() => {
-                                                    const workspaceMember = workspaceMembers?.find((member) => member.user.id == params.row.user.id )
-                                                    if (workspaceMember) {
-                                                        setSelectedWorkspaceMember({...workspaceMember})
+                                                    const workspaceTeam = workspaceTeams.find((team) => team.id == params.row.id )
+                                                    if (workspaceTeam) {
+                                                        setSelectedWorkspaceTeam({...workspaceTeam})
                                                         setIsDeleteOpen(true);
                                                     }
                                                 }}>
-                                                    <Tooltip title={'Remove user from this workspace'}><DeleteForeverIcon></DeleteForeverIcon></Tooltip>
+                                                    <Tooltip title={"Delete"}><DeleteForeverIcon></DeleteForeverIcon></Tooltip>
                                                 </IconButton>
                                             </Box>
                                         )}
@@ -196,9 +198,12 @@ export default function UsersSettings() {
                         }}
                     />
 
-                    <InviteUserModal open={isOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsOpen)}></InviteUserModal>
-                    {selectedWorkspaceMember && isDeleteOpen && user?.currentSelectedWorkspace && user.id !== selectedWorkspaceMember.user.id && (
-                        <DeleteUserFromWorkspaceModal open={isDeleteOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsDeleteOpen)} member={selectedWorkspaceMember} workspaceId={user.currentSelectedWorkspace as string}></DeleteUserFromWorkspaceModal>
+                    <AddTeamModal open={isOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsOpen)}></AddTeamModal>
+                    {selectedWorkspaceTeam && isEditOpen && (
+                        <EditTeamModal open={isEditOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsEditOpen)} team={selectedWorkspaceTeam}></EditTeamModal>
+                    )}
+                    {selectedWorkspaceTeam && isDeleteOpen && (
+                        <DeleteTeamFromWorkspaceModal open={isDeleteOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsDeleteOpen)} team={selectedWorkspaceTeam}></DeleteTeamFromWorkspaceModal>
                     )}
                 </>
             )}

@@ -8,13 +8,13 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {IFieldsTemplate, IUser} from "@/app/models";
+import {IFieldsTemplate, IMemberPopulated, IUser} from "@/app/models";
 import * as React from "react";
 import Typography from "@mui/material/Typography";
 import {deleteFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import {removeUserFromWorkspace} from "@/app/actions/workspaceActions";
 
-export default function DeleteUserFromWorkspaceModal({open, setOpen, user, workspaceId}: {workspaceId: string, user: IUser, open: boolean, setOpen: (open: boolean) => void}) {
+export default function DeleteUserFromWorkspaceModal({open, setOpen, member, workspaceId}: {workspaceId: string, member: IMemberPopulated, open: boolean, setOpen: (open: boolean) => void}) {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const handleClose = () => {
@@ -43,7 +43,7 @@ export default function DeleteUserFromWorkspaceModal({open, setOpen, user, works
                         onClick={() => {
                             setIsSaving(true);
                             async function removeUser() {
-                                await removeUserFromWorkspace(workspaceId, user.id);
+                                await removeUserFromWorkspace(workspaceId, member.user.id);
                             }
                             removeUser().then(() => {
                                 setIsSaving(false);

@@ -93,28 +93,28 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
                             />
                         )}
                     />
-                    <Box sx={{ minWidth: 120 }}>
-                        <FormControl margin="dense" fullWidth>
-                            <InputLabel id="field-type-label">Fields Template</InputLabel>
-                            <Select
-                                id={`fields-template`}
-                                name={`fields-template`}
-                                label="Fields Template"
-                                value={fieldsTemplate}
-                                onChange={(e) => {
-                                    setFieldsTemplate(e.target.value as string);
-                                }}
-                            >
-                                {fieldTemplates.length && (<MenuItem key={'none'} value={''}>None</MenuItem>)}
-                                {fieldTemplates.length && fieldTemplates.map((fieldTemplate) => (
-                                    <MenuItem key={fieldTemplate.id} value={fieldTemplate.id}>{fieldTemplate.title}</MenuItem>
-                                ))}
-                                {!fieldTemplates.length && (
-                                    <MenuItem disabled={true} key={'no-templates'}>No Field Templates are found, please create new template from workspace settings.</MenuItem>
-                                )}
-                            </Select>
-                        </FormControl>
-                    </Box>
+                    {/*<Box sx={{ minWidth: 120 }}>*/}
+                    {/*    <FormControl margin="dense" fullWidth>*/}
+                    {/*        <InputLabel id="field-type-label">Fields Template</InputLabel>*/}
+                    {/*        <Select*/}
+                    {/*            id={`fields-template`}*/}
+                    {/*            name={`fields-template`}*/}
+                    {/*            label="Fields Template"*/}
+                    {/*            value={fieldsTemplate}*/}
+                    {/*            onChange={(e) => {*/}
+                    {/*                setFieldsTemplate(e.target.value as string);*/}
+                    {/*            }}*/}
+                    {/*        >*/}
+                    {/*            {fieldTemplates.length && (<MenuItem key={'none'} value={''}>None</MenuItem>)}*/}
+                    {/*            {fieldTemplates.length && fieldTemplates.map((fieldTemplate) => (*/}
+                    {/*                <MenuItem key={fieldTemplate.id} value={fieldTemplate.id}>{fieldTemplate.title}</MenuItem>*/}
+                    {/*            ))}*/}
+                    {/*            {!fieldTemplates.length && (*/}
+                    {/*                <MenuItem disabled={true} key={'no-templates'}>No Field Templates are found, please create new template from workspace settings.</MenuItem>*/}
+                    {/*            )}*/}
+                    {/*        </Select>*/}
+                    {/*    </FormControl>*/}
+                    {/*</Box>*/}
                 </DialogContent>
                 <DialogActions>
                     <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>

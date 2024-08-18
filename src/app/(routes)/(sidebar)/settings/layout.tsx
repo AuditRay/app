@@ -7,6 +7,8 @@ import ListItemText from "@mui/material/ListItemText";
 import { useRouter, usePathname } from 'next/navigation';
 import InputIcon from '@mui/icons-material/Input';
 import GroupIcon from '@mui/icons-material/Group';
+import GroupsIcon from '@mui/icons-material/Groups';
+import KeyIcon from '@mui/icons-material/Key';
 import {IUser} from "@/app/models";
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
 import {getUser} from "@/app/actions/getUser";
@@ -51,6 +53,18 @@ export default function SettingsLayout({children,}: {
                                 <GroupIcon sx={{marginLeft: '6px'}}/>
                             </ListItemIcon>
                             <ListItemText primary="Users"/>
+                        </ListItemButton>
+                        <ListItemButton selected={pathname === '/settings/teams'} disabled={!user} onClick={() => user && router.push('/settings/teams')}>
+                            <ListItemIcon>
+                                <GroupsIcon sx={{marginLeft: '6px'}}/>
+                            </ListItemIcon>
+                            <ListItemText primary="Teams"/>
+                        </ListItemButton>
+                        <ListItemButton selected={pathname === '/settings/roles'} disabled={!user} onClick={() => user && router.push('/settings/roles')}>
+                            <ListItemIcon>
+                                <KeyIcon sx={{marginLeft: '6px'}}/>
+                            </ListItemIcon>
+                            <ListItemText primary="Roles"/>
                         </ListItemButton>
                     </List>
                 </Paper>

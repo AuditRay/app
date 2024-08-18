@@ -16,6 +16,47 @@ export async function getFieldsTemplate(fieldsTemplateId: string): Promise<IFiel
     return fieldsTemplate.toJSON();
 }
 
+export async function getWorkspaceFieldTemplate(): Promise<IFieldsTemplate> {
+    const user = await getUser();
+    if(!user) {
+        throw new Error('Unauthorized');
+    }
+    const workspace = user.currentSelectedWorkspace;
+    if (workspace) {
+        const fieldTemplate = await FieldsTemplate.findOne({workspace});
+        if(!fieldTemplate) {
+            // Create default field template
+            const defaultFieldTemplate = new FieldsTemplate({
+                workspace: workspace,
+                user: user.id,
+                name: 'Default',
+                fields: [
+                ]
+            });
+            const savedTemplate = await defaultFieldTemplate.save();
+            return savedTemplate.toJSON();
+        } else {
+            return fieldTemplate.toJSON();
+        }
+    } else {
+        const fieldTemplate = await FieldsTemplate.findOne({user: user.id});
+        if(!fieldTemplate) {
+            // Create default field template
+            const defaultFieldTemplate = new FieldsTemplate({
+                workspace: null,
+                user: user.id,
+                name: 'Default',
+                fields: [
+                ]
+            });
+            const savedTemplate = await defaultFieldTemplate.save();
+            return savedTemplate.toJSON();
+        } else {
+            return fieldTemplate.toJSON();
+        }
+    }
+}
+
 export async function getFieldsTemplates(): Promise<IFieldsTemplate[]> {
     const user = await getUser();
     if(!user) {

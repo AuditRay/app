@@ -26,8 +26,10 @@ export default function DashboardLayout({children,}: {
         '/': 'Dashboard',
         '/dashboard': 'Dashboard',
         '/settings': 'Workspace Settings',
-        '/settings/field-templates': 'Workspace Settings',
-        '/settings/users': 'Workspace Settings',
+        '/settings/field-templates': 'Workspace Fields',
+        '/settings/users': 'Workspace Users',
+        '/settings/teams': 'Workspace Teams',
+        '/settings/roles': 'Workspace Roles',
     }
     const [open, setOpen] = React.useState(true);
     const toggleDrawer = () => {

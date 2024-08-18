@@ -56,7 +56,7 @@ export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplate
 
     return (
         <Box>
-            <Button onClick={handleOpen} variant={'outlined'}  sx={{mt: 2}}>Edit Values</Button>
+            <Button onClick={handleOpen} variant={'outlined'}  sx={{mt: 2}}>Edit Fields</Button>
             <Dialog
                 open={open}
                 fullWidth={true}

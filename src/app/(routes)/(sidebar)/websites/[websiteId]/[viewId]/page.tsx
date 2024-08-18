@@ -5,7 +5,7 @@ import * as React from "react";
 import {fetchUpdates, getWebsite, getWebsiteViews} from "@/app/actions/websiteActions";
 import Markdown from 'react-markdown'
 import LaunchIcon from "@mui/icons-material/Launch";
-import WebsiteConnectionTokenModal from "@/app/ui/WebsiteConnectionModal";
+import WebsiteConnectionTokenModal from "@/app/ui/Websites/WebsiteConnectionModal";
 import dayjs from "dayjs";
 import CollapseMD from "@/app/ui/CollapseMD.jsx";
 import {DataSources} from "@/app/models/WebsiteInfo";
@@ -14,7 +14,7 @@ import WebsitesTabs from "@/app/ui/WebsiteTabs";
 import {redirect} from "next/navigation";
 import RightDrawer from "@/app/ui/RightDrawer";
 import {Suspense} from "react";
-import UpdateWebsiteFieldValuesModal from "@/app/ui/UpdateWebsiteFieldValuesModal";
+import UpdateWebsiteFieldValuesModal from "@/app/ui/FieldsTemplate/UpdateWebsiteFieldValuesModal";
 import {FieldsTemplate} from "@/app/models";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string, viewId: string } }) {

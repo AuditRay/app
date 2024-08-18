@@ -58,7 +58,7 @@ export default function WebsiteConnectionTokenModal({websiteId}: {websiteId: str
                         label="Connection Token"
                         type="text"
                         fullWidth
-                        variant="standard"
+                        variant="outlined"
                         value={token}
                     />
                 </DialogContent>

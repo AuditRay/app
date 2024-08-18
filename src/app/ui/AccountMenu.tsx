@@ -31,7 +31,7 @@ export default function AccountMenu({user}: {user: IUser | null}) {
     const switchUserWorkSpace = (workspaceId?: string) => {
         async function switchWorkspace() {
             await setCurrentSelectedWorkspace(workspaceId);
-            window.location.href = '/';
+            window.location.reload();
         }
         switchWorkspace().then();
     }

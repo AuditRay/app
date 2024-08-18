@@ -2,17 +2,21 @@ import {Model, model, models, Schema} from 'mongoose';
 
 export interface IRole {
     id: string;
+    overrideId: string;
     name: string;
-    workspace: typeof Schema.Types.ObjectId;
+    workspace: typeof Schema.Types.ObjectId | string;
     isWorkspace: boolean;
+    isDefault?: boolean;
     permissions: Record<string, boolean>
 }
 
 const ModelSchema = new Schema<IRole>(
     {
         name: String,
-        workspace: {type: Schema.Types.ObjectId, ref: 'Workspace'},
+        overrideId: { type: String, index: true },
+        workspace: { type: Schema.Types.ObjectId, ref: 'Workspace' },
         isWorkspace: Boolean,
+        isDefault: Boolean,
         permissions: {},
     },
     {
