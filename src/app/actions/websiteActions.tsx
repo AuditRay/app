@@ -1,5 +1,5 @@
 'use server'
-import {IWebsite, Website, WebsiteType} from "@/app/models/Website";
+import {IWebsite, Website} from "@/app/models/Website";
 import urlMetadata from "url-metadata";
 import {CreateWebsiteSchema, CreateWebsiteState} from "@/app/lib/definitions";
 import {connectMongo} from "@/app/lib/database";
@@ -9,12 +9,12 @@ import {revalidatePath} from "next/cache";
 import * as WebappalyzerJS from 'webappalyzer-js';
 import {jwtVerify, SignJWT} from "jose";
 import {DataSources, IWebsiteInfo, UpdateInfo, WebsiteInfo} from "@/app/models/WebsiteInfo";
-import {detailedDiff, diff} from 'deep-object-diff';
+import {detailedDiff} from 'deep-object-diff';
 import OpenAI from 'openai';
-import {DefaultView, IWebsiteView, WebsiteView} from "@/app/models/WebsiteView";
+import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
-import {Model} from "mongoose";
 import {IUser, User} from "@/app/models";
+import {Model} from "mongoose";
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
@@ -155,7 +155,7 @@ export async function generateWebsiteAISeoSummary(websiteId: string) {
 
 export async function fetchUpdates(websiteId: string, sync: boolean = false): Promise<IWebsiteInfo | null> {
     const user = await getUser();
-    const website = await Website.findOne({_id: websiteId, user: user.id});
+    const website = await Website.findOne({_id: websiteId});
     //get existing WebsiteInfo components
     const websiteLatestInfos = await WebsiteInfo.find({website: websiteId}).sort({createdAt: -1}).limit(1);
     const websiteLatestInfo = websiteLatestInfos[0];
@@ -163,7 +163,7 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         return null;
     }
     async function getWebsiteInfo(websiteId: string) {
-        const website = await Website.findOne({_id: websiteId, user: user.id});
+        const website = await Website.findOne({_id: websiteId});
         if (!website || !website.url || !website.token) {
             return null;
         }
@@ -302,7 +302,7 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
 
 export async function getWebsite(websiteId: string): Promise<IWebsite | null> {
     const user = await getUser();
-    const website = await Website.findOne({_id: websiteId, user: user.id});
+    const website = await Website.findOne({_id: websiteId});
     if(website && !website.aiSEOSummary) {
         // generateWebsiteAISeoSummary(websiteId).then(() => {
         //     revalidatePath(`/website/${websiteId}`);
@@ -351,7 +351,7 @@ export async function countWebsites(userId: string): Promise<number> {
     if(!user.currentSelectedWorkspace) {
         return Website.countDocuments({user: userId});
     } else {
-        return Website.countDocuments({user: userId, workspace: user.currentSelectedWorkspace});
+        return Website.countDocuments({workspace: user.currentSelectedWorkspace});
     }
 }
 export async function getWebsitesTable(userId?: string): Promise<{
@@ -366,12 +366,13 @@ export async function getWebsitesTable(userId?: string): Promise<{
     }
     console.log('user', user.currentSelectedWorkspace)
     console.time('getWebsitesTable');
-    let websites = await Website.find({
-        user: userId,
-        workspace: user.currentSelectedWorkspace
-    });
+    let websites = [];
     if(!user.currentSelectedWorkspace) {
         websites = await Website.find({user: userId});
+    } else {
+        websites = await Website.find({
+            workspace: user.currentSelectedWorkspace
+        });
     }
     const websitesData: IWebsiteTable[] = [];
     const extraHeaders: { id: string, label: string}[] = [
@@ -497,6 +498,7 @@ export async function getWebsitesTable(userId?: string): Promise<{
         websitesData.push(siteData);
     }
 
+    console.log('websitesData', websitesData);
     return {
         data: websitesData,
         extraHeaders: extraHeaders
@@ -511,11 +513,13 @@ export async function getWebsites(userId?: string): Promise<IWebsite[]> {
     if(!user) {
         throw new Error('User not found');
     }
-    let websites = await Website.find({user: user.id, workspace: user.currentSelectedWorkspace});
+    let websites: any[] = [];
 
     console.log('websites', websites);
     if(!user.currentSelectedWorkspace) {
         websites = await Website.find({user: user.id});
+    } else {
+        websites = await Website.find({workspace: user.currentSelectedWorkspace});
     }
     return websites.map(website => website.toJSON());
 }
@@ -525,7 +529,7 @@ export async function getWebsitesListing(): Promise<IWebsite[]> {
     if(!user) {
         throw new Error('User not found');
     }
-    let websites = await Website.find({user: user.id, workspace: user.currentSelectedWorkspace}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
+    let websites = await Website.find({workspace: user.currentSelectedWorkspace}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
     if(!user.currentSelectedWorkspace) {
         websites = await Website.find({user: user.id}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
     }

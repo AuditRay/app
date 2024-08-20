@@ -5,10 +5,10 @@ import {IRole, Role} from "@/app/models";
 import {AdminRole} from "@/app/premissions/roles/Admin";
 import {MemberRole} from "@/app/premissions/roles/Member";
 
-export async function getUser() {
+export async function getUser(fullUser = false) {
     const session = await verifySession();
     const user = session.user;
-    if(user){
+    if(user && fullUser) {
         user.workspaces = await getWorkspaces(session.user.id);
         const roles: IRole[] = [];
         for (const workspace of user.workspaces) {

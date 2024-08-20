@@ -26,7 +26,7 @@ export async function setCurrentSelectedWorkspace(workspaceId?: string): Promise
         user.currentSelectedWorkspace = '';
         return user;
     }
-    const workspace = await Workspace.findOne({_id: workspaceId, owner: user.id});
+    const workspace = await Workspace.findOne({_id: workspaceId, $or: [{owner: user.id}, {users: user.id}, {"members.user": user.id}]});
     if(!workspace) {
         throw new Error('Workspace not found');
     }
