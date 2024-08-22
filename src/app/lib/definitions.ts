@@ -16,13 +16,21 @@ export const CreateWebsiteSchema = z.object({
         }
         return input;
     }, z.array(z.string().min(0, {message: 'Invalid tag'})).or(z.string().length(0))),
-    fieldsTemplate: z.string().optional()
+    syncConfig: z.object({
+        enabled: z.boolean().optional(),
+        syncInterval: z.number().optional(),
+        intervalUnit: z.string().optional(),
+    }).optional(),
 })
 
 export type CreateWebsiteState = | {
     errors?: {
         url?: string[]
         tags?: string[]
+        fieldsTemplate?: string[]
+        enabled?: string[]
+        syncInterval?: string[]
+        intervalUnit?: string[]
     } | undefined
     message?: string
     data?: IWebsite

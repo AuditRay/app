@@ -3,7 +3,6 @@ import * as React from "react";
 import {Box, IconButton, LinearProgress} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import {ITeamPopulated, IUser} from "@/app/models";
-import {getUser} from "@/app/actions/getUser";
 import {DataGrid, GridSlots} from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
 import {styled} from "@mui/material/styles";
@@ -16,6 +15,7 @@ import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
 import EditTeamModal from "@/app/ui/Teams/EditTeamModal";
 import {deepOrange} from "@mui/material/colors";
+import {userSessionState} from "@/app/lib/uiStore";
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -73,7 +73,7 @@ export default function TeamsSettings() {
     const [selectedWorkspaceTeam, setSelectedWorkspaceTeam] = React.useState<ITeamPopulated>();
     const [isEditOpen, setIsEditOpen] = React.useState<boolean>(false);
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
-
+    const sessionUser = userSessionState((state) => state.user);
     const getInitials = (firstName: string, lastName: string) => {
         return firstName?.charAt(0) + lastName?.charAt(0);
     }
@@ -87,9 +87,7 @@ export default function TeamsSettings() {
     }
     React.useEffect(() => {
         setIsLoading(true);
-        getUser().then((user) => {
-            setUser(user);
-        });
+        setUser(sessionUser);
         getTeams().then((teams) => {
             setWorkspaceTeams(teams);
             console.log('teams', teams);

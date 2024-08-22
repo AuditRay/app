@@ -1,5 +1,6 @@
 import {IUser} from "@/app/models";
 import {buildWorkspaceBasePermissions, type Permissions, PermissionsKeys} from "./BasePermissions";
+import {getFullUser} from "@/app/actions/getUser";
 
 export * from './BasePermissions';
 
@@ -17,6 +18,7 @@ const getUserPermissions = async (user: IUser): Promise<UserPermissions> => {
     for (const permission in permissions) {
         userPermissions[permission] = permissions[permission].default;
     }
+    console.log('user.roles', user.roles);
     // team roles false should override true
     user.roles?.forEach(role => {
         if (!role.isWorkspace) {
@@ -37,8 +39,10 @@ const getUserPermissions = async (user: IUser): Promise<UserPermissions> => {
     return userPermissions;
 }
 
-const hasAccess = async (args: PermissionArgs) => {
+export const checkUserAccess = async (args: PermissionArgs) => {
     const {user, permissionName} = args;
-    const userPermissions = await getUserPermissions(user);
+    const fullUser = await getFullUser(user.id) || user;
+    const userPermissions = await getUserPermissions(fullUser);
+    console.log('userPermissions', userPermissions);
     return userPermissions[permissionName];
 }

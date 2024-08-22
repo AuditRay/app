@@ -11,18 +11,17 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import KeyIcon from '@mui/icons-material/Key';
 import {IUser} from "@/app/models";
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
-import {getUser} from "@/app/actions/getUser";
+import {userSessionState} from "@/app/lib/uiStore";
 
 export default function SettingsLayout({children,}: {
     children: React.ReactNode
 }) {
     const pathname = usePathname()
     const [user, setUser] = React.useState<IUser | null>(null);
+    const sessionUser = userSessionState((state) => state.user);
     React.useEffect(() => {
-        getUser().then((user) => {
-            setUser(user);
-        });
-    }, []);
+        setUser(sessionUser)
+    }, [sessionUser]);
     const router = useRouter();
     return (
         <>

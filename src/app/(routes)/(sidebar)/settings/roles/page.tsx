@@ -1,26 +1,22 @@
 'use client'
 import * as React from "react";
-import {Box, Icon, IconButton, LinearProgress, Link, Tab, Tabs} from "@mui/material";
+import {Box, Icon, IconButton, LinearProgress, Tab, Tabs} from "@mui/material";
 import Typography from "@mui/material/Typography";
-import { useRouter } from 'next/navigation';
-import {IFieldsTemplate, IRole, ITeam, ITeamPopulated, IUser} from "@/app/models";
-import {getUser} from "@/app/actions/getUser";
-import {DataGrid, GridRenderCellParams, GridSlots, GridTreeNodeWithRender} from "@mui/x-data-grid";
+import {IRole, IUser} from "@/app/models";
+import {DataGrid, GridRenderCellParams, GridSlots} from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
 import {styled} from "@mui/material/styles";
 import EditIcon from "@mui/icons-material/Edit";
-import * as MuiIcons from '@mui/icons-material';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import RotateLeftIcon from '@mui/icons-material/RotateLeft';
 import AddRoleModal from "@/app/ui/Roles/AddRoleModal";
 import DeleteRoleFromWorkspaceModal from "@/app/ui/Roles/DeleteRoleFromWorkspaceModal";
-import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
 import EditRoleModal from "@/app/ui/Roles/EditRoleModal";
 import {getWorkspaceAllRoles, updateRole} from "@/app/actions/rolesActions";
-import {buildWorkspaceBasePermissions, Permissions, PermissionsValue} from "@/app/premissions";
+import {buildWorkspaceBasePermissions, PermissionsValue} from "@/app/premissions";
 import CircularProgress from "@mui/material/CircularProgress";
-import {green} from "@mui/material/colors";
+import {userSessionState} from "@/app/lib/uiStore";
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -78,6 +74,7 @@ export default function RolesSettings() {
     const [tabValue, setTabValue] = React.useState<string>('');
     const [selectedWorkspaceRole, setSelectedWorkspaceRole] = React.useState<IRole>();
     const [savingRoles, setSavingRoles] = React.useState<string[]>(['']);
+    const sessionUser = userSessionState((state) => state.user);
     const [workspacePermissions, setWorkspacePermissions] = React.useState<PermissionsValue[]>();
     const [workspaceGroupedPermissions, setWorkspaceGroupedPermissions] = React.useState<Record<string, PermissionsValue[]>>();
     const [workspaceGroups, setWorkspaceGroups] = React.useState<{
@@ -101,9 +98,7 @@ export default function RolesSettings() {
     }
     React.useEffect(() => {
         setIsLoading(true);
-        getUser().then((user) => {
-            setUser(user);
-        });
+        setUser(sessionUser);
         getWorkspaceAllRoles().then((roles) => {
             setWorkspaceRoles(roles);
             console.log('roles', roles);
@@ -132,7 +127,7 @@ export default function RolesSettings() {
             setWorkspaceGroups(groups);
             setWorkspaceGroupedPermissions(groupedPermissions);
         })
-    }, []);
+    }, [sessionUser]);
 
     return (
         <>

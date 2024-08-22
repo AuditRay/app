@@ -2,7 +2,7 @@
 import Link from "@/app/ui/Link";
 import {Grid, Paper, Box, Typography, Divider} from "@mui/material";
 import * as React from "react";
-import {fetchUpdates, getWebsite, getWebsiteViews} from "@/app/actions/websiteActions";
+import {fetchUpdates, getLatestWebsiteInfo, getWebsite, getWebsiteViews} from "@/app/actions/websiteActions";
 import Markdown from 'react-markdown'
 import LaunchIcon from "@mui/icons-material/Launch";
 import WebsiteConnectionTokenModal from "@/app/ui/Websites/WebsiteConnectionModal";
@@ -15,12 +15,15 @@ import EditWebsiteModal from "@/app/ui/Websites/EditWebsiteModal";
 import {FieldsTemplate} from "@/app/models";
 import UpdateWebsiteFieldValuesModal from "@/app/ui/FieldsTemplate/UpdateWebsiteFieldValuesModal";
 import {getWorkspaceFieldTemplate} from "@/app/actions/fieldTemplateActions";
+import Button from "@mui/material/Button";
+import UpdateWebsiteInfoModal from "@/app/ui/Websites/UpdateWebsiteInfoModal";
+import PermissionsAccessCheck from "@/app/ui/PermissionsAccessCheck";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string }}) {
     const { websiteId } = params;
     const website = await getWebsite(websiteId);
     const websiteViews = await getWebsiteViews(websiteId);
-    const websiteInfo = await fetchUpdates(websiteId);
+    const websiteInfo = await getLatestWebsiteInfo(websiteId);
     let websiteFields = [];
     const workspaceFieldTemplateData = await getWorkspaceFieldTemplate();
     if(website && workspaceFieldTemplateData?.fields) {
@@ -108,9 +111,9 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                     <div>
                                         <Box component={'div'}>
                                             <Typography variant={'subtitle1'}>
-                                                <Box component={'img'} src={`/tech/${website.type.icon}`}
+                                                {website.type && (<Box component={'img'} src={`/tech/${website.type.icon}`}
                                                      alt={website.type.name}
-                                                     sx={{width: '20px', verticalAlign: 'text-bottom', mr:'10px'}}/> {website.type.name}</Typography>
+                                                     sx={{width: '20px', verticalAlign: 'text-bottom', mr:'10px'}}/>)} {website.type.name}</Typography>
                                         </Box>
                                         <WebsitesInfoGrid websiteInfo={[websiteInfo.frameworkInfo]} enableRightDrawer={true}/>
                                     </div>
@@ -137,21 +140,29 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                 </Paper>
             </Grid>
             <Grid item xs={4}>
-                <Paper
-                    sx={{
-                        p: 2,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        mb: 2
-                    }}
-                >
-                    {website && (
-                        <div>
-                            <EditWebsiteModal websiteId={website.id}/>
-                            <WebsiteConnectionTokenModal websiteId={website.id}/>
-                        </div>
-                    )}
-                </Paper>
+                {website && (
+                    <PermissionsAccessCheck permission={'Edit Website'} data={{website: website}}>
+                        <Paper
+                            sx={{
+                                p: 2,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                mb: 2
+                            }}
+                        >
+
+                                <div>
+
+                                        <EditWebsiteModal websiteId={website.id}/>
+                                        <PermissionsAccessCheck permission={'View Website Connection tokens'} data={{website: website}}>
+                                            <WebsiteConnectionTokenModal websiteId={website.id}/>
+                                        </PermissionsAccessCheck>
+                                        <UpdateWebsiteInfoModal websiteId={website.id}/>
+
+                                </div>
+                        </Paper>
+                    </PermissionsAccessCheck>
+                )}
 
                 <Paper
                     sx={{
@@ -177,9 +188,9 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                     Tech Stack
                                 </Typography>
                                 <Box component={'div'} sx={{width: '20px'}}>
-                                    <Box component={'img'}  src={`/tech/${website.type.icon}`} alt={website.type.name} sx={{width: '100%' }} />
+                                    {website.type && (<Box component={'img'}  src={`/tech/${website.type.icon}`} alt={website.type.name} sx={{width: '100%' }} />)}
                                 </Box>
-                                {website.type.subTypes?.length > 0 && website.type.subTypes.map((subType) => (
+                                {website.type?.subTypes?.length > 0 && website.type.subTypes.map((subType) => (
                                     <Box key={`ts-${subType.slug}-wrapper`} component={'div'} sx={{width: '20px'}}>
                                         <Box component={'img'} key={subType.slug} src={`/tech/${subType.icon}`} alt={subType.name} sx={{width: '100%' }}/>
                                     </Box>

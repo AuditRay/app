@@ -44,6 +44,12 @@ export interface IWebsite {
         weight: number;
         enabled: boolean;
     }[];
+    syncConfig: {
+        enabled: boolean;
+        lastSync?: Date;
+        syncInterval: number;
+        intervalUnit: '' | 'Hour' | 'Day' | 'Week';
+    };
 }
 
 const ModelSchema = new Schema<IWebsite>(
@@ -64,6 +70,12 @@ const ModelSchema = new Schema<IWebsite>(
         metadata: {},
         attributes: {},
         defaultViewsConfiguration: {},
+        syncConfig: {
+            enabled: Boolean,
+            lastSync: Date,
+            syncInterval: Number,
+            intervalUnit: String,
+        },
     },
     {
         timestamps: true,

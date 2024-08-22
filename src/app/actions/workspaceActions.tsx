@@ -44,6 +44,14 @@ export async function getWorkspaces(userId?: string): Promise<IWorkspace[]> {
     return workspaces.map(workspace => workspace.toJSON());
 }
 
+export async function getWorkspace(workspaceId?: string): Promise<IWorkspace> {
+    const workspace = await Workspace.findOne({_id: workspaceId});
+    if (!workspace) {
+        throw new Error('Workspace not found');
+    }
+    return workspace.toJSON();
+}
+
 export async function getWorkspaceMembers(): Promise<IMemberPopulated[]> {
     const user = await getUser();
     if(!user) {
@@ -194,7 +202,8 @@ export async function updateWorkspace(workspaceId: string, workspaceData: Partia
     if(!workspace) {
         throw new Error('Workspace not found');
     }
-    workspace.set("name", workspaceData.name);
+    workspace.set("name", workspaceData.name || workspace.name);
+    workspace.set("timezone", workspaceData.timezone || workspace.timezone);
     const updatedWorkspace = await workspace.save();
     revalidatePath(`/`);
     return {

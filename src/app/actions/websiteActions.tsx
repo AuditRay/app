@@ -153,6 +153,19 @@ export async function generateWebsiteAISeoSummary(websiteId: string) {
     await website.save();
 }
 
+export async function getLatestWebsiteInfo(websiteId: string): Promise<IWebsiteInfo | null> {
+    const user = await getUser();
+    const website = await Website.findOne({_id: websiteId});
+    //get existing WebsiteInfo components
+    const websiteLatestInfos = await WebsiteInfo.find({website: websiteId}).sort({createdAt: -1}).limit(1);
+    const websiteLatestInfo = websiteLatestInfos[0];
+    if (!website || !website.url || !website.token) {
+        return null;
+    }
+    return websiteLatestInfo?.toJSON() ?? null;
+}
+
+
 export async function fetchUpdates(websiteId: string, sync: boolean = false): Promise<IWebsiteInfo | null> {
     const user = await getUser();
     const website = await Website.findOne({_id: websiteId});
@@ -295,7 +308,10 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
         return null;
     }
     website.set(updateData);
+    website.markModified('syncConfig');
+    console.log('website', website.syncConfig);
     const updatedWebsite = await website.save();
+    console.log('updatedWebsite', updatedWebsite.syncConfig);
     revalidatePath(`/website/${websiteId}`);
     return updatedWebsite.toJSON();
 }
@@ -560,7 +576,11 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
     const validatedFields = CreateWebsiteSchema.safeParse({
         url: formData.get('url'),
         tags: formData.get('tags'),
-        fieldsTemplate: formData.get('fields-template'),
+        syncConfig: {
+            enabled: formData.get('sync-enabled') === 'on',
+            syncInterval: parseInt(formData.get('sync-interval') as string) || 1,
+            intervalUnit: formData.get('sync-interval-unit') || 'Day',
+        }
     })
 
     // If any form fields are invalid, return early
@@ -570,7 +590,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         }
     }
 
-    const { url, tags, fieldsTemplate } = validatedFields.data
+    const { url, tags, syncConfig } = validatedFields.data
 
     await connectMongo();
 
@@ -596,7 +616,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         url,
         tags: tags || [],
         user: user.id,
-        fieldsTemplate: fieldsTemplate || undefined,
+        syncConfig,
         workspace: user.currentSelectedWorkspace
     });
 

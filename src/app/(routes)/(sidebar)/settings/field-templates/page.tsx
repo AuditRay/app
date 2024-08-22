@@ -5,28 +5,15 @@ import {
     Divider,
     FormControl,
     Grid,
-    IconButton,
     InputLabel,
-    LinearProgress,
-    Link,
-    Paper,
     Select
 } from "@mui/material";
 import Typography from "@mui/material/Typography";
 import { useRouter } from 'next/navigation';
 import {Field, IFieldsTemplate, IUser} from "@/app/models";
-import {getUser} from "@/app/actions/getUser";
-import {DataGrid, GridSlots} from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
 import {styled} from "@mui/material/styles";
-import AddFieldsTemplateModal from "@/app/ui/FieldsTemplate/AddFieldsTemplateModal";
-import {getFieldsTemplates, getWorkspaceFieldTemplate, updateFieldsTemplate} from "@/app/actions/fieldTemplateActions";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import EditFieldsTemplateModal from "@/app/ui/FieldsTemplate/EditFieldsTemplateModal";
-import CloneFieldsTemplateModal from "@/app/ui/FieldsTemplate/CloneFieldsTemplateModal";
-import DeleteFieldsTemplateModal from "@/app/ui/FieldsTemplate/DeleteFieldsTemplateModal";
+import {getWorkspaceFieldTemplate, updateFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import {v4 as uuidV4} from "uuid";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";

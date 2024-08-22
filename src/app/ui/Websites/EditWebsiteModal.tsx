@@ -14,11 +14,15 @@ import {CreateWebsiteState} from "@/app/lib/definitions";
 import {useEffect} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {Autocomplete, Chip, FormControl, InputLabel, Select} from "@mui/material";
+import {Autocomplete, Checkbox, Chip, FormControl, FormControlLabel, InputLabel, Select} from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import * as React from "react";
 import {getFieldsTemplates, updateFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import {IFieldsTemplate, IWebsite} from "@/app/models";
+import Grid from "@mui/material/Unstable_Grid2";
+import Typography from "@mui/material/Typography";
+import {getWorkspace} from "@/app/actions/workspaceActions";
+import Link from "@/app/ui/Link";
 
 export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
     const [isSaving, setIsSaving] = useState(false);
@@ -26,6 +30,10 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
     const [fieldsTemplate, setFieldsTemplate] = useState<string | undefined>();
     const [fieldsTemplateError, setFieldsTemplateError] = useState<string | null>(null);
     const [tags, setTags] = useState<string[] | undefined>([]);
+    const [enableSync, setEnableSync] = useState<boolean>(true);
+    const [syncInterval, setSyncInterval] = useState<number>(1);
+    const [syncIntervalUnit, setIntervalUnit] = useState<'' | 'Hour' | 'Day' | 'Week'>('Day');
+    const [timeZone, setTimeZone] = useState('');
     const [tagsError, setTagsError] = useState<string | null>(null);
     const [generalError, setGeneralError] = useState<string | null>(null);
     const [fieldTemplates, setFieldTemplates] = useState<IFieldsTemplate[]>([]);
@@ -39,10 +47,20 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
     useEffect(() => {
         async function getData(){
             const website = await getWebsite(websiteId);
+
             const fieldTemplates = await getFieldsTemplates();
             setFieldTemplates(fieldTemplates);
             if(!website) return '';
+            if (website.workspace) {
+                const workspace = await getWorkspace(website.workspace.toString());
+                if (workspace && workspace.timezone) {
+                    setTimeZone(workspace.timezone);
+                }
+            }
             setTags(website.tags);
+            setEnableSync(website.syncConfig?.enabled);
+            setSyncInterval(website.syncConfig?.syncInterval || 1);
+            setIntervalUnit(website.syncConfig?.intervalUnit || 'Day');
             setFieldsTemplate(website.fieldsTemplate as string);
         }
         websiteId && getData();
@@ -93,6 +111,64 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
                             />
                         )}
                     />
+                    <Box>
+                        <Typography variant={'subtitle2'} sx={{mt:2}}>Sync configuration</Typography>
+                    </Box>
+                    <Grid container spacing={2}>
+                        <Grid xs={12}>
+                            <FormControlLabel
+                                label="Enable auto update"
+                                control={<Checkbox checked={enableSync} onChange={(e) => {setEnableSync(e.target.checked)}} />}
+                            />
+                        </Grid>
+                        {enableSync && (
+                            <>
+                                <Grid xs={6}>
+                                    <TextField
+                                        margin="dense"
+                                        fullWidth={true}
+                                        disabled={isSaving}
+                                        error={!!tagsError}
+                                        helperText={tagsError}
+                                        value={syncInterval}
+                                        onChange={(e) => {
+                                            setSyncInterval(parseInt(e.target.value));
+                                        }}
+                                        variant="outlined"
+                                        label="Sync Interval"
+                                        placeholder="Sync Interval"
+                                        type={'number'}
+                                    />
+                                </Grid>
+                                <Grid xs={6}>
+                                    <FormControl margin="dense" fullWidth>
+                                        <InputLabel id="interval-unit-select-label">Interval Unit</InputLabel>
+                                        <Select
+                                            labelId="interval-unit-select-label"
+                                            id="interval-unit"
+                                            value={syncIntervalUnit}
+                                            label="Interval Unit"
+                                            variant="outlined"
+                                            onChange={(e) => {
+                                                setIntervalUnit(e.target.value as '');
+                                            }}
+                                        >
+                                            <MenuItem value={'Hour'}>Hour</MenuItem>
+                                            <MenuItem value={'Day'}>Day</MenuItem>
+                                            <MenuItem value={'Week'}>Week</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid xs={12}>
+                                    {timeZone ? (
+                                        <Typography variant={'caption'}>Timezone: {timeZone} (Timezone can be changed from <Link href={"/settings"}>workspace setting</Link>)</Typography>
+                                    ) : (
+                                        <Typography variant={'caption'}>Timezone is not available in personal workspaces we use UTC instead</Typography>
+                                    )}
+                                </Grid>
+                            </>
+                        )}
+                    </Grid>
                     {/*<Box sx={{ minWidth: 120 }}>*/}
                     {/*    <FormControl margin="dense" fullWidth>*/}
                     {/*        <InputLabel id="field-type-label">Fields Template</InputLabel>*/}
@@ -128,6 +204,11 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
                                 async function save() {
                                     await updateWebsite(websiteId, {
                                         tags,
+                                        syncConfig: {
+                                            enabled: enableSync,
+                                            syncInterval,
+                                            intervalUnit: syncIntervalUnit,
+                                        },
                                         fieldsTemplate: fieldsTemplate || undefined
                                     });
                                 }

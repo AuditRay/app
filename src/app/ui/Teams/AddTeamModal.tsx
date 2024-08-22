@@ -7,25 +7,20 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import {useFormState, useFormStatus} from "react-dom";
-import {createWebsite, getWebsites, getWebsitesListing} from "@/app/actions/websiteActions";
-import {CreateWebsiteState} from "@/app/lib/definitions";
+import {getWebsitesListing} from "@/app/actions/websiteActions";
 import {useEffect} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {Autocomplete, Chip, Divider, IconButton} from "@mui/material";
-import {createFiltersViews} from "@/app/actions/filterViewsActions";
-import {createWorkspace, getWorkspaceUsers, inviteWorkspaceUser} from "@/app/actions/workspaceActions";
-import {Schema} from "mongoose";
+import {Autocomplete, Divider, IconButton} from "@mui/material";
+import {getWorkspaceUsers} from "@/app/actions/workspaceActions";
 import {createTeam} from "@/app/actions/teamActions";
 import {IRole, IUser, IWebsite} from "@/app/models";
 import Typography from "@mui/material/Typography";
-import {Label} from "@mui/icons-material";
 import Grid from "@mui/material/Unstable_Grid2";
 import {getWorkspaceTeamRoles} from "@/app/actions/rolesActions";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import {getUser} from "@/app/actions/getUser";
+import {userSessionState} from "@/app/lib/uiStore";
 
 export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {
     const [isSaving, setIsSaving] = useState(false);
@@ -33,6 +28,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
     const [workspaceUsers, setWorkspaceUsers] = useState<IUser[]>([]);
     const [workspaceRoles, setWorkspaceRoles] = useState<IRole[]>([]);
     const [workspaceWebsites, setWorkspaceWebsites] = useState<IWebsite[]>([]);
+    const sessionUser = userSessionState((state) => state.user);
     const [newTeamData, setNewTeamData] = useState<{
         name?: string;
         members?: {
@@ -56,10 +52,6 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
         websites: ''
     });
     const [generalError, setGeneralError] = useState<string>('');
-
-    const handleOpen = () => {
-        setOpen(true);
-    }
     const handleClose = () => {
         setNewTeamErrorData({});
         setNewTeamData({});
@@ -68,11 +60,11 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
 
     useEffect(() => {
         async function loadWorkspaceUsers() {
-            const currentUser = await getUser();
+            if(!sessionUser) return;
             const users = await getWorkspaceUsers();
             const websites = await getWebsitesListing();
             const roles = await getWorkspaceTeamRoles();
-            setOwnerUser(currentUser);
+            setOwnerUser(sessionUser);
             setWorkspaceRoles([
                 {
                     id: '', name: 'Please Select Role', permissions: {},
@@ -86,7 +78,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
             setWorkspaceWebsites(websites);
         }
         loadWorkspaceUsers().then(() => {}).catch(() => {});
-    }, []);
+    }, [sessionUser]);
     return (
         <Dialog
             open={open}

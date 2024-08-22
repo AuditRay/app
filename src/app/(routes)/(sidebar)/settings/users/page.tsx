@@ -1,25 +1,17 @@
 'use client'
 import * as React from "react";
-import {Box, IconButton, LinearProgress, Link} from "@mui/material";
+import {Box, IconButton, LinearProgress} from "@mui/material";
 import Typography from "@mui/material/Typography";
-import { useRouter } from 'next/navigation';
-import {IFieldsTemplate, IMemberPopulated, IUser, IWorkspacePopulated} from "@/app/models";
-import {getUser} from "@/app/actions/getUser";
+import {IMemberPopulated, IUser} from "@/app/models";
 import {DataGrid, GridSlots} from "@mui/x-data-grid";
 import Button from "@mui/material/Button";
 import {styled} from "@mui/material/styles";
-import AddFieldsTemplateModal from "@/app/ui/FieldsTemplate/AddFieldsTemplateModal";
-import {getFieldsTemplates} from "@/app/actions/fieldTemplateActions";
-import EditIcon from "@mui/icons-material/Edit";
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import EditFieldsTemplateModal from "@/app/ui/FieldsTemplate/EditFieldsTemplateModal";
-import CloneFieldsTemplateModal from "@/app/ui/FieldsTemplate/CloneFieldsTemplateModal";
-import DeleteFieldsTemplateModal from "@/app/ui/FieldsTemplate/DeleteFieldsTemplateModal";
-import {getWorkspaceMembers, getWorkspaceUsers} from "@/app/actions/workspaceActions";
+import {getWorkspaceMembers} from "@/app/actions/workspaceActions";
 import InviteUserModal from "@/app/ui/Users/InviteUserModal";
 import DeleteUserFromWorkspaceModal from "@/app/ui/Users/DeleteUserFromWorkspaceModal";
 import Tooltip from "@mui/material/Tooltip";
+import {userSessionState} from "@/app/lib/uiStore";
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -75,9 +67,8 @@ export default function UsersSettings() {
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
     const [selectedWorkspaceMember, setSelectedWorkspaceMember] = React.useState<IMemberPopulated>();
-    const [isEditOpen, setIsEditOpen] = React.useState<boolean>(false);
-    const [isCloneOpen, setIsCloneOpen] = React.useState<boolean>(false);
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
+    const sessionUser = userSessionState((state) => state.user);
 
     const handleOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
         //reload
@@ -89,14 +80,12 @@ export default function UsersSettings() {
     }
     React.useEffect(() => {
         setIsLoading(true);
-        getUser().then((user) => {
-            setUser(user);
-        });
+        setUser(sessionUser);
         getWorkspaceMembers().then((members) => {
             setWorkspaceMembers(members);
             setIsLoading(false);
         });
-    }, []);
+    }, [sessionUser]);
 
     return (
         <>

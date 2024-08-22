@@ -14,18 +14,34 @@ import {CreateWebsiteState} from "@/app/lib/definitions";
 import {useEffect} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {Autocomplete, Chip, FormControl, InputLabel, Select} from "@mui/material";
+import {Autocomplete, Checkbox, Chip, FormControl, FormControlLabel, InputLabel, Select} from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import * as React from "react";
 import {getFieldsTemplates} from "@/app/actions/fieldTemplateActions";
 import {IFieldsTemplate} from "@/app/models";
+import PermissionsAccessCheck from "@/app/ui/PermissionsAccessCheck";
+import Typography from "@mui/material/Typography";
+import Grid from "@mui/material/Unstable_Grid2";
+import Link from "@/app/ui/Link";
+import {userSessionState} from "@/app/lib/uiStore";
+import {getWorkspace} from "@/app/actions/workspaceActions";
 
 export default function AddWebsiteModal() {
     const [state, action, isPending] = useFormState(createWebsite, undefined)
     const [open, setOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [tags, setTags] = useState<string[]>([]);
+    const [syncConfig, setSyncConfig] = useState<{
+        enabled: boolean,
+        syncInterval: number,
+        intervalUnit: string,
+    }>({
+        enabled: true,
+        syncInterval: 1,
+        intervalUnit: 'Day',
+    });
     const [formCurrentState, setFormCurrentState] = useState<CreateWebsiteState>(state);
+    const [timeZone, setTimeZone] = useState('');
     const [fieldTemplates, setFieldTemplates] = useState<IFieldsTemplate[]>([]);
     const { pending } = useFormStatus();
     const handleOpen = () => {
@@ -36,24 +52,31 @@ export default function AddWebsiteModal() {
         setFormCurrentState(undefined);
         setOpen(false);
     }
-
+    const sessionUser = userSessionState((state) => state.user);
     useEffect(() => {
         getFieldsTemplates().then((fieldTemplates) => {
             setFieldTemplates(fieldTemplates);
         })
+        if(sessionUser?.currentSelectedWorkspace) {
+            getWorkspace(sessionUser.currentSelectedWorkspace.toString()).then((workspace) => {
+                setTimeZone(workspace.timezone);
+            });
+        }
         setFormCurrentState({...state});
         if(!state?.errors) {
             handleClose();
         }
         setIsSaving(false);
-    }, [state]);
+    }, [state, sessionUser]);
 
     useEffect(() => {
         console.log('isPending', isSaving);
     }, [isSaving]);
     return (
         <div>
-            <Button onClick={handleOpen} variant={'contained'}>Add New Website</Button>
+            <PermissionsAccessCheck permission={'Add New Website'} >
+                <Button onClick={handleOpen} variant={'contained'}>Add New Website</Button>
+            </PermissionsAccessCheck>
             <Dialog
                 open={open}
                 fullWidth={true}
@@ -67,6 +90,7 @@ export default function AddWebsiteModal() {
                         setFormCurrentState({});
                         setIsSaving(true);
                         e.append('tags', JSON.stringify(tags));
+                        e.append('syncConfig', JSON.stringify(syncConfig));
                         setTimeout(() => action(e));
                     }
                 }}
@@ -109,6 +133,7 @@ export default function AddWebsiteModal() {
                         renderInput={(params) => (
                             <TextField
                                 {...params}
+                                margin={'dense'}
                                 disabled={isSaving}
                                 error={!!formCurrentState?.errors?.tags}
                                 helperText={formCurrentState?.errors?.tags}
@@ -118,24 +143,72 @@ export default function AddWebsiteModal() {
                             />
                         )}
                     />
-                    <Box sx={{ minWidth: 120 }}>
-                        <FormControl margin="dense" fullWidth>
-                            <InputLabel id="field-type-label">Fields Template</InputLabel>
-                            <Select
-                                id={`fields-template`}
-                                name={`fields-template`}
-                                label="Fields Template"
-                            >
-                                {fieldTemplates.length && (<MenuItem key={'none'} value={''}>None</MenuItem>)}
-                                {fieldTemplates.length && fieldTemplates.map((fieldTemplate) => (
-                                    <MenuItem key={fieldTemplate.id} value={fieldTemplate.id}>{fieldTemplate.title}</MenuItem>
-                                ))}
-                                {!fieldTemplates.length && (
-                                    <MenuItem disabled={true} key={'no-templates'}>No Field Templates are found, please create new template from workspace settings.</MenuItem>
-                                )}
-                            </Select>
-                        </FormControl>
+                    <Box>
+                        <Typography variant={'subtitle2'} sx={{mt:2}}>Sync configuration</Typography>
                     </Box>
+                    <Grid container spacing={2}>
+                        <Grid xs={12}>
+                            <FormControlLabel
+                                label="Enable auto update"
+                                control={<Checkbox
+                                    id={"sync-enabled"}
+                                    name={"sync-enabled"}
+                                    checked={syncConfig.enabled} onChange={
+                                    (e) => {
+                                        setSyncConfig({...syncConfig, enabled: e.target.checked});
+                                    }
+                                }/>}
+                            />
+                        </Grid>
+                        {syncConfig.enabled && (
+                            <>
+                                <Grid xs={6}>
+                                    <TextField
+                                        margin="dense"
+                                        fullWidth={true}
+                                        disabled={isSaving}
+                                        value={syncConfig.syncInterval}
+                                        onChange={(e) => {
+                                            setSyncConfig({...syncConfig, syncInterval: parseInt(e.target.value)});
+                                        }}
+                                        variant="outlined"
+                                        label="Sync Interval"
+                                        id="sync-interval"
+                                        name="sync-interval"
+                                        placeholder="Sync Interval"
+                                        type={'number'}
+                                    />
+                                </Grid>
+                                <Grid xs={6}>
+                                    <FormControl margin="dense" fullWidth>
+                                        <InputLabel id="interval-unit-select-label">Interval Unit</InputLabel>
+                                        <Select
+                                            labelId="interval-unit-select-label"
+                                            id="sync-interval-unit"
+                                            name="sync-interval-unit"
+                                            value={syncConfig.intervalUnit}
+                                            label="Interval Unit"
+                                            variant="outlined"
+                                            onChange={(e) => {
+                                                setSyncConfig({...syncConfig, intervalUnit: e.target.value});
+                                            }}
+                                        >
+                                            <MenuItem value={'Hour'}>Hour</MenuItem>
+                                            <MenuItem value={'Day'}>Day</MenuItem>
+                                            <MenuItem value={'Week'}>Week</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid xs={12}>
+                                    {timeZone ? (
+                                        <Typography variant={'caption'}>Timezone: {timeZone} (Timezone can be changed from <Link href={"/settings"}>workspace setting</Link>)</Typography>
+                                    ) : (
+                                        <Typography variant={'caption'}>Timezone is not available in personal workspaces we use UTC instead</Typography>
+                                    )}
+                                </Grid>
+                            </>
+                        )}
+                    </Grid>
                 </DialogContent>
                 <DialogActions>
                     <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>

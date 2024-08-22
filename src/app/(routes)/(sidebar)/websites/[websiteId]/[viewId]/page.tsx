@@ -2,7 +2,7 @@
 import Link from "@/app/ui/Link";
 import {Grid, Paper, Box, Typography, Divider} from "@mui/material";
 import * as React from "react";
-import {fetchUpdates, getWebsite, getWebsiteViews} from "@/app/actions/websiteActions";
+import {fetchUpdates, getLatestWebsiteInfo, getWebsite, getWebsiteViews} from "@/app/actions/websiteActions";
 import Markdown from 'react-markdown'
 import LaunchIcon from "@mui/icons-material/Launch";
 import WebsiteConnectionTokenModal from "@/app/ui/Websites/WebsiteConnectionModal";
@@ -22,7 +22,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
     const website = await getWebsite(websiteId);
     const websiteViews = await getWebsiteViews(websiteId);
     const websiteView = websiteViews.find((view) => view.id === viewId);
-    const websiteInfo = await fetchUpdates(websiteId);
+    const websiteInfo = await getLatestWebsiteInfo(websiteId);
     const formattedData: DataSources['data'] = [];
     if (websiteView) {
         for (const dataSource of websiteView.dataSources) {

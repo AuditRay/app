@@ -24,17 +24,17 @@ export const BasePermissions = {
         icon: 'add',
         group: 'Websites',
     },
-    'Edit New Website': {
-        id: 'Edit New Website',
+    'Edit Website': {
+        id: 'Edit Website',
         default: false,
-        description: 'Edit a new website',
+        description: 'Edit a website',
         icon: 'edit',
         group: 'Websites',
     },
-    'Delete New Website': {
-        id: 'Delete New Website',
+    'Delete Website': {
+        id: 'Delete Website',
         default: false,
-        description: 'Delete a new website',
+        description: 'Delete a website',
         icon: 'delete',
         group: 'Websites',
     },

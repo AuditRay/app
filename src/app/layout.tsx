@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import { Roboto } from "next/font/google";
-import {Container, ThemeProvider} from '@mui/material';
+import {ThemeProvider} from '@mui/material';
 const roboto = Roboto({ subsets:["latin"] ,weight: ["300", "400", "500", "700"] });
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '@/theme';

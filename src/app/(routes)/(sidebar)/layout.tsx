@@ -12,7 +12,8 @@ import { LicenseInfo } from '@mui/x-license';
 import Gleap from 'gleap';
 import AccountMenu from "@/app/ui/AccountMenu";
 import {IUser} from "@/app/models";
-import {getUser} from "@/app/actions/getUser";
+import {getFullUser, getUser} from "@/app/actions/getUser";
+import {userSessionState} from "@/app/lib/uiStore";
 LicenseInfo.setLicenseKey('d180cacff967bbf4eb0152899dacbe68Tz05MzI0OCxFPTE3NTEwNDc4MDIwMDAsUz1wcm8sTE09c3Vic2NyaXB0aW9uLEtWPTI=');
 
 export default function DashboardLayout({children,}: {
@@ -20,6 +21,10 @@ export default function DashboardLayout({children,}: {
 }) {
     const [filterViews, setFilterViews] = React.useState<IFiltersView[]>([]);
     const [user, setUser] = React.useState<IUser | null>(null);
+    const sessionUser = userSessionState((state) => state.user);
+    const sessionFullUser = userSessionState((state) => state.fullUser);
+    const setSessionUser = userSessionState((state) => state.setUser);
+    const setSessionFullUser = userSessionState((state) => state.setFullUser);
     const pathname = usePathname();
     const TitlesMap: Record<string, string> = {
         '/websites': 'Websites',
@@ -39,10 +44,22 @@ export default function DashboardLayout({children,}: {
         getFiltersViews().then((filtersViews) => {
             setFilterViews(filtersViews);
         });
-        getUser().then((user) => {
-            setUser(user);
-        });
-    }, []);
+        if(sessionUser){
+            setUser(sessionUser);
+            if(!sessionFullUser) {
+                getFullUser(sessionUser.id).then((user) => {
+                    setSessionFullUser(user);
+                });
+            }
+        } else {
+            getUser().then((user) => {
+                setSessionUser(user);
+                getFullUser(user.id).then((user) => {
+                    setSessionFullUser(user);
+                });
+            });
+        }
+    }, [sessionFullUser, sessionUser, setSessionFullUser, setSessionUser]);
     React.useEffect(() => {
         // Run within useEffect to execute this code on the frontend.
         Gleap.initialize("OSiO40QAObCvUHbraB791AyK5GqygSCL");
@@ -76,7 +93,7 @@ export default function DashboardLayout({children,}: {
                     >
                         {TitlesMap[pathname] ? TitlesMap[pathname] : pathname.includes('/websites') ? 'Website' : 'Dashboard'}
                     </Typography>
-                    {user && (<AccountMenu user={user}></AccountMenu>)}
+                    {sessionFullUser && (<AccountMenu user={sessionFullUser}></AccountMenu>)}
                 </Toolbar>
             </AppBar>
             <Drawer variant="permanent" open={open}>

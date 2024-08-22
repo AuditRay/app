@@ -13,7 +13,7 @@ import Tooltip from '@mui/material/Tooltip';
 import PersonAdd from '@mui/icons-material/PersonAdd';
 import Settings from '@mui/icons-material/Settings';
 import Logout from '@mui/icons-material/Logout';
-import {IUser} from "@/app/models";
+import {IUser, IWorkspace} from "@/app/models";
 import { useRouter } from 'next/navigation';
 import AddWorkspaceModal from "@/app/ui/AddWorkspaceModal";
 import {setCurrentSelectedWorkspace} from "@/app/actions/workspaceActions";
@@ -21,6 +21,7 @@ import {setCurrentSelectedWorkspace} from "@/app/actions/workspaceActions";
 export default function AccountMenu({user}: {user: IUser | null}) {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [isAddWorkspaceModalOpen, setIsAddWorkspaceModalOpen] = React.useState(false);
+    const [userWorkspaces, setUserWorkspaces] = React.useState<IWorkspace[]>(user?.workspaces || []);
     const open = Boolean(anchorEl);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -35,6 +36,7 @@ export default function AccountMenu({user}: {user: IUser | null}) {
         }
         switchWorkspace().then();
     }
+
     const router = useRouter();
     //get initials from First Name and Last Name
     const initials = user ? user?.firstName?.charAt(0) + user?.lastName?.charAt(0) : '';

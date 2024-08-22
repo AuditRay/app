@@ -2,12 +2,11 @@
 import {getUser} from "@/app/actions/getUser";
 import {Grid, Paper, Box} from "@mui/material";
 import * as React from "react";
-import {countWebsites, getWebsitesTable} from "@/app/actions/websiteActions";
-import WebsitesGrid, {GridRow} from "@/app/ui/WebsitesGrid";
+import {countWebsites} from "@/app/actions/websiteActions";
+import WebsitesGrid from "@/app/ui/WebsitesGrid";
 import AddWebsiteModal from "@/app/ui/Websites/AddWebsiteModal";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
 import RightDrawer from "@/app/ui/RightDrawer";
-import Typography from "@mui/material/Typography";
 
 export default async function Websites({searchParams}: {searchParams: Record<string, string>}) {
     const user = await getUser()

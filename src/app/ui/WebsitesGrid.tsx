@@ -16,13 +16,11 @@ import {diff} from 'deep-object-diff';
 import {IWebsite} from "@/app/models/Website";
 import {Box, Chip, LinearProgress, Link} from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
-import {fontSize} from "@mui/system";
 import {useCallback, useEffect} from "react";
 import Button from "@mui/material/Button";
 import SaveFilterViewModal from "@/app/ui/SaveFilterViewModal";
 import {useSearchParams} from "next/navigation";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
-import {headers} from "next/headers";
 import {getWebsitesTable, tableSourceField} from "@/app/actions/websiteActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import UpdateFilterViewModal from "@/app/ui/UpdateFilterViewModal";
@@ -31,9 +29,7 @@ import ViewItem from "@/app/ui/ViewItem";
 import Typography from "@mui/material/Typography";
 import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import ComponentInfo from "@/app/ui/ComponentInfo";
-import {IWebsiteInfo, UpdateInfo} from "@/app/models";
-import {getUser} from "@/app/actions/getUser";
-import {styled} from "@mui/material/styles";
+import {UpdateInfo} from "@/app/models";
 
 export type GridRow = {
     id: number|string;

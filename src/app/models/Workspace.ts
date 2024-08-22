@@ -8,6 +8,7 @@ export interface IWorkspace {
     name: string;
     owner: string | typeof Schema.Types.ObjectId;
     users: (string | typeof Schema.Types.ObjectId)[];
+    timezone: string;
     members?: {
         user: typeof Schema.Types.ObjectId | string,
         roles: (string | typeof Schema.Types.ObjectId)[];
@@ -22,6 +23,7 @@ export interface IWorkspacePopulated {
     id: string;
     name: string;
     owner: IUser;
+    timezone: string;
     users: (string | typeof Schema.Types.ObjectId)[];
     members?: IMemberPopulated[];
 }
@@ -31,6 +33,7 @@ const ModelSchema = new Schema<IWorkspace>(
         name: String,
         owner: {type: Schema.Types.ObjectId, ref: 'User'},
         users: [{type: Schema.Types.ObjectId, ref: 'User'}],
+        timezone: String,
         members: [
             {
                 user: {type: Schema.Types.ObjectId, ref: 'User'},
