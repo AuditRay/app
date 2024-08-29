@@ -118,6 +118,40 @@ export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplate
                                                 />
                                             </Box>
                                         )}
+                                        {["select"].includes(field.type) && (
+                                            <Box sx={{ minWidth: 120 }}>
+                                                <FormControl margin="dense" fullWidth>
+                                                    <InputLabel id="field-type-label">{field.title}</InputLabel>
+                                                    <Select
+                                                        id={field.id}
+                                                        name={field.id}
+                                                        label={field.title}
+                                                        value={getFieldValue(website, field)}
+                                                        variant={'outlined'}
+                                                        onChange={(e) => {
+                                                            //replace the field with the new value based on field.id
+                                                            let newWebsite = {...website};
+                                                            if (!newWebsite.fieldValues) newWebsite.fieldValues = [];
+                                                            let fieldValue = newWebsite.fieldValues.find((f) => f.id === field.id);
+                                                            if(fieldValue) {
+                                                                fieldValue.value = e.target.value;
+                                                            }
+                                                            else {
+                                                                newWebsite.fieldValues.push({
+                                                                    id: field.id,
+                                                                    value: e.target.value
+                                                                });
+                                                            }
+                                                            setWebsite(newWebsite);
+                                                        }}
+                                                    >
+                                                        {field.options.map((option) => (
+                                                            <MenuItem key={option} value={option}>{option}</MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                </FormControl>
+                                            </Box>
+                                        )}
                                     </Box>
                                 ))}
                             </Box>

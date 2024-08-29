@@ -183,6 +183,28 @@ export default function Settings() {
                                                     />
                                                 </Box>
                                             )}
+                                            {["select"].includes(field.type) && (
+                                                <Box sx={{ minWidth: 120 }}>
+                                                    <FormControl margin="dense" fullWidth>
+                                                        <InputLabel id="field-type-label">{field.title}</InputLabel>
+                                                        <Select
+                                                            id={field.id}
+                                                            name={field.id}
+                                                            label={field.title}
+                                                            value={field.defaultValue || ''}
+                                                            variant={'outlined'}
+                                                            onClick={() => {
+                                                                console.log('idx', field.id);
+                                                                setSelectedField(field)
+                                                            }}
+                                                        >
+                                                            {field.options.map((option) => (
+                                                                <MenuItem key={option} value={option}>{option}</MenuItem>
+                                                            ))}
+                                                        </Select>
+                                                    </FormControl>
+                                                </Box>
+                                            )}
                                         </Box>
                                     ))}
                                 </Box>
@@ -253,6 +275,7 @@ export default function Settings() {
                                                     name={`field-type`}
                                                     label="Field Type"
                                                     value={selectedField.type}
+                                                    variant={'outlined'}
                                                     onChange={(e) => {
                                                         //replace the field with the new value
                                                         let newFields = [...fields];
@@ -264,11 +287,35 @@ export default function Settings() {
                                                     <MenuItem value={'text'}>Text</MenuItem>
                                                     <MenuItem value={'email'}>Email</MenuItem>
                                                     <MenuItem value={'number'}>Number</MenuItem>
+                                                    <MenuItem value={'select'}>Select</MenuItem>
                                                     <MenuItem value={'date'}>Date</MenuItem>
                                                     <MenuItem value={'multiline'}>Multiline</MenuItem>
                                                 </Select>
                                             </FormControl>
                                         </Box>
+                                        {selectedField.type === 'select' && (
+                                            <>
+                                                <TextField
+                                                    autoFocus
+                                                    margin="dense"
+                                                    id={`field-options`}
+                                                    name={`field-options`}
+                                                    helperText={'Separate options with comma'}
+                                                    label="Options"
+                                                    type="text"
+                                                    fullWidth
+                                                    variant="outlined"
+                                                    value={selectedField.options.join(',')}
+                                                    onChange={(e) => {
+                                                        //replace the field with the new value
+                                                        let newFields = [...fields];
+                                                        let selectedFieldIndex = newFields.findIndex((f) => f.id === selectedField.id);
+                                                        newFields[selectedFieldIndex].options = e.target.value.split(',');
+                                                        setFields(newFields);
+                                                    }}
+                                                />
+                                            </>
+                                        )}
                                         <TextField
                                             autoFocus
                                             margin="dense"

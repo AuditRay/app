@@ -23,6 +23,15 @@ import Grid from "@mui/material/Unstable_Grid2";
 import Typography from "@mui/material/Typography";
 import {getWorkspace} from "@/app/actions/workspaceActions";
 import Link from "@/app/ui/Link";
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import dayjs, {Dayjs} from "dayjs";
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
     const [isSaving, setIsSaving] = useState(false);
@@ -32,6 +41,9 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
     const [tags, setTags] = useState<string[] | undefined>([]);
     const [enableSync, setEnableSync] = useState<boolean>(true);
     const [syncInterval, setSyncInterval] = useState<number>(1);
+    const [syncTime, setSyncTime] = useState<Dayjs | null>(
+        dayjs().startOf('day')
+    );
     const [syncIntervalUnit, setIntervalUnit] = useState<'' | 'Hour' | 'Day' | 'Week'>('Day');
     const [timeZone, setTimeZone] = useState('');
     const [tagsError, setTagsError] = useState<string | null>(null);
@@ -45,22 +57,28 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
     }
 
     useEffect(() => {
+        console.log('syncTime', syncTime, dayjs().startOf('day'));
+    }, [syncTime]);
+    useEffect(() => {
         async function getData(){
             const website = await getWebsite(websiteId);
-
+            console.log('website', website);
             const fieldTemplates = await getFieldsTemplates();
             setFieldTemplates(fieldTemplates);
             if(!website) return '';
-            if (website.workspace) {
-                const workspace = await getWorkspace(website.workspace.toString());
-                if (workspace && workspace.timezone) {
-                    setTimeZone(workspace.timezone);
-                }
-            }
             setTags(website.tags);
             setEnableSync(website.syncConfig?.enabled);
             setSyncInterval(website.syncConfig?.syncInterval || 1);
             setIntervalUnit(website.syncConfig?.intervalUnit || 'Day');
+            //default sync time to 12:00 AM
+            setSyncTime(website.syncConfig?.syncTime ? dayjs.utc(website.syncConfig?.syncTime) : dayjs().startOf('day'));
+            if (website.workspace) {
+                const workspace = await getWorkspace(website.workspace.toString());
+                if (workspace && workspace.timezone) {
+                    setTimeZone(workspace.timezone);
+                    setSyncTime(website.syncConfig?.syncTime ? dayjs(website.syncConfig?.syncTime).tz(workspace.timezone) : dayjs().tz(workspace.timezone).startOf('day'));
+                }
+            }
             setFieldsTemplate(website.fieldsTemplate as string);
         }
         websiteId && getData();
@@ -160,6 +178,18 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
                                     </FormControl>
                                 </Grid>
                                 <Grid xs={12}>
+                                    <LocalizationProvider
+                                        dateAdapter={AdapterDayjs}>
+                                        <TimePicker
+                                            value={syncTime}
+                                            sx={{width: '100%'}}
+                                            onChange={setSyncTime}
+                                            timezone={timeZone || undefined}
+                                            label={`Sync Time in Timezone: ${timeZone || 'UTC'}`}
+                                        />
+                                    </LocalizationProvider>
+                                </Grid>
+                                <Grid xs={12}>
                                     {timeZone ? (
                                         <Typography variant={'caption'}>Timezone: {timeZone} (Timezone can be changed from <Link href={"/settings"}>workspace setting</Link>)</Typography>
                                     ) : (
@@ -207,6 +237,7 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
                                         syncConfig: {
                                             enabled: enableSync,
                                             syncInterval,
+                                            syncTime: syncTime || undefined,
                                             intervalUnit: syncIntervalUnit,
                                         },
                                         fieldsTemplate: fieldsTemplate || undefined

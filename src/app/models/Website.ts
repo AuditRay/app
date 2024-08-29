@@ -1,5 +1,11 @@
 import {Model, model, models, Schema} from 'mongoose';
 import {FieldValue} from "@/app/models/FieldsTemplate";
+import dayjs, {Dayjs} from "dayjs";
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export type WebsiteTechnology = {
     slug: string;
@@ -48,6 +54,7 @@ export interface IWebsite {
         enabled: boolean;
         lastSync?: Date;
         syncInterval: number;
+        syncTime?: Dayjs;
         intervalUnit: '' | 'Hour' | 'Day' | 'Week';
     };
 }
@@ -73,6 +80,7 @@ const ModelSchema = new Schema<IWebsite>(
         syncConfig: {
             enabled: Boolean,
             lastSync: Date,
+            syncTime: Date,
             syncInterval: Number,
             intervalUnit: String,
         },
@@ -91,6 +99,7 @@ const ModelSchema = new Schema<IWebsite>(
         },
     },
 );
+
 
 ModelSchema.index({ url: 1, user: 1, workspace: 1}, { unique: true });
 ModelSchema.index({ workspace: 1 });
