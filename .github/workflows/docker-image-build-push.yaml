@@ -10,6 +10,7 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+-beta'
+      - 'v[0-9]+.[0-9]+.[0-9]+-alpha'
 
 env:
   IMAGE_NAME: monitdev-app
@@ -40,9 +41,9 @@ jobs:
           registry: ${{ secrets.CR_ENDPOINT }}
           username: ${{ secrets.CR_USERNAME }}
           password: ${{ secrets.CR_PASSWORD }}
-      # Below secrets and step will only run for PRODUCTION, when release tag doesn't contain 'beta'
+      # Below secrets and step will only run for PRODUCTION, when release tag doesn't contain 'beta' or 'alpha'
       - name: Build & Push
-        if: contains(github.ref_name , 'beta') == false && github.event.base_ref == 'refs/heads/main'
+        if: contains(github.ref_name , 'beta') == false && contains(github.ref_name , 'alpha') == false && github.event.base_ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:
           file: Dockerfile
@@ -50,9 +51,19 @@ jobs:
           build-args: |
             version=${{ steps.meta.outputs.tags }}
           tags: ${{ steps.meta.outputs.tags }}
-      # Below secrets and step will only run for STAGING, when release tag contains 'beta'
+      # Below secrets and step will only run for STAGING (BETA), when release tag contains 'beta'
       - name: Build & Push
         if: contains(github.ref_name , 'beta') == true
+        uses: docker/build-push-action@v5
+        with:
+          file: Dockerfile
+          push: true
+          build-args: |
+            version=${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
+      # Below secrets and step will only run for DEVELOPMENT (ALPHA), when release tag contains 'alpha'
+      - name: Build & Push
+        if: contains(github.ref_name , 'alpha') == true
         uses: docker/build-push-action@v5
         with:
           file: Dockerfile
