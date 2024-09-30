@@ -6,4 +6,5 @@ export * from './WebsiteView';
 export * from './Workspace';
 export * from './Role';
 export * from './Team';
+export * from './Alert';
 export * from './FieldsTemplate';
