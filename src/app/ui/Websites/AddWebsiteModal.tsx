@@ -74,9 +74,7 @@ export default function AddWebsiteModal() {
     }, [isSaving]);
     return (
         <div>
-            <PermissionsAccessCheck permission={'Add New Website'} >
-                <Button onClick={handleOpen} variant={'contained'}>Add New Website</Button>
-            </PermissionsAccessCheck>
+            <Button onClick={handleOpen} variant={'contained'}>Add New Website</Button>
             <Dialog
                 open={open}
                 fullWidth={true}

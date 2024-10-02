@@ -2,14 +2,19 @@
 import {getUser} from "@/app/actions/getUser";
 import {revalidatePath} from "next/cache";
 import {FiltersView, IFiltersView} from "@/app/models/FiltersView";
+import {connectMongo} from "@/app/lib/database";
 
 export async function getFiltersView(filtersViewID: string): Promise<IFiltersView | null> {
+    await connectMongo();
+    console.log('getFiltersView');
     const user = await getUser();
     const filterView =  await FiltersView.findOne({_id: filtersViewID, user: user.id});
     return filterView ? filterView.toJSON() : null;
 }
 
 export async function getFiltersViews(): Promise<IFiltersView[]> {
+    await connectMongo();
+    console.log('getFiltersViews');
     const user = await getUser();
     if(user.currentSelectedWorkspace) {
         const filterViews = await FiltersView.find({user: user.id, workspace: user.currentSelectedWorkspace});
@@ -22,6 +27,8 @@ export async function getFiltersViews(): Promise<IFiltersView[]> {
 
 
 export async function createFiltersViews(filterData: Partial<IFiltersView>) {
+    await connectMongo();
+    console.log('createFiltersViews');
     const user = await getUser();
 
     if(!filterData.title || !filterData.filters) {
@@ -43,6 +50,8 @@ export async function createFiltersViews(filterData: Partial<IFiltersView>) {
 }
 
 export async function updateFiltersViews(filterViewId: string, filterData: Partial<IFiltersView>) {
+    await connectMongo();
+    console.log('updateFiltersViews');
     const user = await getUser();
 
     if(!filterData.title || !filterData.filters) {

@@ -45,13 +45,18 @@ export default function DashboardLayout({children,}: {
             setFilterViews(filtersViews);
         });
         if(sessionUser){
+            console.log("sessionUser");
             setUser(sessionUser);
             if(!sessionFullUser) {
+                console.log("!sessionFullUser");
                 getFullUser(sessionUser.id).then((user) => {
                     setSessionFullUser(user);
                 });
+            } else {
+                console.log("sessionFullUser");
             }
         } else {
+            console.log("!sessionUser");
             getUser().then((user) => {
                 setSessionUser(user);
                 getFullUser(user.id).then((user) => {
@@ -60,6 +65,7 @@ export default function DashboardLayout({children,}: {
             });
         }
     }, [sessionFullUser, sessionUser, setSessionFullUser, setSessionUser]);
+    console.log("test", sessionFullUser, sessionUser, setSessionFullUser, setSessionUser);
     React.useEffect(() => {
         // Run within useEffect to execute this code on the frontend.
         Gleap.initialize("OSiO40QAObCvUHbraB791AyK5GqygSCL");

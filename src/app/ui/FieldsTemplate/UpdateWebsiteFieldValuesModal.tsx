@@ -20,12 +20,12 @@ import {v4 as uuidV4} from "uuid";
 import {createFieldsTemplate, getFieldsTemplate, getFieldsTemplates} from "@/app/actions/fieldTemplateActions";
 import {getWebsite, updateWebsite} from "@/app/actions/websiteActions";
 
-export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplateId}: {websiteId: string, fieldsTemplateId: string}) {
+export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplateId, website, fieldsTemplate}: {websiteId: string, fieldsTemplateId: string, website?: IWebsite, fieldsTemplate?: IFieldsTemplate}) {
     const [isSaving, setIsSaving] = useState(false);
     const [open, setOpen] = useState(false);
     const [generalError, setGeneralError] = useState<string>('');
-    const [fieldsTemplate, setFieldsTemplate] = useState<IFieldsTemplate | null>(null);
-    const [website, setWebsite] = useState<Partial<IWebsite>>();
+    const [loadedFieldsTemplate, setLoadedFieldsTemplate] = useState<IFieldsTemplate | null>(null);
+    const [loadedWebsite, setLoadedWebsite] = useState<Partial<IWebsite>>();
 
     const handleOpen = () => {
         setOpen(true);
@@ -43,16 +43,16 @@ export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplate
 
     useEffect(() => {
         async function getData(){
-            const website = await getWebsite(websiteId);
-            const fieldsTemplate = await getFieldsTemplate(fieldsTemplateId);
-            if(!website) return '';
-            if(!fieldsTemplate) return '';
-            setFieldsTemplate(fieldsTemplate);
-            setWebsite(website);
+            const websiteLoaded = website || await getWebsite(websiteId);
+            const fieldsTemplateLoaded = fieldsTemplate || await getFieldsTemplate(fieldsTemplateId);
+            if(!websiteLoaded) return '';
+            if(!fieldsTemplateLoaded) return '';
+            setLoadedFieldsTemplate(fieldsTemplateLoaded);
+            setLoadedWebsite(websiteLoaded);
         }
         websiteId && getData();
         setIsSaving(false);
-    }, [websiteId, fieldsTemplateId]);
+    }, [websiteId, fieldsTemplateId, website, fieldsTemplate]);
 
     return (
         <Box>
@@ -84,7 +84,7 @@ export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplate
                                     overflowY: 'auto',
                                 }}
                             >
-                                {fieldsTemplate?.fields.sort((a, b) => a.position - b.position).map((field) => (
+                                {loadedFieldsTemplate?.fields.sort((a, b) => a.position - b.position).map((field) => (
                                     <Box key={field.id}>
                                         {["text", "email", "number", "date", "multiline"].includes(field.type) && (
                                             <Box>
@@ -95,10 +95,10 @@ export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplate
                                                     name={field.id}
                                                     label={field.title}
                                                     type={field.type !== 'multiline' ? field.type : 'text'}
-                                                    value={getFieldValue(website, field)}
+                                                    value={getFieldValue(loadedWebsite, field)}
                                                     onChange={(e) => {
                                                         //replace the field with the new value based on field.id
-                                                        let newWebsite = {...website};
+                                                        let newWebsite = {...loadedWebsite};
                                                         if (!newWebsite.fieldValues) newWebsite.fieldValues = [];
                                                         let fieldValue = newWebsite.fieldValues.find((f) => f.id === field.id);
                                                         if(fieldValue) {
@@ -110,7 +110,7 @@ export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplate
                                                                 value: e.target.value
                                                             });
                                                         }
-                                                        setWebsite(newWebsite);
+                                                        setLoadedWebsite(newWebsite);
                                                     }}
                                                     multiline={field.type === 'multiline'}
                                                     fullWidth
@@ -126,11 +126,11 @@ export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplate
                                                         id={field.id}
                                                         name={field.id}
                                                         label={field.title}
-                                                        value={getFieldValue(website, field)}
+                                                        value={getFieldValue(loadedWebsite, field)}
                                                         variant={'outlined'}
                                                         onChange={(e) => {
                                                             //replace the field with the new value based on field.id
-                                                            let newWebsite = {...website};
+                                                            let newWebsite = {...loadedWebsite};
                                                             if (!newWebsite.fieldValues) newWebsite.fieldValues = [];
                                                             let fieldValue = newWebsite.fieldValues.find((f) => f.id === field.id);
                                                             if(fieldValue) {
@@ -142,7 +142,7 @@ export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplate
                                                                     value: e.target.value
                                                                 });
                                                             }
-                                                            setWebsite(newWebsite);
+                                                            setLoadedWebsite(newWebsite);
                                                         }}
                                                     >
                                                         {field.options.map((option) => (
@@ -168,7 +168,7 @@ export default function UpdateWebsiteFieldValuesModal({websiteId, fieldsTemplate
                                 setIsSaving(true);
                                 async function save() {
                                     await updateWebsite(websiteId, {
-                                        fieldValues: website?.fieldValues
+                                        fieldValues: loadedWebsite?.fieldValues
                                     });
                                 }
                                 save().then(() => {

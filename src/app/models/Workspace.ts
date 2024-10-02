@@ -48,14 +48,15 @@ const ModelSchema = new Schema<IWorkspace>(
             virtuals: true,
             transform: (_, ret) => {
                 ret.owner = ret.owner.toString();
+                ret.users = ret.users.map((user: any) => user.toString());
                 ret.members = ret.members?.map((member: any) => {
                     delete member._id;
-                    if(!member.user.id) {
+                    if(member.user.constructor.name == "ObjectId") {
                         member.user = member.user.toString();
                     }
                     member.roles = member.roles?.map((role: any) => {
                         delete role._id;
-                        if(!role.id) {
+                        if(role.constructor.name == "ObjectId") {
                             role = role.toString();
                         }
                         return role;

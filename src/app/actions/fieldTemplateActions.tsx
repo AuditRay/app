@@ -2,9 +2,12 @@
 import {getUser} from "@/app/actions/getUser";
 import {revalidatePath} from "next/cache";
 import {IFieldsTemplate, FieldsTemplate} from "@/app/models";
+import {connectMongo} from "@/app/lib/database";
 // @ts-ignore
 
 export async function getFieldsTemplate(fieldsTemplateId: string): Promise<IFieldsTemplate> {
+    await connectMongo();
+    console.log('getFieldsTemplate');
     const user = await getUser();
     if(!user) {
         throw new Error('Unauthorized');
@@ -17,6 +20,8 @@ export async function getFieldsTemplate(fieldsTemplateId: string): Promise<IFiel
 }
 
 export async function getWorkspaceFieldTemplate(): Promise<IFieldsTemplate> {
+    await connectMongo();
+    console.log('getWorkspaceFieldTemplate');
     const user = await getUser();
     if(!user) {
         throw new Error('Unauthorized');
@@ -58,6 +63,8 @@ export async function getWorkspaceFieldTemplate(): Promise<IFieldsTemplate> {
 }
 
 export async function getFieldsTemplates(): Promise<IFieldsTemplate[]> {
+    await connectMongo();
+    console.log('getFieldsTemplates');
     const user = await getUser();
     if(!user) {
         throw new Error('Unauthorized');
@@ -73,6 +80,8 @@ export async function getFieldsTemplates(): Promise<IFieldsTemplate[]> {
 }
 
 export async function createFieldsTemplate(fieldTemplateData: Partial<IFieldsTemplate>) {
+    await connectMongo();
+    console.log('createFieldsTemplate');
     const user = await getUser();
     if(!user) {
         throw new Error('Unauthorized');
@@ -91,6 +100,8 @@ export async function createFieldsTemplate(fieldTemplateData: Partial<IFieldsTem
 }
 
 export async function deleteFieldsTemplate(fieldTemplateId: string) {
+    await connectMongo();
+    console.log('deleteFieldsTemplate');
     const user = await getUser();
     if (!user) {
         throw new Error('User not found');
@@ -107,6 +118,8 @@ export async function deleteFieldsTemplate(fieldTemplateId: string) {
 }
 
 export async function updateFieldsTemplate(fieldTemplateId: string, fieldTemplateData: Partial<IFieldsTemplate>) {
+    await connectMongo();
+    console.log('updateFieldsTemplate');
     const user = await getUser();
     if(!user) {
         throw new Error('Unauthorized');

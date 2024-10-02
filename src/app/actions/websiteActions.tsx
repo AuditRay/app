@@ -9,16 +9,16 @@ import {revalidatePath} from "next/cache";
 import * as WebappalyzerJS from 'webappalyzer-js';
 import {jwtVerify, SignJWT} from "jose";
 import {DataSources, IWebsiteInfo, UpdateInfo, WebsiteInfo} from "@/app/models/WebsiteInfo";
+import {WebsiteInfoFull} from "@/app/models/WebsiteInfoFull";
 import {detailedDiff} from 'deep-object-diff';
 import OpenAI from 'openai';
 import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
 import {IUser, User} from "@/app/models";
-import {Model} from "mongoose";
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
-       throw new Error('Missing OPENAI_API_KEY');
+        throw new Error('Missing OPENAI_API_KEY');
     }
     return new OpenAI({apiKey: process.env.OPENAI_API_KEY});
 }
@@ -33,12 +33,12 @@ export type WebsiteTokenPayload = {
 }
 
 export async function createKey(websiteId: string) {
-    return encrypt({ websiteId });
+    return encrypt({websiteId});
 }
 
 export async function encrypt(payload: WebsiteTokenPayload) {
     return new SignJWT(payload)
-        .setProtectedHeader({ alg: 'HS256' })
+        .setProtectedHeader({alg: 'HS256'})
         .setIssuedAt()
         .setExpirationTime('7d')
         .sign(encodedKey)
@@ -46,7 +46,7 @@ export async function encrypt(payload: WebsiteTokenPayload) {
 
 export async function decrypt(session: string | undefined = '') {
     try {
-        const { payload } = await jwtVerify<WebsiteTokenPayload>(session, encodedKey, {
+        const {payload} = await jwtVerify<WebsiteTokenPayload>(session, encodedKey, {
             algorithms: ['HS256'],
         })
         return payload
@@ -154,6 +154,8 @@ export async function generateWebsiteAISeoSummary(websiteId: string) {
 }
 
 export async function getLatestWebsiteInfo(websiteId: string): Promise<IWebsiteInfo | null> {
+    await connectMongo();
+    console.log('getLatestWebsiteInfo');
     const user = await getUser();
     const website = await Website.findOne({_id: websiteId});
     //get existing WebsiteInfo components
@@ -167,6 +169,8 @@ export async function getLatestWebsiteInfo(websiteId: string): Promise<IWebsiteI
 
 
 export async function fetchUpdates(websiteId: string, sync: boolean = false): Promise<IWebsiteInfo | null> {
+    await connectMongo();
+    console.log('fetchUpdates');
     const user = await getUser();
     const website = await Website.findOne({_id: websiteId});
     //get existing WebsiteInfo components
@@ -175,14 +179,75 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
     if (!website || !website.url || !website.token) {
         return null;
     }
+
+    function prepareAvailableReleases(currentRelease: string, availableReleases: UpdateInfo['available_releases']): UpdateInfo['available_releases'] {
+        if(availableReleases.length <= 20) {
+            return availableReleases;
+        }
+        //
+        // get the current release index,
+        // if the current release index is in the first 5 releases, show the first 5 releases, and the last 5 releases
+        // if the current release index is in the last 5 releases, show the first 5 releases, and the last 5 releases
+        // if the current release index is in the middle, show the first 5 releases, the last 5 releases, and the current release with 3 releases before and after
+        // add "... n more versions truncated" in between slices
+        const currentReleaseIndex = availableReleases.findIndex((release) => release.version === currentRelease);
+        if(currentReleaseIndex <= 5) {
+            const slicedFirstReleases = availableReleases.slice(0, 5);
+            const slicedLastReleases = availableReleases.slice(availableReleases.length - 5, availableReleases.length);
+            const truncatedReleases = availableReleases.length - 10;
+            return [
+                ...slicedFirstReleases,
+                {
+                    name: `...`,
+                    version: `... and ${truncatedReleases} more versions truncated ...`,
+                },
+                ...slicedLastReleases
+            ];
+        } else if(currentReleaseIndex >= availableReleases.length - 5) {
+            const slicedFirstReleases = availableReleases.slice(0, 5);
+            const slicedLastReleases = availableReleases.slice(availableReleases.length - 5, availableReleases.length);
+            const truncatedReleases = availableReleases.length - 10;
+            return [
+                ...slicedFirstReleases,
+                {
+                    name: '...',
+                    version: `... and ${truncatedReleases} more versions truncated ...`,
+                },
+                ...slicedLastReleases
+            ];
+        } else {
+            const slicedFirstReleases = availableReleases.slice(0, 5);
+            const slicedLastReleases = availableReleases.slice(availableReleases.length - 5, availableReleases.length);
+            const currentReleaseSliced = availableReleases.slice(currentReleaseIndex - 3, currentReleaseIndex + 4);
+            //get how many releases are truncated between the first and current release
+            const truncatedFirstReleases = (currentReleaseIndex + 1) - 3 - 5;
+            //get how many releases are truncated between the current and last release
+            const truncatedLastReleases = availableReleases.length - 8 - (currentReleaseIndex + 1);
+            return [
+                ...slicedFirstReleases,
+                {
+                    name: '...',
+                    version: `... and ${truncatedFirstReleases} more versions truncated ...`,
+                },
+                ...currentReleaseSliced,
+                {
+                    name: '...',
+                    version: `... and ${truncatedLastReleases} more versions truncated ...`,
+                },
+                ...slicedLastReleases
+            ];
+        }
+    }
+
     async function getWebsiteInfo(websiteId: string) {
+        console.log("test");
         const website = await Website.findOne({_id: websiteId});
         if (!website || !website.url || !website.token) {
             return null;
         }
 
         //check if the website url ends with a slash, if not add a slash
-        const websiteUrl= website.url.endsWith('/') ? website.url : `${website.url}/`;
+        const websiteUrl = website.url.endsWith('/') ? website.url : `${website.url}/`;
         // Fetch updates from the website url using fetch library on the route /monit/health,
         // try to use the website.url if it's not working then website.url/web, use post method with body as form data
         let response = await fetch(`${websiteUrl}monit/health`, {
@@ -220,28 +285,76 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         //remove available_updates from dataSources
         delete dataSources.available_updates;
         //format dataSources
-        const formattedDataSources: DataSources[] = Object.keys(dataSources).map((key) => {
+        const formattedDataSourcesFull: DataSources[] = Object.keys(dataSources).map((key) => {
             return {
                 id: key,
                 label: dataSources[key].label,
                 description: dataSources[key].description,
-                data: dataSources[key].data.map((data: any) => {
+                data: dataSources[key].data.map((data: DataSources['data'][number] & {time: any}) => {
                     const newData = {...data};
                     delete newData.time;
                     return newData;
                 })
             }
         });
+        const formattedDataSources: DataSources[] = Object.keys(dataSources).map((key) => {
+            return {
+                id: key,
+                label: dataSources[key].label,
+                description: dataSources[key].description,
+                data: dataSources[key].data.map((data: DataSources['data'][number] & {time: any}) => {
+                    const newData = {...data};
+                    newData.detailsFindings = newData.detailsFindings?.map((finding: any) => {
+                        if(finding.items?.length >= 50) {
+                            const length = finding.items.length;
+                            const last25Items = finding.items.slice(length - 25, length);
+                            finding.items = finding.items.slice(0, 25);
+                            finding.items.push(`... and ${length - 50} more items truncated ...`);
+                            finding.items.push(...last25Items);
+                        }
+                        return finding;
+                    });
+                    delete newData.detailsExtra;
+                    delete newData.time;
+                    return newData;
+                })
+            }
+        });
+
+        const formattedFrameworkInfo: UpdateInfo = {
+            ...data.available_updates.data.framework_info,
+            available_releases: prepareAvailableReleases(
+                data.available_updates.data.framework_info.current_version,
+                data.available_updates.data.framework_info.available_releases
+            ),
+        }
+
+        const formattedWebsiteComponentsInfo: UpdateInfo[] = data.available_updates.data.website_components.map((component: UpdateInfo) => {
+            return {
+                ...component,
+                available_releases: prepareAvailableReleases(
+                    component.current_version,
+                    component.available_releases
+                ),
+            }
+        });
 
         const preparedData = {
             website: websiteId,
             configData: {},
-            frameworkInfo: data.available_updates.data.framework_info,
-            websiteComponentsInfo: data.available_updates.data.website_components,
+            frameworkInfo: formattedFrameworkInfo,
+            websiteComponentsInfo: formattedWebsiteComponentsInfo,
             dataSourcesInfo: formattedDataSources,
         }
-        if(websiteLatestInfo) {
 
+        const preparedDataFull = {
+            website: websiteId,
+            configData: {},
+            frameworkInfo: data.available_updates.data.framework_info,
+            websiteComponentsInfo: data.available_updates.data.website_components,
+            dataSourcesInfo: formattedDataSourcesFull,
+        }
+        if (websiteLatestInfo) {
             // if(!website.aiSummary) {
             //     generateWebsiteAIUpdatesSummary(websiteId).then(() => {
             //         revalidatePath(`/website/${websiteId}`);
@@ -258,7 +371,6 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             //     });
             // }
             const infoObj = websiteLatestInfo.toJSON();
-
             const compare = detailedDiff({
                 website: infoObj.website,
                 configData: infoObj.configData || {},
@@ -272,9 +384,11 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             const updated = Object.keys(compare.updated).length;
             const updatedKeys = Object.keys(compare.updated);
             const newVersion = added > 0 || deleted > 0 || updatedKeys.includes('frameworkInfo') || updatedKeys.includes('websiteComponentsInfo') || (updated > 2 && updatedKeys.includes('dataSourcesInfo'));
-            if(newVersion) {
+            if (newVersion) {
                 const newWebsiteInfo = new WebsiteInfo(preparedData);
+                const newWebsiteInfoFull = new WebsiteInfoFull(preparedDataFull);
                 await newWebsiteInfo.save();
+                await newWebsiteInfoFull.save();
                 // generateWebsiteAIUpdatesSummary(websiteId).then(() => {
                 //     revalidatePath(`/website/${websiteId}`);
                 // });
@@ -286,7 +400,9 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             }
         } else {
             const newWebsiteInfo = new WebsiteInfo(preparedData);
+            const newWebsiteInfoFull = new WebsiteInfoFull(preparedDataFull);
             await newWebsiteInfo.save();
+            await newWebsiteInfoFull.save();
             return newWebsiteInfo.toJSON();
         }
     }
@@ -302,6 +418,8 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
 }
 
 export async function updateWebsite(websiteId: string, updateData: Partial<IWebsite>): Promise<IWebsite | null> {
+    await connectMongo();
+    console.log('updateWebsite');
     const user = await getUser();
     const website = await Website.findOne({_id: websiteId, user: user.id});
     if (!website) {
@@ -317,9 +435,10 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
 }
 
 export async function getWebsite(websiteId: string): Promise<IWebsite | null> {
-    const user = await getUser();
+    await connectMongo();
+    console.log('getWebsite', websiteId);
     const website = await Website.findOne({_id: websiteId});
-    if(website && !website.aiSEOSummary) {
+    if (website && !website.aiSEOSummary) {
         // generateWebsiteAISeoSummary(websiteId).then(() => {
         //     revalidatePath(`/website/${websiteId}`);
         // });
@@ -328,10 +447,19 @@ export async function getWebsite(websiteId: string): Promise<IWebsite | null> {
 }
 
 export async function getWebsiteInfo(websiteId: string): Promise<IWebsite | null> {
+    await connectMongo();
+    console.log('getWebsiteInfo');
     const websiteInfo = await WebsiteInfo.findOne({_id: websiteId}).sort({createdAt: -1});
     return websiteInfo?.toJSON() ?? null;
 }
-export type frameWorkUpdateStatus = 'Up to Date' | 'Needs Update' | 'Security Update' | 'Revoked' | 'Unknown' | 'Not Supported';
+
+export type frameWorkUpdateStatus =
+    'Up to Date'
+    | 'Needs Update'
+    | 'Security Update'
+    | 'Revoked'
+    | 'Unknown'
+    | 'Not Supported';
 export type tableSourceField = {
     type: 'string' | 'boolean' | 'version' | 'status',
     status?: string,
@@ -357,25 +485,28 @@ const versionTypeMapping = {
     UNKNOWN: 'Unknown',
     NOT_SUPPORTED: 'Not Supported',
 }
+
 export async function countWebsites(userId: string): Promise<number> {
+    await connectMongo();
+    console.log('countWebsites');
     let user = await getUser();
-    if(!userId) {
+    if (!userId) {
         userId = user.id;
     } else {
         user = await User.findOne({_id: userId}) || user;
     }
-    if(!user.currentSelectedWorkspace) {
+    if (!user.currentSelectedWorkspace) {
         return Website.countDocuments({user: userId});
     } else {
         return Website.countDocuments({workspace: user.currentSelectedWorkspace});
     }
 }
-export async function getWebsitesTable(userId?: string): Promise<{
-    data: IWebsiteTable[];
-    extraHeaders: { id: string, label: string }[];
-}> {
+
+export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsiteTable[]; extraHeaders: { id: string, label: string }[]; }> {
+    await connectMongo();
+    console.log('getWebsitesTable');
     let user = await getUser();
-    if(!userId) {
+    if (!userId) {
         userId = user.id;
     } else {
         user = await User.findOne({_id: userId}) || user;
@@ -383,7 +514,7 @@ export async function getWebsitesTable(userId?: string): Promise<{
     console.log('user', user.currentSelectedWorkspace)
     console.time('getWebsitesTable');
     let websites = [];
-    if(!user.currentSelectedWorkspace) {
+    if (!user.currentSelectedWorkspace) {
         websites = await Website.find({user: userId});
     } else {
         websites = await Website.find({
@@ -391,17 +522,17 @@ export async function getWebsitesTable(userId?: string): Promise<{
         });
     }
     const websitesData: IWebsiteTable[] = [];
-    const extraHeaders: { id: string, label: string}[] = [
+    const extraHeaders: { id: string, label: string }[] = [
         {id: 'frameworkVersion', label: 'Framework'},
     ];
     const websiteInfos: Record<string, IWebsiteInfo> = {};
     for (const website of websites) {
         const websiteInfo = await WebsiteInfo.find({website: website._id}).sort({createdAt: -1}).limit(1);
 
-        if(websiteInfo[0]){
+        if (websiteInfo[0]) {
             websiteInfos[website._id.toString()] = websiteInfo[0];
         }
-        if(websiteInfo[0]?.websiteComponentsInfo) {
+        if (websiteInfo[0]?.websiteComponentsInfo) {
             for (const component of websiteInfo[0].websiteComponentsInfo) {
                 if (!extraHeaders.find((header) => header.id === component.name)) {
                     extraHeaders.push({id: component.name, label: component.title});
@@ -409,9 +540,9 @@ export async function getWebsitesTable(userId?: string): Promise<{
             }
         }
 
-        if(websiteInfo[0]?.dataSourcesInfo) {
+        if (websiteInfo[0]?.dataSourcesInfo) {
             for (const component of websiteInfo[0].dataSourcesInfo) {
-                if(component.data) {
+                if (component.data) {
                     for (const data of component.data) {
                         if (!extraHeaders.find((header) => header.id === data.id)) {
                             extraHeaders.push({id: data.id, label: `${component.label} - ${data.label}`});
@@ -422,6 +553,7 @@ export async function getWebsitesTable(userId?: string): Promise<{
         }
     }
     console.timeEnd('getWebsitesTable');
+    console.time('process websitesTable');
     for (const website of websites) {
         const websiteObj = website.toJSON();
         const websiteInfo = websiteInfos[websiteObj.id.toString()];
@@ -431,19 +563,19 @@ export async function getWebsitesTable(userId?: string): Promise<{
         const componentsWithSecurityUpdates = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_SECURE') || [];
         const frameWorkUpdateStatus = websiteInfo?.frameworkInfo.type || "UNKNOWN";
         let status: IWebsiteTable['frameWorkUpdateStatus'] = "Up to Date";
-        if(componentsWithUpdates?.length || frameWorkUpdateStatus === "NOT_CURRENT") {
+        if (componentsWithUpdates?.length || frameWorkUpdateStatus === "NOT_CURRENT") {
             status = "Needs Update";
         }
-        if(componentsWithSecurityUpdates?.length || frameWorkUpdateStatus === "NOT_SECURE") {
+        if (componentsWithSecurityUpdates?.length || frameWorkUpdateStatus === "NOT_SECURE") {
             status = "Security Update";
         }
-        if(frameWorkUpdateStatus === "REVOKED") {
+        if (frameWorkUpdateStatus === "REVOKED") {
             status = "Revoked";
         }
-        if(frameWorkUpdateStatus === "UNKNOWN") {
+        if (frameWorkUpdateStatus === "UNKNOWN") {
             status = "Unknown";
         }
-        if(frameWorkUpdateStatus === "NOT_SUPPORTED") {
+        if (frameWorkUpdateStatus === "NOT_SUPPORTED") {
             status = "Not Supported";
         }
         const siteData: IWebsiteTable = {
@@ -454,7 +586,7 @@ export async function getWebsitesTable(userId?: string): Promise<{
             componentsWithSecurityUpdates,
             frameWorkUpdateStatus: status
         }
-        if(websiteInfo?.frameworkInfo){
+        if (websiteInfo?.frameworkInfo) {
             siteData.frameworkVersion = {
                 type: "version",
                 status: versionTypeMapping[websiteInfo.frameworkInfo?.type] || 'Unknown',
@@ -462,10 +594,10 @@ export async function getWebsitesTable(userId?: string): Promise<{
                 component: websiteInfo.frameworkInfo,
             }
         }
-        if(websiteInfo?.websiteComponentsInfo) {
+        if (websiteInfo?.websiteComponentsInfo) {
             for (const header of extraHeaders) {
                 const component = websiteInfo.websiteComponentsInfo.find((component) => component.name === header.id);
-                if(!component) continue;
+                if (!component) continue;
                 siteData[header.id] = {
                     type: "version",
                     status: versionTypeMapping[component?.type] || 'Unknown',
@@ -474,12 +606,12 @@ export async function getWebsitesTable(userId?: string): Promise<{
                 };
             }
         }
-        if(websiteInfo?.dataSourcesInfo) {
+        if (websiteInfo?.dataSourcesInfo) {
             for (const dataSource of websiteInfo.dataSourcesInfo) {
-                if(dataSource.data) {
+                if (dataSource.data) {
                     for (const header of extraHeaders) {
                         const data = dataSource.data.find((data) => data.id === header.id);
-                        if(data?.status) {
+                        if (data?.status) {
                             siteData[header.id] = {
                                 type: "status",
                                 status: data.status,
@@ -487,10 +619,10 @@ export async function getWebsitesTable(userId?: string): Promise<{
                                 raw: data,
                                 url: websiteObj.url,
                             };
-                            if(data?.detailsFindings) {
+                            if (data?.detailsFindings) {
                                 siteData[header.id]['info'] = data.detailsFindings.map((finding) => finding.value).join(' ');
                             }
-                        } else if(data?.detailsFindings) {
+                        } else if (data?.detailsFindings) {
                             siteData[header.id] = {
                                 type: "text",
                                 value: data.detailsFindings.map((finding) => finding.value).join(' '),
@@ -504,7 +636,7 @@ export async function getWebsitesTable(userId?: string): Promise<{
         }
 
         for (const header of extraHeaders) {
-            if(!siteData[header.id]) {
+            if (!siteData[header.id]) {
                 siteData[header.id] = {
                     type: "text",
                     value: 'N/A',
@@ -514,7 +646,7 @@ export async function getWebsitesTable(userId?: string): Promise<{
         websitesData.push(siteData);
     }
 
-    console.log('websitesData', websitesData);
+    console.timeEnd('process websitesTable');
     return {
         data: websitesData,
         extraHeaders: extraHeaders
@@ -522,17 +654,19 @@ export async function getWebsitesTable(userId?: string): Promise<{
 }
 
 export async function getWebsites(userId?: string): Promise<IWebsite[]> {
+    await connectMongo();
+    console.log('getWebsites');
     let user: IUser | null = await getUser();
-    if(userId) {
+    if (userId) {
         user = await User.findOne({_id: userId});
     }
-    if(!user) {
+    if (!user) {
         throw new Error('User not found');
     }
     let websites: any[] = [];
 
     console.log('websites', websites);
-    if(!user.currentSelectedWorkspace) {
+    if (!user.currentSelectedWorkspace) {
         websites = await Website.find({user: user.id});
     } else {
         websites = await Website.find({workspace: user.currentSelectedWorkspace});
@@ -541,18 +675,28 @@ export async function getWebsites(userId?: string): Promise<IWebsite[]> {
 }
 
 export async function getWebsitesListing(): Promise<IWebsite[]> {
+    await connectMongo();
+    console.log('getWebsitesListing');
     let user: IUser = await getUser();
-    if(!user) {
+    if (!user) {
         throw new Error('User not found');
     }
-    let websites = await Website.find({workspace: user.currentSelectedWorkspace}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
-    if(!user.currentSelectedWorkspace) {
+    let websites = await Website.find({workspace: user.currentSelectedWorkspace}, {
+        _id: 1,
+        title: 1,
+        url: 1,
+        type: 1,
+        favicon: 1
+    });
+    if (!user.currentSelectedWorkspace) {
         websites = await Website.find({user: user.id}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
     }
     return websites.map(website => website.toJSON());
 }
 
 export async function getWebsiteViews(websiteId: string): Promise<DefaultView[]> {
+    await connectMongo();
+    console.log('getWebsiteViews');
     const website = await Website.findOne({_id: websiteId});
     if (!website) return [];
     const websiteViews = await WebsiteView.find({website: websiteId});
@@ -572,6 +716,8 @@ export async function getWebsiteViews(websiteId: string): Promise<DefaultView[]>
 }
 
 export async function createWebsite(state: CreateWebsiteState, formData: FormData) {
+    await connectMongo();
+    console.log('createWebsite');
     const user = await getUser();
     const validatedFields = CreateWebsiteSchema.safeParse({
         url: formData.get('url'),
@@ -590,7 +736,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         }
     }
 
-    const { url, tags, syncConfig } = validatedFields.data
+    const {url, tags, syncConfig} = validatedFields.data
 
     await connectMongo();
 
@@ -671,15 +817,15 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         const site = await wappalyzer.open(url, headers, storage)
 
         const results = await site.analyze()
-        if(results.technologies) {
-            updatedWebsite.set("technologies",  results.technologies);
-            if(updatedWebsite.technologies.length > 0) {
+        if (results.technologies) {
+            updatedWebsite.set("technologies", results.technologies);
+            if (updatedWebsite.technologies.length > 0) {
                 const checkDrupal = updatedWebsite.technologies.find((tech) => tech.slug === 'drupal');
                 const checkCloudFlare = updatedWebsite.technologies.find((tech) => tech.slug === 'cloudflare');
                 const checkVarbase = updatedWebsite.technologies.find((tech) => tech.slug === 'varbase');
                 const checkOther = updatedWebsite.technologies.find((tech) => ['wordpress', 'nodejs', 'react'].includes(tech.slug));
 
-                if(checkDrupal) {
+                if (checkDrupal) {
                     updatedWebsite.type = {
                         name: checkDrupal.name,
                         slug: checkDrupal.slug,
@@ -687,7 +833,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
                         icon: `${checkDrupal.icon?.endsWith('.svg') ? 'converted/' + checkDrupal.icon?.replace('.svg', '.png') : `${checkDrupal.icon}`}`,
                         subTypes: []
                     }
-                    if(checkVarbase) {
+                    if (checkVarbase) {
                         updatedWebsite.type.subTypes.push({
                             name: 'Varbase',
                             slug: 'varbase',
@@ -696,7 +842,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
                             subTypes: []
                         })
                     }
-                } else if(checkOther) {
+                } else if (checkOther) {
                     updatedWebsite.type = {
                         name: checkOther.name,
                         slug: checkOther.slug,
@@ -714,7 +860,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
                     }
                 }
 
-                if(checkCloudFlare) {
+                if (checkCloudFlare) {
                     updatedWebsite.type.subTypes.push({
                         name: 'Cloudflare',
                         slug: 'cloudflare',

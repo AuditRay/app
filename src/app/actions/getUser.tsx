@@ -4,8 +4,11 @@ import {getWorkspaces} from "@/app/actions/workspaceActions";
 import {IRole, Role, User} from "@/app/models";
 import {AdminRole} from "@/app/premissions/roles/Admin";
 import {MemberRole} from "@/app/premissions/roles/Member";
+import {connectMongo} from "@/app/lib/database";
 
 export async function getUser(fullUser = false) {
+    await connectMongo();
+    console.log('getUser');
     const session = await verifySession();
     const user = session.user;
     if(user && fullUser) {
@@ -38,6 +41,8 @@ export async function getUser(fullUser = false) {
 }
 
 export async function getFullUser(userId: string) {
+    await connectMongo();
+    console.log('getFullUser');
     const user = (await User.findOne({_id: userId}))?.toJSON();
     if(user) {
         user.workspaces = await getWorkspaces(user.id);
@@ -65,6 +70,5 @@ export async function getFullUser(userId: string) {
         }
         user.roles = roles;
     }
-    console.log('user', user);
     return JSON.parse(JSON.stringify(user));
 }

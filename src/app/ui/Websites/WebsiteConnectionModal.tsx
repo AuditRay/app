@@ -8,8 +8,9 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import {createKey, getWebsite, updateWebsite} from "@/app/actions/websiteActions";
 import {useEffect} from "react";
+import {IWebsite} from "@/app/models";
 
-export default function WebsiteConnectionTokenModal({websiteId}: {websiteId: string}) {
+export default function WebsiteConnectionTokenModal({websiteId, website}: {websiteId: string, website?: IWebsite}) {
     const [open, setOpen] = useState(false);
     const [token, setToken] = useState('');
     const handleOpen = () => {
@@ -21,18 +22,18 @@ export default function WebsiteConnectionTokenModal({websiteId}: {websiteId: str
 
     useEffect(() => {
         async function checkToken(){
-            const website = await getWebsite(websiteId);
-            if(!website) return '';
-            if (!website.token) {
-                const token = await createKey(website.id);
-                await updateWebsite(website.id, {token});
+            const loadedWebsite = website || await getWebsite(websiteId);
+            if(!loadedWebsite) return '';
+            if (!loadedWebsite.token) {
+                const token = await createKey(loadedWebsite.id);
+                await updateWebsite(loadedWebsite.id, {token});
                 setToken(token);
             } else {
-                setToken(website.token);
+                setToken(loadedWebsite.token);
             }
         }
         websiteId && checkToken();
-    }, [websiteId]);
+    }, [websiteId, website]);
 
     return (
         <div>

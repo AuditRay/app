@@ -9,7 +9,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {IFieldsTemplate, IMemberPopulated, IUser} from "@/app/models";
+import {IFieldsTemplate, IMemberPopulated, IUser, IWebsite} from "@/app/models";
 import * as React from "react";
 import Typography from "@mui/material/Typography";
 import {deleteFieldsTemplate} from "@/app/actions/fieldTemplateActions";
@@ -45,6 +45,7 @@ export default function UpdateWebsiteInfoModal({websiteId}: {websiteId: string})
                     <Typography variant={'body1'}>Are you sure you want to update the website info?</Typography>
                     <Typography variant={'body2'} color={"error"}>This action could potentially place a performance load
                         on your website.</Typography>
+                    <Typography variant={'body2'} sx={{mt: 2, fontWeight: "bold"}}>This will reload after the update finishes.</Typography>
                     {error && <Typography color={'error'}>{error}</Typography>}
                 </DialogContent>
                 <DialogActions>

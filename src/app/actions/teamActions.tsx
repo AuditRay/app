@@ -2,9 +2,11 @@
 import {ITeam, ITeamPopulated, IUser, IWebsite, Team, Workspace} from "@/app/models";
 import {getUser} from "@/app/actions/getUser";
 import {revalidatePath} from "next/cache";
-
+import {connectMongo} from "@/app/lib/database";
 
 export async function createTeam(teamData: Partial<ITeam>) {
+    await connectMongo();
+    console.log('createTeam');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -31,7 +33,10 @@ export async function createTeam(teamData: Partial<ITeam>) {
         data: savedTeam.toJSON()
     }
 }
+
 export async function getTeams(): Promise<ITeamPopulated[]> {
+    await connectMongo();
+    console.log('getTeams');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -79,7 +84,10 @@ export async function getTeams(): Promise<ITeamPopulated[]> {
 
     return teams.map(team => team.toJSON());
 }
+
 export async function getTeam(teamId: string): Promise<ITeam> {
+    await connectMongo();
+    console.log('getTeam');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -97,7 +105,10 @@ export async function getTeam(teamId: string): Promise<ITeam> {
     }
     return team.toJSON();
 }
+
 export async function updateTeam(teamId: string, teamData: Partial<ITeam>) {
+    await connectMongo();
+    console.log('updateTeam');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -125,7 +136,10 @@ export async function updateTeam(teamId: string, teamData: Partial<ITeam>) {
         data: savedTeam.toJSON()
     }
 }
+
 export async function deleteTeam(teamId: string) {
+    await connectMongo();
+    console.log('deleteTeam');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -147,7 +161,10 @@ export async function deleteTeam(teamId: string) {
         data: team.toJSON()
     }
 }
+
 export async function getUserTeams(userId: string, workspaceId: string): Promise<ITeam[]> {
+    await connectMongo();
+    console.log('getUserTeams');
     const teams = await Team.find({workspace: workspaceId, members: { $elemMatch: { user: userId } }});
     return teams.map(team => team.toJSON());
 }

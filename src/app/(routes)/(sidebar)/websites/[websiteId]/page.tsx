@@ -69,12 +69,12 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                 ))}
                             </Box>
                             <Box sx={{textAlign: 'right'}}>
-                                <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id}></UpdateWebsiteFieldValuesModal>
+                                <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id} website={website} fieldsTemplate={workspaceFieldTemplateData}></UpdateWebsiteFieldValuesModal>
                             </Box>
                         </>
                     ) : website && workspaceFieldTemplateData.fields.length && (
                         <Box sx={{textAlign: 'right'}}>
-                            <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id}></UpdateWebsiteFieldValuesModal>
+                            <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id} website={website} fieldsTemplate={workspaceFieldTemplateData}></UpdateWebsiteFieldValuesModal>
                         </Box>
                     )}
                 </Paper>
@@ -93,9 +93,9 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                             </Box>
                             <Box sx={{display: 'flex', width: '100%'}}>
                                 <Box>
-                                    {website.aiSummary && (
-                                        <CollapseMD title={'Updates Summary'} md={website.aiSummary}/>
-                                    )}
+                                    {/*{website.aiSummary && (*/}
+                                    {/*     <CollapseMD title={'Updates Summary'} md={website.aiSummary}/>*/}
+                                    {/*)}*/}
                                 </Box>
                                 <Box sx={{textAlign: 'right', ml: 'auto'}}>
                                     <Typography variant={'overline'} sx={{mb: '20px'}}>
@@ -141,27 +141,21 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
             </Grid>
             <Grid item xs={4}>
                 {website && (
-                    <PermissionsAccessCheck permission={'Edit Website'} data={{website: website}}>
-                        <Paper
-                            sx={{
-                                p: 2,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                mb: 2
-                            }}
-                        >
+                    <Paper
+                        sx={{
+                            p: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            mb: 2
+                        }}
+                    >
 
-                                <div>
-
-                                        <EditWebsiteModal websiteId={website.id}/>
-                                        <PermissionsAccessCheck permission={'View Website Connection tokens'} data={{website: website}}>
-                                            <WebsiteConnectionTokenModal websiteId={website.id}/>
-                                        </PermissionsAccessCheck>
-                                        <UpdateWebsiteInfoModal websiteId={website.id}/>
-
-                                </div>
-                        </Paper>
-                    </PermissionsAccessCheck>
+                        <div>
+                            <EditWebsiteModal websiteId={website.id} website={website} />
+                            <WebsiteConnectionTokenModal websiteId={website.id} website={website} />
+                            <UpdateWebsiteInfoModal websiteId={website.id} />
+                        </div>
+                    </Paper>
                 )}
 
                 <Paper
@@ -212,9 +206,9 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                             {website.type && (
                                 <Box sx={{mb: '50px'}}>
 
-                                    {website.aiSEOSummary && (
-                                        <CollapseMD title={'Website General Summary'} md={website.aiSEOSummary}/>
-                                    )}
+                                    {/*{website.aiSEOSummary && (*/}
+                                    {/*    <CollapseMD title={'Website General Summary'} md={website.aiSEOSummary}/>*/}
+                                    {/*)}*/}
                                     <Typography variant={'h2'} sx={{mb: '20px'}}>
                                         Main Technology
                                     </Typography>

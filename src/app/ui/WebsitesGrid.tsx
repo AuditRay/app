@@ -14,7 +14,7 @@ import {
 } from '@mui/x-data-grid-pro';
 import {diff} from 'deep-object-diff';
 import {IWebsite} from "@/app/models/Website";
-import {Box, Chip, LinearProgress, Link} from "@mui/material";
+import {Box, Chip, LinearProgress} from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import {useCallback, useEffect} from "react";
 import Button from "@mui/material/Button";
@@ -30,6 +30,7 @@ import Typography from "@mui/material/Typography";
 import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import ComponentInfo from "@/app/ui/ComponentInfo";
 import {UpdateInfo} from "@/app/models";
+import Link from "@/app/ui/Link";
 
 export type GridRow = {
     id: number|string;
@@ -74,7 +75,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                     <>
                         <Box>
                             <Link href={`/websites/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
-                                <Box component={'img'}  src={`${params.row.favicon}`} alt={params.value} sx={{width: '20px', verticalAlign: 'middle', mr: '10px'}} />{params.value}
+                                <Box component={'img'}  src={`${params.row.favicon ?? '/tech/other.png'}`} alt={params.value} sx={{width: '20px', verticalAlign: 'middle', mr: '10px'}} />{params.value}
                             </Link>
                             <Link href={params.row.url} target={'_blank'}>
                                 <LaunchIcon fontSize={'small'} sx={{verticalAlign: 'middle', ml: '5px'}}></LaunchIcon>

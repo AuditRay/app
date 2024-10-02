@@ -16,6 +16,7 @@ import RightDrawer from "@/app/ui/RightDrawer";
 import {Suspense} from "react";
 import UpdateWebsiteFieldValuesModal from "@/app/ui/FieldsTemplate/UpdateWebsiteFieldValuesModal";
 import {FieldsTemplate} from "@/app/models";
+import Loading from "@/app/loading";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string, viewId: string } }) {
     const { websiteId, viewId } = params;
@@ -56,7 +57,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
     }
     return (
         <>
-            <Suspense fallback={<p>Loading Data...</p>}>
+            <Suspense fallback={<Box sx={{textAlign:"center", width:"100%", mt: 20}}>Please wait loading data...</Box>}>
                 <Grid item xs={8}>
                     <Paper
                         sx={{

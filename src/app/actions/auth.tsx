@@ -15,11 +15,15 @@ import { createSession } from "@/app/lib/session";
 import { redirect } from "next/navigation";
 
 export async function getUserByInviteToken(inviteToken: string): Promise<IUser | null> {
+    await connectMongo();
+    console.log('getUserByInviteToken');
     const user = await User.findOne({ inviteToken });
     return user?.toJSON() || null;
 }
 
 export async function login(state: LoginFormState, formData: FormData) {
+    await connectMongo();
+    console.log('login');
     const validatedFields = LoginFormSchema.safeParse({
         email: formData.get('email'),
         password: formData.get('password'),
@@ -33,7 +37,6 @@ export async function login(state: LoginFormState, formData: FormData) {
 
     const { email, password } = validatedFields.data
 
-    await connectMongo();
     const user = await User.findOne({ email });
     if (!user) {
         return {
@@ -51,7 +54,10 @@ export async function login(state: LoginFormState, formData: FormData) {
     await createSession(user.id)
     redirect('/');
 }
+
 export async function signup(state: FormState, formData: FormData) {
+    await connectMongo();
+    console.log('signup');
     // Validate form fields
     const validatedFields = SignupFormSchema.safeParse({
         firstName: formData.get('firstName'),
@@ -94,6 +100,8 @@ export async function signup(state: FormState, formData: FormData) {
 }
 
 export async function join(state: JoinFormState, formData: FormData) {
+    await connectMongo();
+    console.log('join');
     // Validate form fields
     const validatedFields = JoinFormSchema.safeParse({
         firstName: formData.get('firstName'),

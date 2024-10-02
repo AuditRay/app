@@ -35,7 +35,7 @@ export type DataSources = {
             value?: string;
             items?: string[];
         }[];
-        detailsExtra: {
+        detailsExtra?: {
             [key: string]: string[];
         };
     }[]
@@ -63,7 +63,7 @@ export interface IWebsiteInfoInternal {
     updatedAt: Date;
 }
 
-const ModelSchema = new Schema<IWebsiteInfoInternal>(
+const ModelSchema = new Schema<IWebsiteInfo>(
     {
         website: {type: Schema.Types.ObjectId, ref: 'Website'},
         configData: {},
@@ -83,38 +83,6 @@ const ModelSchema = new Schema<IWebsiteInfoInternal>(
         },
     },
 );
-
-ModelSchema.post('find', function(WebsiteInfos: any[]) {
-    WebsiteInfos.forEach((WebsiteInfo) => {
-        WebsiteInfo.set('frameworkInfo', JSON.parse(WebsiteInfo.frameworkInfo));
-        WebsiteInfo.set('websiteComponentsInfo', JSON.parse(WebsiteInfo.websiteComponentsInfo));
-        WebsiteInfo.set('dataSourcesInfo', JSON.parse(WebsiteInfo.dataSourcesInfo));
-    });
-    return WebsiteInfos;
-});
-
-ModelSchema.post('findOne', function(WebsiteInfo: any) {
-    WebsiteInfo.set('frameworkInfo', JSON.parse(WebsiteInfo.frameworkInfo));
-    WebsiteInfo.set('websiteComponentsInfo', JSON.parse(WebsiteInfo.websiteComponentsInfo));
-    WebsiteInfo.set('dataSourcesInfo', JSON.parse(WebsiteInfo.dataSourcesInfo));
-
-    return WebsiteInfo;
-});
-
-ModelSchema.post('save', function(WebsiteInfo: any) {
-    WebsiteInfo.set('frameworkInfo', JSON.parse(WebsiteInfo.frameworkInfo));
-    WebsiteInfo.set('websiteComponentsInfo', JSON.parse(WebsiteInfo.websiteComponentsInfo));
-    WebsiteInfo.set('dataSourcesInfo', JSON.parse(WebsiteInfo.dataSourcesInfo));
-
-    return WebsiteInfo;
-});
-
-ModelSchema.pre('save', function(next) {
-    this.set('frameworkInfo', JSON.stringify(this.frameworkInfo));
-    this.set('websiteComponentsInfo', JSON.stringify(this.websiteComponentsInfo));
-    this.set('dataSourcesInfo', JSON.stringify(this.dataSourcesInfo));
-    next();
-});
 
 ModelSchema.index({ website: -1});
 ModelSchema.index({ createdAt: -1 });
