@@ -53,12 +53,14 @@ export type GridRow = {
 };
 const columnsVisibility = (headers?: { id: string, label: string}[]) => {
     const cols: { [key: string]: boolean } = {
+        frameworkVersion: true,
         componentsNumber: true,
         componentsUpdatedNumber: true,
         componentsWithUpdatesNumber: true,
         componentsWithSecurityUpdatesNumber: true,
     }
     for (const [key, value] of Object.entries(headers || {})) {
+        if(value.id === 'frameworkVersion') continue;
         cols[value.id] = false;
     }
     return cols;
@@ -128,6 +130,26 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 )
             ),
 
+        },
+        {
+            field: 'frameworkVersion',
+            headerName: 'Framework',
+            flex: 1,
+            minWidth: 120,
+            sortable: false,
+            align: 'left',
+            headerAlign: 'left',
+            filterOperators: getGridStringOperators().filter((operator) => operator.value === 'contains').map((operator) => {
+                return operator;
+            }),
+            renderCell: (params: GridRenderCellParams<GridRow, GridRow['frameworkVersion']>) => {
+                const rawData = params.row.frameworkVersion;
+                const updatedComponent = rawData?.component;
+                if(!rawData || !updatedComponent) {
+                    return <Chip label={'Unknown'} />
+                }
+                return <Chip label={updatedComponent.current_version} onClick={() => rawData?.component && params.value && viewMore(rawData?.component.title,  <WebsitesInfoGrid websiteInfo={[updatedComponent]}/>)}/>
+            },
         },
         {
             field: 'frameWorkUpdateStatus',
@@ -230,6 +252,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
     ]
     const containsOperator = getGridStringOperators().find((operator) => operator.value === 'contains');
     for (const [key, value] of Object.entries(headers || {})) {
+        if(value.id === 'frameworkVersion') continue;
         cols.push({
             field: value.id,
             headerName: value.label,

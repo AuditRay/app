@@ -15,6 +15,7 @@ import OpenAI from 'openai';
 import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
 import {IUser, User} from "@/app/models";
+import * as fs from "node:fs";
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
@@ -240,7 +241,7 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
     }
 
     async function getWebsiteInfo(websiteId: string) {
-        console.log("test");
+        console.log("getWebsiteInfo");
         const website = await Website.findOne({_id: websiteId});
         if (!website || !website.url || !website.token) {
             return null;
@@ -292,6 +293,12 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
                 description: dataSources[key].description,
                 data: dataSources[key].data.map((data: DataSources['data'][number] & {time: any}) => {
                     const newData = {...data};
+                    if(newData.id.includes('security_review-')) {
+                        newData.id = newData.id.replace('security_review-', '');
+                        if (newData.id === "monit_security_review_file_perms") {
+                            newData.id = "monit_security_review_file_permissions";
+                        }
+                    }
                     delete newData.time;
                     return newData;
                 })
@@ -304,6 +311,12 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
                 description: dataSources[key].description,
                 data: dataSources[key].data.map((data: DataSources['data'][number] & {time: any}) => {
                     const newData = {...data};
+                    if(newData.id.includes('security_review-')) {
+                        newData.id = newData.id.replace('security_review-', '');
+                        if (newData.id === "monit_security_review_file_perms") {
+                            newData.id = "monit_security_review_file_permissions";
+                        }
+                    }
                     newData.detailsFindings = newData.detailsFindings?.map((finding: any) => {
                         if(finding.items?.length >= 50) {
                             const length = finding.items.length;
@@ -427,9 +440,7 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
     }
     website.set(updateData);
     website.markModified('syncConfig');
-    console.log('website', website.syncConfig);
     const updatedWebsite = await website.save();
-    console.log('updatedWebsite', updatedWebsite.syncConfig);
     revalidatePath(`/website/${websiteId}`);
     return updatedWebsite.toJSON();
 }
@@ -511,7 +522,6 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
     } else {
         user = await User.findOne({_id: userId}) || user;
     }
-    console.log('user', user.currentSelectedWorkspace)
     console.time('getWebsitesTable');
     let websites = [];
     if (!user.currentSelectedWorkspace) {
@@ -542,6 +552,9 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
 
         if (websiteInfo[0]?.dataSourcesInfo) {
             for (const component of websiteInfo[0].dataSourcesInfo) {
+                if(component.id === 'monit_phpinfo') {
+                    continue;
+                }
                 if (component.data) {
                     for (const data of component.data) {
                         if (!extraHeaders.find((header) => header.id === data.id)) {
@@ -555,12 +568,17 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
     console.timeEnd('getWebsitesTable');
     console.time('process websitesTable');
     for (const website of websites) {
-        const websiteObj = website.toJSON();
+        const websiteObj: IWebsite = website.toJSON();
         const websiteInfo = websiteInfos[websiteObj.id.toString()];
-        const components = websiteInfo?.websiteComponentsInfo || [];
-        const componentsUpdated = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'CURRENT') || [];
-        const componentsWithUpdates = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_CURRENT') || [];
-        const componentsWithSecurityUpdates = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_SECURE') || [];
+        const components: UpdateInfo[] =  (websiteInfo?.websiteComponentsInfo || []).map((component) => {
+            return {
+                ...component,
+                available_releases: []
+            }
+        });
+        const componentsUpdated = components.filter((component) => component.type === 'CURRENT') || [];
+        const componentsWithUpdates = components.filter((component) => component.type === 'NOT_CURRENT') || [];
+        const componentsWithSecurityUpdates = components.filter((component) => component.type === 'NOT_SECURE') || [];
         const frameWorkUpdateStatus = websiteInfo?.frameworkInfo.type || "UNKNOWN";
         let status: IWebsiteTable['frameWorkUpdateStatus'] = "Up to Date";
         if (componentsWithUpdates?.length || frameWorkUpdateStatus === "NOT_CURRENT") {
@@ -579,7 +597,10 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
             status = "Not Supported";
         }
         const siteData: IWebsiteTable = {
-            ...websiteObj,
+            ...{
+                ...websiteObj,
+                metadata: undefined,
+            },
             components,
             componentsUpdated,
             componentsWithUpdates,
@@ -591,12 +612,15 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
                 type: "version",
                 status: versionTypeMapping[websiteInfo.frameworkInfo?.type] || 'Unknown',
                 value: websiteInfo.frameworkInfo.current_version || 'N/A',
-                component: websiteInfo.frameworkInfo,
+                component: {
+                    ...websiteInfo.frameworkInfo,
+                    available_releases: []
+                },
             }
         }
         if (websiteInfo?.websiteComponentsInfo) {
             for (const header of extraHeaders) {
-                const component = websiteInfo.websiteComponentsInfo.find((component) => component.name === header.id);
+                const component = components.find((component) => component.name === header.id);
                 if (!component) continue;
                 siteData[header.id] = {
                     type: "version",
@@ -608,9 +632,20 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
         }
         if (websiteInfo?.dataSourcesInfo) {
             for (const dataSource of websiteInfo.dataSourcesInfo) {
+                if (dataSource.id === 'monit_phpinfo') {
+                    continue;
+                }
                 if (dataSource.data) {
                     for (const header of extraHeaders) {
                         const data = dataSource.data.find((data) => data.id === header.id);
+                        if(data?.detailsFindings) {
+                            data.detailsFindings = data.detailsFindings.map((finding) => {
+                                if(finding.items) {
+                                    delete finding.items;
+                                }
+                                return finding;
+                            });
+                        }
                         if (data?.status) {
                             siteData[header.id] = {
                                 type: "status",
@@ -647,6 +682,16 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
     }
 
     console.timeEnd('process websitesTable');
+    // const mb = 1024 * 1024;
+    // const mByteSize = (str: string) => new Blob([str]).size / mb;
+    // console.log('websitesData', mByteSize(JSON.stringify(websitesData)));
+    // console.log('extraHeaders', mByteSize(JSON.stringify(extraHeaders)));
+    // //write data to file
+    // fs.writeFileSync('websitesData.json', JSON.stringify({
+    //     data: websitesData,
+    //     extraHeaders: extraHeaders
+    // }, null, 2));
+
     return {
         data: websitesData,
         extraHeaders: extraHeaders
@@ -664,8 +709,6 @@ export async function getWebsites(userId?: string): Promise<IWebsite[]> {
         throw new Error('User not found');
     }
     let websites: any[] = [];
-
-    console.log('websites', websites);
     if (!user.currentSelectedWorkspace) {
         websites = await Website.find({user: user.id});
     } else {
@@ -765,8 +808,6 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         syncConfig,
         workspace: user.currentSelectedWorkspace
     });
-
-    console.log('website', website);
 
     try {
         website = await website.save();
