@@ -10,7 +10,7 @@ import {
     GridToolbarContainer,
     GridToolbarColumnsButton,
     GridToolbarFilterButton,
-    GridToolbarExport, GridFilterModel, GridColumnVisibilityModel
+    GridToolbarExport, GridFilterModel, GridColumnVisibilityModel, GridPaginationModel, GridSortModel
 } from '@mui/x-data-grid-pro';
 import {diff} from 'deep-object-diff';
 import {IWebsite} from "@/app/models/Website";
@@ -446,6 +446,9 @@ export default function WebsitesGrid() {
     const [isSaveOpened, setIsSaveOpened] = React.useState<boolean>(false);
     const [isUpdateOpened, setIsUpdateOpened] = React.useState<boolean>(false);
     const [websites, setWebsites] = React.useState<GridRow[]>([])
+    const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({ page: 0, pageSize: 10 });
+    const [sortModel, setSortModel] = React.useState<GridSortModel>();
+    const [rowCount, setRowCount] = React.useState<number>(0);
     const [extraHeader, setExtraHeader] = React.useState<{ id: string, label: string}[]>([]);
     const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
     const CustomToolbar = useCallback(() => {
@@ -477,72 +480,101 @@ export default function WebsitesGrid() {
             </GridToolbarContainer>
         );
     }, [searchParams, filters, columns, filtersView, extraHeader])
-    useEffect(() => {
+    const getWebsites = async (data?: {
+        filters?: GridFilterModel,
+        pagination?: GridPaginationModel
+        sort?: GridSortModel
+    }) => {
         setIsWebsitesLoading(true);
-        const getWebsites = async () => {
-            const {data: websites, extraHeaders} = await getWebsitesTable();
-            const WebsiteRows: GridRow[] = websites.map((website) => {
-                const websiteData: GridRow = {
-                    id: website.id,
-                    url: website.url,
-                    favicon: website.favicon,
-                    siteName: website.title ? website.title : website.url,
-                    type: website.type,
-                    types:  website.type ? [website.type.name, ...(website.type.subTypes.map((subType) => subType.name))] : [],
-                    tags: website.tags || [],
-                    components: website.components,
-                    componentsNumber: website.components.length,
-                    componentsUpdated: website.componentsUpdated,
-                    componentsUpdatedNumber: website.componentsUpdated.length,
-                    componentsWithUpdates: website.componentsWithUpdates,
-                    componentsWithUpdatesNumber: website.componentsWithUpdates.length,
-                    componentsWithSecurityUpdates: website.componentsWithSecurityUpdates,
-                    componentsWithSecurityUpdatesNumber: website.componentsWithSecurityUpdates.length,
-                    frameWorkUpdateStatus: website.frameWorkUpdateStatus,
-                    frameworkVersion: website.frameworkVersion,
-                }
-                for (const [key, value] of Object.entries(website)) {
-                    if(!websiteData[key]) {
-                        if(typeof value === 'object') {
-                            switch (value.type) {
-                                case 'text':
-                                    websiteData[key] = value.value
-                                    break
-                                case 'status':
-                                    websiteData[key] = value.status === 'success' ? "Success" : value.status === 'warning' ? "Warning" : "Error"
-                                    break
-                                case 'version':
-                                    websiteData[key] = value.value
-                                    break
-                            }
-                            websiteData[`${key}_raw`] = value;
+        console.log('filters', filters);
+
+        const {data: websites, extraHeaders, count} = await getWebsitesTable(
+            undefined,
+            data?.pagination || paginationModel,
+            data?.filters || filters,
+            data?.sort || sortModel
+        );
+        setRowCount(count);
+        const WebsiteRows: GridRow[] = websites.map((website) => {
+            const websiteData: GridRow = {
+                id: website.id,
+                url: website.url,
+                favicon: website.favicon,
+                siteName: website.title ? website.title : website.url,
+                type: website.type,
+                types:  website.type ? [website.type.name, ...(website.type.subTypes.map((subType) => subType.name))] : [],
+                tags: website.tags || [],
+                components: website.components,
+                componentsNumber: website.components.length,
+                componentsUpdated: website.componentsUpdated,
+                componentsUpdatedNumber: website.componentsUpdated.length,
+                componentsWithUpdates: website.componentsWithUpdates,
+                componentsWithUpdatesNumber: website.componentsWithUpdates.length,
+                componentsWithSecurityUpdates: website.componentsWithSecurityUpdates,
+                componentsWithSecurityUpdatesNumber: website.componentsWithSecurityUpdates.length,
+                frameWorkUpdateStatus: website.frameWorkUpdateStatus,
+                frameworkVersion: website.frameworkVersion,
+            }
+            for (const [key, value] of Object.entries(website)) {
+                if(!websiteData[key]) {
+                    if(typeof value === 'object') {
+                        switch (value.type) {
+                            case 'text':
+                                websiteData[key] = value.value
+                                break
+                            case 'status':
+                                websiteData[key] = value.status === 'success' ? "Success" : value.status === 'warning' ? "Warning" : "Error"
+                                break
+                            case 'version':
+                                websiteData[key] = value.value
+                                break
                         }
+                        websiteData[`${key}_raw`] = value;
                     }
                 }
-                return websiteData;
-            });
-            setWebsites(WebsiteRows);
-            setExtraHeader(extraHeaders);
-            setIsWebsitesLoading(false);
-        }
-
-        getWebsites();
-    }, [])
+            }
+            return websiteData;
+        });
+        setWebsites(WebsiteRows);
+        setColumns(columns || columnsVisibility(extraHeader));
+        setExtraHeader(extraHeaders);
+        setIsWebsitesLoading(false);
+    }
+    useEffect(() => {
+        const filterView = searchParams.get('filterView');
+        if(filterView) return;
+        setFilters({ items: [] });
+        getWebsites({
+            filters: { items: [] }
+        }).then(() => {
+            console.log('extraHeader', extraHeader);
+            setColumns(columnsVisibility(extraHeader));
+        });
+    }, [searchParams]);
     useEffect(() => {
         const filterView = searchParams.get('filterView');
         if (filterView) {
             getFiltersView(filterView).then((filter) => {
-                filter && setIsFiltersLoaded(true);
-                filter && setFiltersView(filter);
-                filter && setFilters(filter.filters as GridFilterModel);
-                filter && filter.columns && setColumns(filter.columns as GridColumnVisibilityModel);
+                if (filter) {
+                    setIsFiltersLoaded(true);
+                    setFiltersView(filter);
+                    setFilters(filter.filters as GridFilterModel);
+                    if (filter.columns) {
+                        setColumns(filter.columns as GridColumnVisibilityModel);
+                    }
+                    getWebsites({
+                        filters: filter.filters as GridFilterModel,
+                    });
+                }
             })
         } else {
             setFilters({ items: [] });
-            setColumns(columnsVisibility(extraHeader));
+            if (extraHeader.length) {
+                setColumns(columnsVisibility(extraHeader));
+            }
             setFiltersView(undefined);
         }
-    }, [extraHeader, searchParams]);
+    }, [searchParams]);
 
     return (
         <div style={{ width: '100%' }}>
@@ -561,8 +593,20 @@ export default function WebsitesGrid() {
                 rows={websites}
                 columns={prepareColumns(openRightDrawer, extraHeader)}
                 rowSelection={false}
+                filterMode={'server'}
+                onPaginationModelChange={(model) => {
+                    console.log('model', model);
+                    setPaginationModel(model);
+                    getWebsites({
+                        pagination: model,
+                    });
+                }}
                 onFilterModelChange={(model) => {
+                    console.log('model', model);
                     setFilters(model);
+                    getWebsites({
+                        filters: model,
+                    });
                 }}
                 onColumnVisibilityModelChange={(model) => {
                     setColumns(model);  // save columns visibility
@@ -571,13 +615,23 @@ export default function WebsitesGrid() {
                 columnVisibilityModel={columns}
                 initialState={{
                     pagination: {
-                        paginationModel: { page: 0, pageSize: 20 },
+                        paginationModel: paginationModel,
                     },
                     columns: {
                         columnVisibilityModel: columnsVisibility(extraHeader),
                     },
                 }}
-                pageSizeOptions={[5, 20]}
+                sortingMode={'server'}
+                onSortModelChange={(model) => {
+                  setSortModel(model);
+                  getWebsites({
+                      sort: model,
+                  });
+                }}
+                pagination={true}
+                paginationMode={'server'}
+                rowCount={rowCount}
+                pageSizeOptions={[5, 10, 20]}
             />
         </div>
     );

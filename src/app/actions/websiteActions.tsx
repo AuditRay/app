@@ -16,6 +16,7 @@ import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
 import {IUser, User} from "@/app/models";
 import * as fs from "node:fs";
+import {GridFilterModel, GridPaginationModel, GridSortModel} from "@mui/x-data-grid-pro";
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
@@ -513,7 +514,17 @@ export async function countWebsites(userId: string): Promise<number> {
     }
 }
 
-export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsiteTable[]; extraHeaders: { id: string, label: string }[]; }> {
+export async function getWebsitesTable(
+        userId?: string,
+        pagination: GridPaginationModel = { page: 0, pageSize: 10 },
+        filters: GridFilterModel = { items: [] },
+        sort: GridSortModel = []
+    ): Promise<{
+        data: IWebsiteTable[];
+        count: number;
+        remaining: number;
+        extraHeaders: { id: string, label: string }[];
+    }> {
     await connectMongo();
     console.log('getWebsitesTable');
     let user = await getUser();
@@ -601,10 +612,17 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
                 ...websiteObj,
                 metadata: undefined,
             },
+            siteName: websiteObj.title ? websiteObj.title : websiteObj.url,
+            types: websiteObj.type ? [websiteObj.type.name, ...(websiteObj.type.subTypes.map((subType) => subType.name))] : [],
+            tags: websiteObj.tags,
             components,
+            componentsNumber:  components.length,
             componentsUpdated,
+            componentsUpdatedNumber:  componentsUpdated.length,
             componentsWithUpdates,
+            componentsWithUpdatesNumber:  componentsWithUpdates.length,
             componentsWithSecurityUpdates,
+            componentsWithSecurityUpdatesNumber: componentsWithSecurityUpdates.length,
             frameWorkUpdateStatus: status
         }
         if (websiteInfo?.frameworkInfo) {
@@ -681,6 +699,217 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
         websitesData.push(siteData);
     }
 
+
+    if(filters.items.length) {
+        console.log('filters.items', filters, filters.items);
+        const filteredData = websitesData.filter((website) => {
+            let valid = false;
+            for(const filter of filters.items) {
+                const logicOperator = filters.logicOperator || 'and';
+                const val = website[filter.field]?.value || website[filter.field];
+                if(filter.operator === 'notEmpty' || filter.operator === 'isNotEmpty') {
+                    console.log('notEmpty', filter.field, website[filter.field]);
+                    if (val?.toString() != "" && val?.toString() != 'N/A') {
+                        valid = true;
+                    }
+                    if (logicOperator == 'and' && (val?.toString() == "" || val?.toString() == 'N/A')) {
+                        valid = false;
+                        break;
+                    }
+                    if (logicOperator == 'or' && (val?.toString() != "" && val?.toString() != 'N/A')) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator === 'empty' || filter.operator === 'isEmpty') {
+                    if(val?.toString() == "" || val?.toString() == 'N/A') {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && (val?.toString() != "" && val?.toString() != 'N/A')) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && (val?.toString() == "" || val?.toString() == 'N/A')) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(!filter.value) continue;
+                if(filter.operator === 'contains') {
+                    if(val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && !val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
+                        console.log('contains', filter.field, website[filter.field], filter.value.toString().toLowerCase());
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator === 'notContains') {
+                    if(!val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && !val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator === '=' || filter.operator === 'equals') {
+                    if(val?.toString().toLowerCase() == filter.value.toString().toLowerCase()) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && val?.toString().toLowerCase() != filter.value.toString().toLowerCase()) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && val?.toString().toLowerCase() == filter.value.toString().toLowerCase()) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator == "startsWith") {
+                    if(val?.toString().toLowerCase().startsWith(filter.value.toString().toLowerCase())) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && !val?.toString().toLowerCase().startsWith(filter.value.toString().toLowerCase())) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && val?.toString().toLowerCase().startsWith(filter.value.toString().toLowerCase())) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator == "endsWith") {
+                    if(val?.toString().toLowerCase().endsWith(filter.value.toString().toLowerCase())) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && !val?.toString().toLowerCase().endsWith(filter.value.toString().toLowerCase())) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && val?.toString().toLowerCase().endsWith(filter.value.toString().toLowerCase())) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator === '!=') {
+                    if(val?.toString().toLowerCase() != filter.value.toString().toLowerCase()) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && val?.toString().toLowerCase() == filter.value.toString().toLowerCase()) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && val?.toString().toLowerCase() != filter.value.toString().toLowerCase()) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator === '>') {
+                    if(website[filter.field] > filter.value) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && website[filter.field] <= filter.value) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && website[filter.field] > filter.value) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator === '<') {
+                    if(website[filter.field] < filter.value) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && website[filter.field] >= filter.value) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && website[filter.field] < filter.value) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator === '>=') {
+                    if(website[filter.field] >= filter.value) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && website[filter.field] < filter.value) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && website[filter.field] >= filter.value) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator === '<=') {
+                    if(website[filter.field] <= filter.value) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && website[filter.field] > filter.value) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && website[filter.field] <= filter.value) {
+                        valid = true;
+                        break;
+                    }
+                }
+                if(filter.operator === 'isAnyOf') {
+                    if(filter.value.includes(val?.toString().toLowerCase())) {
+                        valid = true;
+                    }
+                    if(logicOperator == 'and' && !filter.value.includes(val?.toString().toLowerCase())) {
+                        valid = false;
+                        break;
+                    }
+                    if(logicOperator == 'or' && filter.value.includes(val?.toString().toLowerCase())) {
+                        valid = true;
+                        break;
+                    }
+                }
+            }
+            return valid;
+        });
+        console.log('filteredData', filteredData.length);
+        websitesData.length = 0;
+        websitesData.push(...filteredData);
+    }
+    if(sort.length) {
+        websitesData.sort((a, b) => {
+            for(const sortItem of sort) {
+                const field = sortItem.field;
+                const order = sortItem.sort;
+                if (a[field].value && b[field].value) {
+                    if(a[field].value < b[field].value) {
+                        return order === 'asc' ? -1 : 1;
+                    }
+                    if(a[field].value > b[field].value) {
+                        return order === 'asc' ? 1 : -1;
+                    }
+                } else {
+                    if (a[field] < b[field]) {
+                        return order === 'asc' ? -1 : 1;
+                    }
+                    if (a[field] > b[field]) {
+                        return order === 'asc' ? 1 : -1;
+                    }
+                }
+            }
+            return 0;
+        });
+    }
     console.timeEnd('process websitesTable');
     // const mb = 1024 * 1024;
     // const mByteSize = (str: string) => new Blob([str]).size / mb;
@@ -691,9 +920,14 @@ export async function getWebsitesTable(userId?: string): Promise<{ data: IWebsit
     //     data: websitesData,
     //     extraHeaders: extraHeaders
     // }, null, 2));
+    // calculate the page and pageSize check if out of websitesData bounds
+    const start = pagination.page * pagination.pageSize < 0 ? 0 : pagination.page * pagination.pageSize;
+    const end = start + pagination.pageSize;
 
     return {
-        data: websitesData,
+        data: websitesData.slice(start > websitesData.length ? websitesData.length - pagination.pageSize : start, end > websitesData.length ? websitesData.length : end),
+        count: websitesData.length,
+        remaining: websitesData.length - end,
         extraHeaders: extraHeaders
     };
 }
