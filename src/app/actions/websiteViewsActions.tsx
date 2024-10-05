@@ -3,9 +3,12 @@ import {Website} from "@/app/models/Website";
 import {getUser} from "@/app/actions/getUser";
 import {DefaultView, IWebsiteView, WebsiteView} from "@/app/models/WebsiteView";
 import {revalidatePath} from "next/cache";
+import {connectMongo} from "@/app/lib/database";
 // @ts-ignore
 
 export async function getWebsiteViewsListing(websiteId) {
+    await connectMongo();
+    console.log('getWebsiteViewsListing');
     const user = await getUser();
     if (!user) {
         throw new Error('User not found');
@@ -15,6 +18,8 @@ export async function getWebsiteViewsListing(websiteId) {
 }
 
 export async function deleteWebsiteView(viewId: string) {
+    await connectMongo();
+    console.log('deleteWebsiteView');
     const user = await getUser();
     if (!user) {
         throw new Error('User not found');
@@ -31,8 +36,9 @@ export async function deleteWebsiteView(viewId: string) {
     }
 }
 
-
 export async function updateWebsiteView(view: DefaultView, viewData: Partial<IWebsiteView>) {
+    await connectMongo();
+    console.log('updateWebsiteView');
     const user = await getUser();
     console.log('user', user);
     if(view.isDefault) {
@@ -55,6 +61,8 @@ export async function updateWebsiteView(view: DefaultView, viewData: Partial<IWe
 }
 
 export async function createWebsiteView(websiteId: string, viewData: Partial<IWebsiteView>) {
+    await connectMongo();
+    console.log('createWebsiteView');
     const user = await getUser();
     console.log('user', user);
     const website = await Website.findOne({ _id: websiteId });

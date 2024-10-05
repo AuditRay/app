@@ -45,18 +45,29 @@ export default function DashboardLayout({children,}: {
             setFilterViews(filtersViews);
         });
         if(sessionUser){
+            console.log("sessionUser");
             setUser(sessionUser);
             if(!sessionFullUser) {
+                console.log("!sessionFullUser");
                 getFullUser(sessionUser.id).then((user) => {
                     setSessionFullUser(user);
+                }).catch((error) => {
+                    console.log(error);
                 });
+            } else {
+                console.log("sessionFullUser");
             }
         } else {
+            console.log("!sessionUser");
             getUser().then((user) => {
                 setSessionUser(user);
                 getFullUser(user.id).then((user) => {
                     setSessionFullUser(user);
+                }).catch((error) => {
+                    console.log(error);
                 });
+            }).catch((error) => {
+                console.log(error);
             });
         }
     }, [sessionFullUser, sessionUser, setSessionFullUser, setSessionUser]);

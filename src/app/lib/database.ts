@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/monit-next';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/staging';
 const MONGO_USER = process.env.MONGO_USER || 'yourUsername';
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD || 'yourPassword';
 
@@ -35,7 +35,7 @@ export async function connectMongo() {
         cached.connection = await cached.promise;
     } catch (e) {
         cached.promise = undefined;
-        throw e;
+        console.error(e);
     }
 
     return cached.connection;

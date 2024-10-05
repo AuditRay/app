@@ -17,9 +17,12 @@ import {
 import {findOne} from "domutils";
 import {sendEmail} from "@/app/lib/email";
 import {getWorkspaceRoles} from "@/app/actions/rolesActions";
+import {connectMongo} from "@/app/lib/database";
 // @ts-ignore
 
 export async function setCurrentSelectedWorkspace(workspaceId?: string): Promise<IUser> {
+    await connectMongo();
+    console.log('setCurrentSelectedWorkspace');
     const user = await getUser();
     if (!workspaceId) {
         await User.updateOne({_id: user.id}, {currentSelectedWorkspace: null});
@@ -36,6 +39,8 @@ export async function setCurrentSelectedWorkspace(workspaceId?: string): Promise
 }
 
 export async function getWorkspaces(userId?: string): Promise<IWorkspace[]> {
+    await connectMongo();
+    console.log('getWorkspaces');
     if(!userId) {
         const user = await getUser();
         userId = user.id;
@@ -45,6 +50,8 @@ export async function getWorkspaces(userId?: string): Promise<IWorkspace[]> {
 }
 
 export async function getWorkspace(workspaceId?: string): Promise<IWorkspace> {
+    await connectMongo();
+    console.log('getWorkspace');
     const workspace = await Workspace.findOne({_id: workspaceId});
     if (!workspace) {
         throw new Error('Workspace not found');
@@ -53,6 +60,8 @@ export async function getWorkspace(workspaceId?: string): Promise<IWorkspace> {
 }
 
 export async function getWorkspaceMembers(): Promise<IMemberPopulated[]> {
+    await connectMongo();
+    console.log('getWorkspaceMembers');
     const user = await getUser();
     if(!user) {
         throw new Error('User not found');
@@ -99,7 +108,10 @@ export async function getWorkspaceMembers(): Promise<IMemberPopulated[]> {
     }
     return [];
 }
+
 export async function getWorkspaceUsers(): Promise<IUser[]> {
+    await connectMongo();
+    console.log('getWorkspaceUsers');
     const user = await getUser();
     const workspaceId = user.currentSelectedWorkspace;
     const workspace = await Workspace.findOne({_id: workspaceId});
@@ -113,6 +125,8 @@ export async function getWorkspaceUsers(): Promise<IUser[]> {
 }
 
 export async function removeUserFromWorkspace(workspaceId: string, userId: string): Promise<IWorkspace> {
+    await connectMongo();
+    console.log('removeUserFromWorkspace');
     const workspace = await Workspace.findOne({_id: workspaceId});
     if(!workspace) {
         throw new Error('Workspace not found');
@@ -125,6 +139,8 @@ export async function removeUserFromWorkspace(workspaceId: string, userId: strin
 }
 
 export async function inviteWorkspaceUser(userData: {firstName: string, lastName: string, email: string, role: string}): Promise<IUser> {
+    await connectMongo();
+    console.log('inviteWorkspaceUser');
     const user = await getUser();
     console.log('user', user);
     if(!user.currentSelectedWorkspace) {
@@ -196,6 +212,8 @@ export async function inviteWorkspaceUser(userData: {firstName: string, lastName
 }
 
 export async function updateWorkspace(workspaceId: string, workspaceData: Partial<IWorkspace>) {
+    await connectMongo();
+    console.log('updateWorkspace');
     const user = await getUser();
 
     const workspace = await Workspace.findOne({ _id: workspaceId, owner: user.id });
@@ -212,6 +230,8 @@ export async function updateWorkspace(workspaceId: string, workspaceData: Partia
 }
 
 export async function createWorkspace(workspaceData: Partial<IWorkspace>) {
+    await connectMongo();
+    console.log('createWorkspace');
     const user = await getUser();
     const workspace = new Workspace({
         name: workspaceData.name,

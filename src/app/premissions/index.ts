@@ -13,6 +13,7 @@ export type PermissionArgs = {
 export type UserPermissions = Record<PermissionsKeys, boolean>
 
 const getUserPermissions = async (user: IUser): Promise<UserPermissions> => {
+    console.log("getUserPermissions");
     const permissions = await buildWorkspaceBasePermissions();
     const userPermissions: UserPermissions = {};
     for (const permission in permissions) {

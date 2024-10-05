@@ -3,8 +3,11 @@ import {IRole, Role, Workspace} from "@/app/models";
 import {getUser} from "@/app/actions/getUser";
 import {AdminRole} from "@/app/premissions/roles/Admin";
 import {MemberRole} from "@/app/premissions/roles/Member";
+import {connectMongo} from "@/app/lib/database";
 
 export async function createRole(roleData: Partial<IRole>) {
+    await connectMongo();
+    console.log('createRole');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -31,6 +34,8 @@ export async function createRole(roleData: Partial<IRole>) {
 }
 
 export async function getWorkspaceAllRoles(): Promise<IRole[]> {
+    await connectMongo();
+    console.log('getWorkspaceAllRoles');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -57,6 +62,8 @@ export async function getWorkspaceAllRoles(): Promise<IRole[]> {
 }
 
 export async function getWorkspaceRoles(): Promise<IRole[]> {
+    await connectMongo();
+    console.log('getWorkspaceRoles');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -83,6 +90,8 @@ export async function getWorkspaceRoles(): Promise<IRole[]> {
 }
 
 export async function getWorkspaceTeamRoles(): Promise<IRole[]> {
+    await connectMongo();
+    console.log('getWorkspaceTeamRoles');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -102,6 +111,8 @@ export async function getWorkspaceTeamRoles(): Promise<IRole[]> {
 }
 
 export async function deleteRole(roleId: string) {
+    await connectMongo();
+    console.log('deleteRole');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
@@ -118,6 +129,8 @@ export async function deleteRole(roleId: string) {
 }
 
 export async function updateRole(roleId: string, roleData: Partial<IRole>) {
+    await connectMongo();
+    console.log('updateRole');
     const user = await getUser();
 
     if(!user.currentSelectedWorkspace) {
@@ -182,6 +195,8 @@ export async function updateRole(roleId: string, roleData: Partial<IRole>) {
 }
 
 export async function getRole(roleId: string): Promise<IRole> {
+    await connectMongo();
+    console.log('getRole');
     const user = await getUser();
     if(!user.currentSelectedWorkspace) {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');

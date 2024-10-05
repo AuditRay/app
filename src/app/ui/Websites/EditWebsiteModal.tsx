@@ -33,7 +33,7 @@ import timezone from 'dayjs/plugin/timezone';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
+export default function EditWebsiteModal({websiteId, website}: {websiteId: string, website?: IWebsite}) {
     const [isSaving, setIsSaving] = useState(false);
     const [open, setOpen] = useState(false);
     const [fieldsTemplate, setFieldsTemplate] = useState<string | undefined>();
@@ -61,29 +61,29 @@ export default function EditWebsiteModal({websiteId}: {websiteId: string}) {
     }, [syncTime]);
     useEffect(() => {
         async function getData(){
-            const website = await getWebsite(websiteId);
-            console.log('website', website);
+            const loadedWebsite = website || await getWebsite(websiteId);
+            console.log('website', loadedWebsite);
             const fieldTemplates = await getFieldsTemplates();
             setFieldTemplates(fieldTemplates);
-            if(!website) return '';
-            setTags(website.tags);
-            setEnableSync(website.syncConfig?.enabled);
-            setSyncInterval(website.syncConfig?.syncInterval || 1);
-            setIntervalUnit(website.syncConfig?.intervalUnit || 'Day');
+            if(!loadedWebsite) return '';
+            setTags(loadedWebsite.tags);
+            setEnableSync(loadedWebsite.syncConfig?.enabled);
+            setSyncInterval(loadedWebsite.syncConfig?.syncInterval || 1);
+            setIntervalUnit(loadedWebsite.syncConfig?.intervalUnit || 'Day');
             //default sync time to 12:00 AM
-            setSyncTime(website.syncConfig?.syncTime ? dayjs.utc(website.syncConfig?.syncTime) : dayjs().startOf('day'));
-            if (website.workspace) {
-                const workspace = await getWorkspace(website.workspace.toString());
+            setSyncTime(loadedWebsite.syncConfig?.syncTime ? dayjs.utc(loadedWebsite.syncConfig?.syncTime) : dayjs().startOf('day'));
+            if (loadedWebsite.workspace) {
+                const workspace = await getWorkspace(loadedWebsite.workspace.toString());
                 if (workspace && workspace.timezone) {
                     setTimeZone(workspace.timezone);
-                    setSyncTime(website.syncConfig?.syncTime ? dayjs(website.syncConfig?.syncTime).tz(workspace.timezone) : dayjs().tz(workspace.timezone).startOf('day'));
+                    setSyncTime(loadedWebsite.syncConfig?.syncTime ? dayjs(loadedWebsite.syncConfig?.syncTime).tz(workspace.timezone) : dayjs().tz(workspace.timezone).startOf('day'));
                 }
             }
-            setFieldsTemplate(website.fieldsTemplate as string);
+            setFieldsTemplate(loadedWebsite.fieldsTemplate as string);
         }
-        websiteId && getData();
+        open && websiteId && getData();
         setIsSaving(false);
-    }, [websiteId]);
+    }, [websiteId, website, open]);
 
     useEffect(() => {
         console.log('isPending', isSaving);
