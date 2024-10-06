@@ -24,7 +24,7 @@ export async function connectMongo() {
         const opts = {
             user: MONGO_USER,
             pass: MONGO_PASSWORD,
-            bufferCommands: false,
+            bufferCommands: true,
             authSource: 'admin',
         };
 
