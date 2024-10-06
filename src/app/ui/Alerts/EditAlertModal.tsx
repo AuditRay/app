@@ -9,57 +9,97 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import CircularProgress from '@mui/material/CircularProgress';
 import {green} from '@mui/material/colors';
-import {Divider, FormControl, InputLabel, Select} from "@mui/material";
-import {IAlert, IUser} from "@/app/models";
-import {getAllFacts, updateAlert} from "@/app/actions/alertsActions";
+import {
+    Autocomplete,
+    Divider,
+    FormControl,
+    FormHelperText,
+    IconButton,
+    InputLabel,
+    LinearProgress,
+    Select
+} from "@mui/material";
+import {IAlert} from "@/app/models";
+import {updateAlert} from "@/app/actions/alertsActions";
 import Grid from "@mui/material/Unstable_Grid2";
 import MenuItem from "@mui/material/MenuItem";
-import ConditionComponent from "@/app/ui/Alerts/ConditionComponent";
 import * as React from "react";
-import {TopLevelCondition} from "json-rules-engine";
 import {userSessionState} from "@/app/lib/uiStore";
+import AlertsWebsitesPreviewGrid from "@/app/ui/Alerts/AlertsWebsitesPreviewGrid";
+import Typography from "@mui/material/Typography";
+import Tooltip from "@mui/material/Tooltip";
+import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import {notificationUserOptionsType} from "@/app/ui/Alerts/AddAlertModal";
+import {getWorkspaceUsers} from "@/app/actions/workspaceActions";
+import {getTeams} from "@/app/actions/teamActions";
 
 export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, open: boolean, setOpen: (open: boolean) => void}) {
     const [isSaving, setIsSaving] = useState(false);
-    const [ownerUser, setOwnerUser] = useState<IUser>();
-    const [conditions, setConditions] = useState<TopLevelCondition>({
-        all: []
-    });
-    const sessionUser = userSessionState((state) => state.user);
-
-    const [factOptions, setFactOptions] = useState<{ id: string, label: string }[]>([]);
-    useEffect(() => {
-        async function loadWorkspaceFacts() {
-            const {facts} = await getAllFacts();
-            setFactOptions(facts);
-        }
-        loadWorkspaceFacts().then();
-    }, []);
     const [newAlertData, setNewAlertData] = useState<{
         title?: string;
         enabled?: boolean;
-        rules?: any;
+        filters?: any;
         events?: any;
         interval?: number;
+        notifyUsers?: string[];
         intervalUnit? : string;
-    }>(alert);
-    console.log("alert", newAlertData);
+    }>({...alert});
+    console.log("newAlertData",newAlertData);
     const [newAlertErrorData, setNewAlertErrorData] = useState<{
         title?: string;
         enabled?: string;
-        rules?: string;
+        filters?: string;
         events?: string;
         interval?: string;
+        notifyUsers?: string;
         intervalUnit?: string;
     }>({
         title: '',
         enabled: '',
-        rules: '',
+        filters: '',
         events: '',
         interval: '',
+        notifyUsers: '',
         intervalUnit: ''
     });
     const [generalError, setGeneralError] = useState<string>('');
+    const [notificationUserOptions, setNotificationUserOptions] = useState<notificationUserOptionsType[]>([]);
+    const sessionUser = userSessionState((state) => state.user);
+    useEffect(() => {
+        async function loadWorkspaceUsers() {
+            const currentUser = sessionUser;
+            const users = await getWorkspaceUsers().catch(() => []);
+            const teams = await getTeams().catch(() => []);
+            const options: notificationUserOptionsType[] = [];
+            for(const user of users) {
+                options.push({
+                    id: `user:${user.id}`,
+                    label: `${user.firstName} ${user.lastName}<${user.email}>`,
+                    type: 'user',
+                    members: []
+                });
+            }
+            for(const team of teams) {
+                options.push({
+                    id: `team:${team.id}`,
+                    label: team.name,
+                    type: 'team',
+                    members: team.members?.map((m) => m.user) || []
+                });
+            }
+            if (currentUser) {
+                options.push({
+                    id: `user:${currentUser.id}`,
+                    label: `Me <${currentUser.email}>`,
+                    type: 'user',
+                    members: []
+                });
+            }
+            setNotificationUserOptions(options);
+        }
+        loadWorkspaceUsers().then(() => {}).catch(() => {});
+    }, [sessionUser]);
+
     const handleClose = () => {
         setNewAlertErrorData({});
         setNewAlertData({});
@@ -80,11 +120,8 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
                 !isSaving && handleClose();
             }}
         >
-            <DialogTitle>Add new team to workspace</DialogTitle>
+            <DialogTitle>Edit Alert</DialogTitle>
             <DialogContent>
-                <DialogContentText>
-                    Please enter alert information to add alert to workspace
-                </DialogContentText>
                 <TextField
                     autoFocus
                     disabled={isSaving}
@@ -142,14 +179,92 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
                         </Select>
                     </FormControl>
                 </Grid>
-                <Divider sx={{my: 3}}/>
-                <ConditionComponent condition={newAlertData.rules[0]} setCondition={(c) => {
-                    setConditions(c);
-                    setNewAlertData({
-                        ...newAlertData,
-                        rules: c
-                    });
-                }} firstLevel={true} factOptions={factOptions}/>
+                <Divider sx={{my: 1}}/>
+                <Typography variant={'caption'}>Team Members</Typography>
+                <Box>
+                    {newAlertErrorData.notifyUsers && <Typography color={'error'}>{newAlertErrorData.notifyUsers}</Typography>}
+                    {notificationUserOptions.length ? newAlertData.notifyUsers?.map((member, index) => (
+                        <Grid container key={`member-${index}`} columnSpacing={3} >
+                            <Grid xs={6}>
+                                <Autocomplete
+                                    disablePortal
+                                    fullWidth
+                                    disableClearable={true}
+                                    options={notificationUserOptions.filter((user) => !newAlertData.notifyUsers?.find((m) => m == user.id))}
+                                    onChange={(e, value) => {
+                                        if(!value) {
+                                            const notifyUsers = [...newAlertData.notifyUsers || []];
+                                            notifyUsers.splice(index, 1);
+                                            setNewAlertData({
+                                                ...newAlertData,
+                                                notifyUsers: notifyUsers
+                                            });
+                                            return;
+                                        }
+                                        if(index == newAlertData.notifyUsers!.length - 1) {
+                                            setNewAlertErrorData({
+                                                ...newAlertErrorData,
+                                                notifyUsers: ''
+                                            })
+                                        }
+                                        const notifyUsers = [...(newAlertData.notifyUsers || [])];
+                                        notifyUsers[index] = value.id;
+                                        setNewAlertData({
+                                            ...newAlertData,
+                                            notifyUsers: notifyUsers
+                                        });
+                                    }}
+                                    value={notificationUserOptions.find((option) => option.id == member)}
+                                    renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="User" />}
+                                />
+                            </Grid>
+                            <Grid xs={1}>
+                                <IconButton sx={{
+                                    mt: 2,
+                                }} color={'error'} onClick={() => {
+                                    //remove member
+                                    const notifyUsers = [...newAlertData.notifyUsers || []];
+                                    notifyUsers.splice(index, 1);
+                                    setNewAlertData({
+                                        ...newAlertData,
+                                        notifyUsers: notifyUsers
+                                    });
+                                }}><Tooltip title={"Remove User From Notifications"}><DeleteForeverIcon></DeleteForeverIcon></Tooltip></IconButton>
+                            </Grid>
+                        </Grid>
+                    )) : <LinearProgress></LinearProgress>}
+                    <Box sx={{textAlign: 'right'}}>
+                        <Button sx={{
+                            mt: 2
+                        }} variant={'outlined'} onClick={() => {
+                            //check if last member has user selected
+                            if(newAlertData.notifyUsers && newAlertData.notifyUsers.length > 0) {
+                                const lastMember = newAlertData.notifyUsers[newAlertData.notifyUsers.length - 1];
+                                setNewAlertErrorData({notifyUsers: ''});
+                                if(!lastMember) {
+                                    setNewAlertErrorData({
+                                        ...newAlertErrorData,
+                                        notifyUsers: 'Please select user for last member'
+                                    });
+                                    return;
+                                }
+                            }
+                            setNewAlertData({
+                                ...newAlertData,
+                                notifyUsers: [
+                                    ...(newAlertData.notifyUsers || []),
+                                    ''
+                                ]
+                            });
+                        }}>Add New Member +</Button>
+                    </Box>
+                </Box>
+                <Divider sx={{my: 1}}/>
+                <InputLabel id="interval-unit-select-label" sx={{my: 1}}>Alert Criteria</InputLabel>
+                <FormHelperText error={!!newAlertErrorData.filters}>{newAlertErrorData.filters}</FormHelperText>
+                <AlertsWebsitesPreviewGrid filters={newAlertData.filters} setFilters={(filters) => {
+                    setNewAlertData({...newAlertData, filters});
+                }}></AlertsWebsitesPreviewGrid>
             </DialogContent>
             <DialogActions>
                 <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>
@@ -174,7 +289,8 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
                                     await updateAlert(alert.id, {
                                         title: newAlertData.title,
                                         enabled: newAlertData.enabled,
-                                        rules: newAlertData.rules,
+                                        filters: newAlertData.filters,
+                                        notifyUsers: newAlertData.notifyUsers,
                                         interval: newAlertData.interval,
                                         intervalUnit: newAlertData.intervalUnit,
                                         events: newAlertData.events

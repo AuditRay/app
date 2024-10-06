@@ -1,7 +1,10 @@
 'use server'
-import {IAlert, Alert, User, Website, IWebsiteInfo, WebsiteInfo} from "@/app/models";
+import {IAlert, Alert, Website, IWebsiteInfo, WebsiteInfo, IWebsite, UpdateInfo} from "@/app/models";
 import {getUser} from "@/app/actions/getUser";
 import {IWebsiteTable} from "@/app/actions/websiteActions";
+import {connectMongo} from "@/app/lib/database";
+import {GridFilterModel} from "@mui/x-data-grid-pro";
+import {filterWebsiteTable} from "@/app/lib/utils";
 
 const versionTypeMapping = {
     NOT_CURRENT: 'Needs Update',
@@ -12,47 +15,52 @@ const versionTypeMapping = {
     NOT_SUPPORTED: 'Not Supported',
 }
 
-export async function getAllFacts(userId?: string): Promise<{
-    facts: { id: string, label: string }[];
+export async function getAlertWebsites(
+    workspaceId?: string,
+    userId?: string,
+    filters: GridFilterModel = { items: [] }
+): Promise<{
+    data: IWebsiteTable[];
+    count: number;
+    extraHeaders: { id: string, label: string }[];
 }> {
-    let user = await getUser();
-    if(!userId) {
-        userId = user.id;
-    } else {
-        user = await User.findOne({_id: userId}) || user;
-    }
-    console.log('user', user.currentSelectedWorkspace)
+    await connectMongo();
+    console.log('getWebsitesTable');
+
     console.time('getWebsitesTable');
     let websites = [];
-    if(!user.currentSelectedWorkspace) {
-        websites = await Website.find({user: userId});
+    if (!workspaceId) {
+        websites = await Website.find({user: userId, workspace: null});
     } else {
         websites = await Website.find({
-            workspace: user.currentSelectedWorkspace
+            workspace: workspaceId
         });
     }
     const websitesData: IWebsiteTable[] = [];
-    const extraHeaders: { id: string, label: string}[] = [
+    const extraHeaders: { id: string, label: string, type?: string }[] = [
         {id: 'frameworkVersion', label: 'Framework'},
     ];
     const websiteInfos: Record<string, IWebsiteInfo> = {};
     for (const website of websites) {
         const websiteInfo = await WebsiteInfo.find({website: website._id}).sort({createdAt: -1}).limit(1);
 
-        if(websiteInfo[0]){
+        if (websiteInfo[0]) {
             websiteInfos[website._id.toString()] = websiteInfo[0];
         }
-        if(websiteInfo[0]?.websiteComponentsInfo) {
+        if (websiteInfo[0]?.websiteComponentsInfo) {
             for (const component of websiteInfo[0].websiteComponentsInfo) {
                 if (!extraHeaders.find((header) => header.id === component.name)) {
-                    extraHeaders.push({id: component.name, label: component.title});
+                    extraHeaders.push({id: component.name, label: component.title, type: 'component'});
                 }
             }
         }
 
-        if(websiteInfo[0]?.dataSourcesInfo) {
+        if (websiteInfo[0]?.dataSourcesInfo) {
             for (const component of websiteInfo[0].dataSourcesInfo) {
-                if(component.data) {
+                if(component.id === 'monit_phpinfo') {
+                    continue;
+                }
+                if (component.data) {
                     for (const data of component.data) {
                         if (!extraHeaders.find((header) => header.id === data.id)) {
                             extraHeaders.push({id: data.id, label: `${component.label} - ${data.label}`});
@@ -63,50 +71,69 @@ export async function getAllFacts(userId?: string): Promise<{
         }
     }
     console.timeEnd('getWebsitesTable');
+    console.time('process websitesTable');
     for (const website of websites) {
-        const websiteObj = website.toJSON();
+        const websiteObj: IWebsite = website.toJSON();
         const websiteInfo = websiteInfos[websiteObj.id.toString()];
-        const components = websiteInfo?.websiteComponentsInfo || [];
-        const componentsUpdated = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'CURRENT') || [];
-        const componentsWithUpdates = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_CURRENT') || [];
-        const componentsWithSecurityUpdates = websiteInfo?.websiteComponentsInfo.filter((component) => component.type === 'NOT_SECURE') || [];
+        const components: UpdateInfo[] =  (websiteInfo?.websiteComponentsInfo || []).map((component) => {
+            return {
+                ...component,
+                available_releases: []
+            }
+        });
+        const componentsUpdated = components.filter((component) => component.type === 'CURRENT') || [];
+        const componentsWithUpdates = components.filter((component) => component.type === 'NOT_CURRENT') || [];
+        const componentsWithSecurityUpdates = components.filter((component) => component.type === 'NOT_SECURE') || [];
         const frameWorkUpdateStatus = websiteInfo?.frameworkInfo.type || "UNKNOWN";
         let status: IWebsiteTable['frameWorkUpdateStatus'] = "Up to Date";
-        if(componentsWithUpdates?.length || frameWorkUpdateStatus === "NOT_CURRENT") {
+        if (componentsWithUpdates?.length || frameWorkUpdateStatus === "NOT_CURRENT") {
             status = "Needs Update";
         }
-        if(componentsWithSecurityUpdates?.length || frameWorkUpdateStatus === "NOT_SECURE") {
+        if (componentsWithSecurityUpdates?.length || frameWorkUpdateStatus === "NOT_SECURE") {
             status = "Security Update";
         }
-        if(frameWorkUpdateStatus === "REVOKED") {
+        if (frameWorkUpdateStatus === "REVOKED") {
             status = "Revoked";
         }
-        if(frameWorkUpdateStatus === "UNKNOWN") {
+        if (frameWorkUpdateStatus === "UNKNOWN") {
             status = "Unknown";
         }
-        if(frameWorkUpdateStatus === "NOT_SUPPORTED") {
+        if (frameWorkUpdateStatus === "NOT_SUPPORTED") {
             status = "Not Supported";
         }
         const siteData: IWebsiteTable = {
-            ...websiteObj,
+            ...{
+                ...websiteObj,
+                metadata: undefined,
+            },
+            siteName: websiteObj.title ? websiteObj.title : websiteObj.url,
+            types: websiteObj.type ? [websiteObj.type.name, ...(websiteObj.type.subTypes.map((subType) => subType.name))] : [],
+            tags: websiteObj.tags,
             components,
+            componentsNumber:  components.length,
             componentsUpdated,
+            componentsUpdatedNumber:  componentsUpdated.length,
             componentsWithUpdates,
+            componentsWithUpdatesNumber:  componentsWithUpdates.length,
             componentsWithSecurityUpdates,
+            componentsWithSecurityUpdatesNumber: componentsWithSecurityUpdates.length,
             frameWorkUpdateStatus: status
         }
-        if(websiteInfo?.frameworkInfo){
+        if (websiteInfo?.frameworkInfo) {
             siteData.frameworkVersion = {
                 type: "version",
                 status: versionTypeMapping[websiteInfo.frameworkInfo?.type] || 'Unknown',
                 value: websiteInfo.frameworkInfo.current_version || 'N/A',
-                component: websiteInfo.frameworkInfo,
+                component: {
+                    ...websiteInfo.frameworkInfo,
+                    available_releases: []
+                },
             }
         }
-        if(websiteInfo?.websiteComponentsInfo) {
+        if (websiteInfo?.websiteComponentsInfo) {
             for (const header of extraHeaders) {
-                const component = websiteInfo.websiteComponentsInfo.find((component) => component.name === header.id);
-                if(!component) continue;
+                const component = components.find((component) => component.name === header.id);
+                if (!component) continue;
                 siteData[header.id] = {
                     type: "version",
                     status: versionTypeMapping[component?.type] || 'Unknown',
@@ -115,12 +142,23 @@ export async function getAllFacts(userId?: string): Promise<{
                 };
             }
         }
-        if(websiteInfo?.dataSourcesInfo) {
+        if (websiteInfo?.dataSourcesInfo) {
             for (const dataSource of websiteInfo.dataSourcesInfo) {
-                if(dataSource.data) {
+                if (dataSource.id === 'monit_phpinfo') {
+                    continue;
+                }
+                if (dataSource.data) {
                     for (const header of extraHeaders) {
                         const data = dataSource.data.find((data) => data.id === header.id);
-                        if(data?.status) {
+                        if(data?.detailsFindings) {
+                            data.detailsFindings = data.detailsFindings.map((finding) => {
+                                if(finding.items) {
+                                    delete finding.items;
+                                }
+                                return finding;
+                            });
+                        }
+                        if (data?.status) {
                             siteData[header.id] = {
                                 type: "status",
                                 status: data.status,
@@ -128,10 +166,10 @@ export async function getAllFacts(userId?: string): Promise<{
                                 raw: data,
                                 url: websiteObj.url,
                             };
-                            if(data?.detailsFindings) {
+                            if (data?.detailsFindings) {
                                 siteData[header.id]['info'] = data.detailsFindings.map((finding) => finding.value).join(' ');
                             }
-                        } else if(data?.detailsFindings) {
+                        } else if (data?.detailsFindings) {
                             siteData[header.id] = {
                                 type: "text",
                                 value: data.detailsFindings.map((finding) => finding.value).join(' '),
@@ -145,7 +183,7 @@ export async function getAllFacts(userId?: string): Promise<{
         }
 
         for (const header of extraHeaders) {
-            if(!siteData[header.id]) {
+            if (!siteData[header.id]) {
                 siteData[header.id] = {
                     type: "text",
                     value: 'N/A',
@@ -154,26 +192,28 @@ export async function getAllFacts(userId?: string): Promise<{
         }
         websitesData.push(siteData);
     }
-    const allKeys: { id: string, label: string }[] = [];
-    websitesData.forEach((website) => {
-        Object.keys(website).forEach((key) => {
-            const object = website[key];
-            let title = object?.title ? object?.title : object?.label ? object?.label : object?.id ? object?.id : key;
-            const checkIFExists = allKeys.find((k) => k.id === key);
-            if(!checkIFExists) {
-                allKeys.push({
-                    id: key,
-                    label: title
-                });
-            }
+
+
+    if(filters.items.length) {
+        console.log('filters.items', filters, filters.items);
+        const filteredData = websitesData.filter((website) => {
+            return filterWebsiteTable(website, filters);
         });
-    });
+        console.log('filteredData', filteredData.length);
+        websitesData.length = 0;
+        websitesData.push(...filteredData);
+    }
+    console.timeEnd('process websitesTable');
+
     return {
-        facts: allKeys
+        data: websitesData,
+        count: websitesData.length,
+        extraHeaders: extraHeaders
     };
 }
 
 export async function createAlert(alertData: Partial<IAlert>) {
+    await connectMongo();
     const user = await getUser();
 
     const alert = new Alert({
@@ -183,7 +223,8 @@ export async function createAlert(alertData: Partial<IAlert>) {
         enabled: alertData.enabled,
         interval: alertData.interval,
         intervalUnit: alertData.intervalUnit,
-        rules: alertData.rules,
+        filters: alertData.filters,
+        notifyUsers: alertData.notifyUsers,
     });
 
     const savedAlert = await alert.save();
@@ -193,6 +234,7 @@ export async function createAlert(alertData: Partial<IAlert>) {
 }
 
 export async function getWorkspaceAllAlerts(): Promise<IAlert[]> {
+    await connectMongo();
     const user = await getUser();
 
     let alerts;
@@ -205,11 +247,13 @@ export async function getWorkspaceAllAlerts(): Promise<IAlert[]> {
 }
 
 export async function deleteAlert(alertId: string) {
+    await connectMongo();
     const user = await getUser();
     await Alert.deleteOne({_id: alertId});
 }
 
 export async function updateAlert(alertId: string, alertData: Partial<IAlert>) {
+    await connectMongo();
     const user = await getUser();
     const alert = await Alert.findOne({_id: alertId});
     if (!alert) {
@@ -219,7 +263,8 @@ export async function updateAlert(alertId: string, alertData: Partial<IAlert>) {
     alert.set({
         title: alertData.title,
         enabled: alertData.enabled,
-        rules: alertData.rules,
+        filters: alertData.filters,
+        notifyUsers: alertData.notifyUsers,
         interval: alertData.interval,
         intervalUnit: alertData.intervalUnit,
         events: alertData.events
@@ -230,6 +275,8 @@ export async function updateAlert(alertId: string, alertData: Partial<IAlert>) {
     alert.markModified('rules');
     alert.markModified('interval');
     alert.markModified('intervalUnit');
+    alert.markModified('notifyUsers');
+    alert.markModified('filters');
     alert.markModified('events');
     const savedAlert = await alert.save();
     return {
@@ -238,6 +285,7 @@ export async function updateAlert(alertId: string, alertData: Partial<IAlert>) {
 }
 
 export async function getAlert(alertId: string): Promise<IAlert> {
+    await connectMongo();
     const user = await getUser();
     const alert = await Alert.findOne({_id: alertId});
     if(!alert) {

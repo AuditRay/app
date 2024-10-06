@@ -48,7 +48,9 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     libxtst6 \
     lsb-release \
-    wget \ 
+    wget \
+    cron \
+    curl \
     xdg-utils \
     chromium \
     --no-install-recommends && \
@@ -68,6 +70,8 @@ ENV OPENAI_API_KEY="NA"
 
 RUN npm run build
 
-
+COPY Dockerfiles/monit-cron /etc/cron.d/monit-cron
+RUN chmod 0744 /etc/cron.d/monit-cron
+RUN crontab -l | { cat; cat /etc/cron.d/monit-cron } | crontab -
 # Define ENTRYPOINT array with arguments for 'entrpoint.sh'.
 ENTRYPOINT ["/bin/bash","Dockerfiles/scripts/entrypoint.sh"]
