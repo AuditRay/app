@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import {NextRequest} from "next/server";
 import {Alert, Team, User, Website, WebsiteInfo, Workspace} from "@/app/models";
 import {connectMongo} from "@/app/lib/database";
