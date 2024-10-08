@@ -1,2 +1,1 @@
 */30 * * * *  /usr/bin/curl --silent http://localhost:3000/api/cron >> /var/log/crontab.log 2>&1
-*/1 * * * * echo "cron is running" >> /var/log/crontab-debug.log 2>&1
