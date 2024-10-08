@@ -71,6 +71,6 @@ RUN npm run build
 
 COPY ./Dockerfiles/monit-cron /etc/cron.d/monit-cron
 RUN chmod 0744 /etc/cron.d/monit-cron
-RUN cron
+RUN crontab /etc/cron.d/monit-cron
 # Define ENTRYPOINT array with arguments for 'entrpoint.sh'.
 ENTRYPOINT ["/bin/bash","Dockerfiles/scripts/entrypoint.sh"]
