@@ -163,5 +163,5 @@ export async function GET(request: NextRequest) {
             }
         }
     }
-    return Response.json(websites);
+    return Response.json({status: "done", time: dayjs().format('YYYY-MM-DD HH:mm:ss')});
 }
