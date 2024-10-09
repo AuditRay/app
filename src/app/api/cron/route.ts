@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
             const syncTime = syncConfig?.syncTime;
             const websiteInfos = await WebsiteInfo.find({website: website._id}).sort({createdAt: -1}).limit(1);
             const latestWebsiteInfo = websiteInfos[0]
-            const lastSync = latestWebsiteInfo?.createdAt;
+            const lastSync = latestWebsiteInfo?.updatedAt || latestWebsiteInfo?.createdAt;
             console.log('-----------------------------------------------------------------------');
             console.log('lastSync', dayjs(lastSync).format('YYYY-MM-DD HH:mm:ss'), website._id);
             if(website.workspace) {
