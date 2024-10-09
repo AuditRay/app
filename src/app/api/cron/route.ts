@@ -1,3 +1,5 @@
+import {AlertInfo} from "@/app/models/AlertInfo";
+
 export const dynamic = 'force-dynamic';
 import {NextRequest} from "next/server";
 import {Alert, Team, User, Website, WebsiteInfo, Workspace} from "@/app/models";
@@ -106,6 +108,16 @@ export async function GET(request: NextRequest) {
                 //unique userIds
                 const users = await User.find({_id: {$in: userIds}});
                 for (const user of users) {
+                    const lastAlertInfo = await AlertInfo.find({workspace: workspaceId, alert: alert._id, user: user._id}).sort({createdAt: -1});
+                    if (lastAlertInfo[0]) {
+                        const lastAlertInfoDate = lastAlertInfo[0]?.createdAt;
+                        const lastAlertInfoDateTime = lastAlertInfoDate ? dayjs(lastAlertInfoDate) : dayjs().subtract(1, 'hour');
+                        const nextAlert = lastAlertInfoDateTime.add(alert.interval, alert.intervalUnit.toLowerCase() as ManipulateType);
+                        const now = dayjs();
+                        if (!now.isAfter(nextAlert)) {
+                            continue;
+                        }
+                    }
                     await sendEmail(
                         user.email,
                         `Alert: you have ${alertWebsites.count} websites matching you "${alert.title}" alert criteria`,
@@ -118,6 +130,17 @@ export async function GET(request: NextRequest) {
                             <div>Click on this link to open dashboard ${process.env.APP_URL}</div>
                         `
                     );
+                    const alertInfo = new AlertInfo({
+                        workspace: workspaceId,
+                        alert: alert._id,
+                        user: user._id,
+                        subject: `Alert: you have ${alertWebsites.count} websites matching you "${alert.title}" alert criteria`,
+                        text: `The following website(s) matches your criteria for "${alert.title}" alert: ${alertWebsites.data.map(website => website.title).join(', ')}`,
+                        data: JSON.stringify(alertWebsites),
+                        isSeen: false,
+                        isOpened: false,
+                    });
+                    await alertInfo.save();
                 }
                 console.log('alertWebsites', alertWebsites.count);
             }
@@ -146,6 +169,16 @@ export async function GET(request: NextRequest) {
                 //unique userIds
                 const users = await User.find({_id: {$in: userIds}});
                 for (const user of users) {
+                    const lastAlertInfo = await AlertInfo.find({workspace: null, alert: alert._id, user: user._id}).sort({createdAt: -1});
+                    if (lastAlertInfo[0]) {
+                        const lastAlertInfoDate = lastAlertInfo[0]?.createdAt;
+                        const lastAlertInfoDateTime = lastAlertInfoDate ? dayjs(lastAlertInfoDate) : dayjs().subtract(1, 'hour');
+                        const nextAlert = lastAlertInfoDateTime.add(alert.interval, alert.intervalUnit.toLowerCase() as ManipulateType);
+                        const now = dayjs();
+                        if (!now.isAfter(nextAlert)) {
+                            continue;
+                        }
+                    }
                     await sendEmail(
                         user.email,
                         `Alert: you have ${alertWebsites.count} websites matching you "${alert.title}" alert criteria`,
@@ -158,6 +191,17 @@ export async function GET(request: NextRequest) {
                             <div>Click on this link to open dashboard ${process.env.APP_URL}</div>
                         `
                     );
+                    const alertInfo = new AlertInfo({
+                        workspace: null,
+                        alert: alert._id,
+                        user: user._id,
+                        subject: `Alert: you have ${alertWebsites.count} websites matching you "${alert.title}" alert criteria`,
+                        text: `The following website(s) matches your criteria for "${alert.title}" alert: ${alertWebsites.data.map(website => website.title).join(', ')}`,
+                        data: JSON.stringify(alertWebsites),
+                        isSeen: false,
+                        isOpened: false,
+                    });
+                    await alertInfo.save();
                 }
                 console.log('alertWebsites personalWorkspaces', alertWebsites.count);
             }
