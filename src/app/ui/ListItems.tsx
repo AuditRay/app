@@ -8,7 +8,7 @@ import LanguageIcon from '@mui/icons-material/Language';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import {useRouter} from "next/navigation";
 import {IFiltersView} from "@/app/models/FiltersView";
-import {Box} from "@mui/material";
+import NotificationsIcon from '@mui/icons-material/Notifications';
 
 export const MainListItems = ({filtersViews} : {filtersViews: IFiltersView[]}) => {
     const router = useRouter()
@@ -28,7 +28,7 @@ export const MainListItems = ({filtersViews} : {filtersViews: IFiltersView[]}) =
             </ListItemButton>
             <ListItemButton onClick={() => router.push('/alerts')}>
                 <ListItemIcon>
-                    <LanguageIcon sx={{marginLeft: '6px'}}/>
+                    <NotificationsIcon sx={{marginLeft: '6px'}}/>
                 </ListItemIcon>
                 <ListItemText primary="Alerts"/>
             </ListItemButton>
@@ -42,29 +42,3 @@ export const MainListItems = ({filtersViews} : {filtersViews: IFiltersView[]}) =
         </>
     );
 }
-
-export const secondaryListItems = (
-    <React.Fragment>
-        <ListSubheader component="div" inset>
-            Saved reports
-        </ListSubheader>
-        <ListItemButton>
-            <ListItemIcon>
-                <AssignmentIcon />
-            </ListItemIcon>
-            <ListItemText primary="Current month" />
-        </ListItemButton>
-        <ListItemButton>
-            <ListItemIcon>
-                <AssignmentIcon />
-            </ListItemIcon>
-            <ListItemText primary="Last quarter" />
-        </ListItemButton>
-        <ListItemButton>
-            <ListItemIcon>
-                <AssignmentIcon />
-            </ListItemIcon>
-            <ListItemText primary="Year-end sale" />
-        </ListItemButton>
-    </React.Fragment>
-);
