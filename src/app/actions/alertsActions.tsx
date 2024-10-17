@@ -22,9 +22,9 @@ export async function getAlertInfo(): Promise<IAlertInfo[]> {
     if (!user) {
         throw new Error('User not found');
     }
-    const alerts = await AlertInfo.find({}, {
+    const alerts = await AlertInfo.find({user: user.id}, {
         workspace: 1, user: 1, alert: 1, subject:1, text: 1, isSeen: 1, isOpened: 1
-    });
+    }).sort({createdAt: -1});
     return alerts.map((alert) => alert.toJSON());
 }
 

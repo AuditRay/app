@@ -25,11 +25,16 @@ export default async function Alerts() {
                             expandIcon={<ExpandMoreIcon />}
                             aria-controls="panel1-content"
                             id="panel1-header"
+                            sx={{textTransform: 'capitalize'}}
                         >
-                            {alertInfo.subject.replaceAll('Alert: ', '').toUpperCase()}
+                            {alertInfo.subject.replaceAll('Alert: ', '')}
                         </AccordionSummary>
                         <AccordionDetails>
-                            {alertInfo.text}
+                            <Box
+                                dangerouslySetInnerHTML={{__html: alertInfo.text}}
+                            >
+
+                            </Box>
                         </AccordionDetails>
                     </Accordion>
                 ))}

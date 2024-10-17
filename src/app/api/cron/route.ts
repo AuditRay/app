@@ -109,6 +109,7 @@ export async function GET(request: NextRequest) {
                         }
                     }
                 }
+                console.log('userIds', userIds);
                 //unique userIds
                 const users = await User.find({_id: {$in: userIds}});
                 for (const user of users) {
