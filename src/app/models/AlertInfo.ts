@@ -1,4 +1,5 @@
 import {Model, model, models, Schema} from 'mongoose';
+import {IWebsiteTable} from "@/app/actions/websiteActions";
 
 export type IAlertInfo = {
     id: string;
@@ -38,6 +39,7 @@ const ModelSchema = new Schema<IAlertInfo>(
         },
     },
 );
+
 
 ModelSchema.index({ workspace: -1});
 ModelSchema.index({ user: -1});

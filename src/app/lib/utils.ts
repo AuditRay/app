@@ -100,7 +100,7 @@ export function filterWebsiteTable(website: IWebsiteTable, filters: GridFilterMo
                 break;
             }
         }
-        if(filter.operator === '!=' || filter.operator === 'isNot') {
+        if(filter.operator === '!=' || filter.operator === 'isNot' || filter.operator === 'not') {
             if(val?.toString().toLowerCase() != filter.value.toString().toLowerCase()) {
                 valid = true;
             }
@@ -166,14 +166,15 @@ export function filterWebsiteTable(website: IWebsiteTable, filters: GridFilterMo
             }
         }
         if(filter.operator === 'isAnyOf') {
-            if(filter.value.includes(val?.toString().toLowerCase())) {
+            const filterValuesLower = filter.value.map((v: any) => v.toString().toLowerCase());
+            if(filterValuesLower.includes(val?.toString().toLowerCase())) {
                 valid = true;
             }
-            if(logicOperator == 'and' && !filter.value.includes(val?.toString().toLowerCase())) {
+            if(logicOperator == 'and' && !filterValuesLower.includes(val?.toString().toLowerCase())) {
                 valid = false;
                 break;
             }
-            if(logicOperator == 'or' && filter.value.includes(val?.toString().toLowerCase())) {
+            if(logicOperator == 'or' && filterValuesLower.includes(val?.toString().toLowerCase())) {
                 valid = true;
                 break;
             }

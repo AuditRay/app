@@ -26,6 +26,12 @@ export const MainListItems = ({filtersViews} : {filtersViews: IFiltersView[]}) =
                 </ListItemIcon>
                 <ListItemText primary="Websites"/>
             </ListItemButton>
+            <ListItemButton onClick={() => router.push('/alerts')}>
+                <ListItemIcon>
+                    <LanguageIcon sx={{marginLeft: '6px'}}/>
+                </ListItemIcon>
+                <ListItemText primary="Alerts"/>
+            </ListItemButton>
             {filtersViews && filtersViews.map((filterView) => (
                 <ListItemButton key={filterView.id} onClick={() => router.push(`/websites?filterView=${filterView.id}`)}>
                     <ListItemIcon>

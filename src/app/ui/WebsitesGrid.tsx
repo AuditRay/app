@@ -207,7 +207,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 const rawData = params.row.frameworkVersion;
                 const components = params.row.componentsUpdated;
                 return <Chip
-                    sx={{bgcolor: 'green', color: 'white'}}
+                    sx={{bgcolor: params.value ? 'green' : undefined, color: params.value ? 'white' : undefined}}
                     label={params.value}
                     onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
                 />
@@ -225,7 +225,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 const rawData = params.row.frameworkVersion;
                 const components = params.row.componentsWithUpdates;
                 return <Chip
-                    sx={{bgcolor: 'orange', color: 'white'}}
+                    sx={{bgcolor: params.value ? 'orange' : undefined, color: params.value ? 'white' : undefined}}
                     label={params.value}
                     onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
                 />
@@ -243,7 +243,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 const rawData = params.row.frameworkVersion;
                 const components = params.row.componentsWithSecurityUpdates;
                 return <Chip
-                    sx={{bgcolor: 'red', color: 'white'}}
+                    sx={{bgcolor: params.value ? 'red' : undefined, color: params.value ? 'white' : undefined}}
                     label={params.value}
                     onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
                 />

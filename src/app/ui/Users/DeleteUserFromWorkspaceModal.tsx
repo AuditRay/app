@@ -49,6 +49,7 @@ export default function DeleteUserFromWorkspaceModal({open, setOpen, member, wor
                                 setIsSaving(false);
                                 handleClose();
                             }).catch((e) => {
+                                console.error(e);
                                 setIsSaving(false);
                                 setError('Error deleting template, please try again.');
                             });

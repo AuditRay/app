@@ -31,7 +31,7 @@ export default function InviteUserModal({open, setOpen}: {open: boolean, setOpen
         firstName: '',
         lastName: '',
         email: '',
-        role: ''
+        role: 'default_member'
     });
     const [newUserErrorData, setNewUserErrorData] = useState<{
         firstName?: string;
@@ -42,7 +42,7 @@ export default function InviteUserModal({open, setOpen}: {open: boolean, setOpen
         firstName: '',
         lastName: '',
         email: '',
-        role: 'default_member'
+        role: ''
     });
     const [generalError, setGeneralError] = useState<string>('');
 
@@ -142,6 +142,7 @@ export default function InviteUserModal({open, setOpen}: {open: boolean, setOpen
                     options={workspaceRoles}
                     onChange={(e, value) => {
                         if(!value) {
+                            console.log("workspaceRoles", workspaceRoles);
                             //set default role
                             value = workspaceRoles[1];
                         }

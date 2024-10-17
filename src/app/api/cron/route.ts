@@ -7,7 +7,7 @@ import {connectMongo} from "@/app/lib/database";
 import dayjs, {Dayjs, ManipulateType} from "dayjs";
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import {fetchUpdates, getWebsitesTable} from "@/app/actions/websiteActions";
+import {fetchUpdates, getWebsitesTable, IWebsiteTable} from "@/app/actions/websiteActions";
 import {getAlertWebsites} from "@/app/actions/alertsActions";
 import {sendEmail} from "@/app/lib/email";
 
@@ -16,6 +16,10 @@ dayjs.extend(timezone);
 
 export async function GET(request: NextRequest) {
     await connectMongo();
+    //check if call from localhost
+    if (!request.headers.get('host')?.startsWith('localhost')) {
+        return Response.json({status: "error", message: "Unauthorized"});
+    }
     const websites = await Website.find({});
     for (const website of websites) {
         const isSyncingEnabled = website.syncConfig?.enabled;
@@ -25,7 +29,7 @@ export async function GET(request: NextRequest) {
             const intervalUnit = (syncConfig?.intervalUnit || 'Hour').toLowerCase() as ManipulateType;
             const syncTime = syncConfig?.syncTime;
             const websiteInfos = await WebsiteInfo.find({website: website._id}).sort({createdAt: -1}).limit(1);
-            const latestWebsiteInfo = websiteInfos[0]
+            const latestWebsiteInfo = websiteInfos[0];
             const lastSync = latestWebsiteInfo?.updatedAt || latestWebsiteInfo?.createdAt;
             console.log('-----------------------------------------------------------------------');
             console.log('lastSync', dayjs(lastSync).format('YYYY-MM-DD HH:mm:ss'), website._id);
@@ -108,9 +112,9 @@ export async function GET(request: NextRequest) {
                 //unique userIds
                 const users = await User.find({_id: {$in: userIds}});
                 for (const user of users) {
-                    const lastAlertInfo = await AlertInfo.find({workspace: workspaceId, alert: alert._id, user: user._id}).sort({createdAt: -1});
-                    if (lastAlertInfo[0]) {
-                        const lastAlertInfoDate = lastAlertInfo[0]?.createdAt;
+                    const lastAlertInfo = await AlertInfo.findOne({workspace: workspaceId, alert: alert._id, user: user._id}).sort({createdAt: -1});
+                    if (lastAlertInfo) {
+                        const lastAlertInfoDate = lastAlertInfo?.createdAt;
                         const lastAlertInfoDateTime = lastAlertInfoDate ? dayjs(lastAlertInfoDate) : dayjs().subtract(1, 'hour');
                         const nextAlert = lastAlertInfoDateTime.add(alert.interval, alert.intervalUnit.toLowerCase() as ManipulateType);
                         const now = dayjs();
@@ -118,15 +122,73 @@ export async function GET(request: NextRequest) {
                             continue;
                         }
                     }
+
+                    let emailText = '';
+                    let emailSubject = '';
+                    if (lastAlertInfo && alertWebsites.data) {
+                        const lastAlertData : {
+                            data: IWebsiteTable[];
+                            count: number;
+                            extraHeaders: { id: string, label: string }[];
+                        } = JSON.parse(lastAlertInfo.data);
+                        const newWebsites = alertWebsites.data.filter(website => {
+                            return !lastAlertData.data.find(oldWebsite => oldWebsite.id.toString() === website.id.toString());
+                        });
+                        const otherWebsites = lastAlertData.data.filter(website => {
+                            return alertWebsites.data.find(oldWebsite => oldWebsite.id.toString() === website.id.toString());
+                        });
+                        let newEmailText = '';
+                        let otherEmailText = '';
+                        if (newWebsites.length) {
+                            newEmailText = `
+                                <div>The following new website(s) matches your criteria for "${alert.title}" alert: </div>
+                                <ul>
+                                    ${newWebsites.map(website => "<li>" + website.title + "</li>").join('')}
+                                </ul>
+                            `
+                        }
+                        if (otherWebsites.length) {
+                            otherEmailText = `
+                                <div>The following website(s) matched your criteria again for "${alert.title}" alert: </div>
+                                <ul>
+                                    ${otherWebsites.map(website => "<li>" + website.title + "</li>").join('')}
+                                </ul>
+                            `
+                        }
+                        if(newEmailText || otherEmailText) {
+                            if (newEmailText && otherEmailText) {
+                                emailSubject = `Alert: you have (${newWebsites.length}) new websites and (${otherWebsites.length}) old matching your "${alert.title}" alert criteria`;
+                            } else if (newEmailText) {
+                                emailSubject = `Alert: you have (${newWebsites.length}) new websites matching your "${alert.title}" alert criteria`;
+                            } else {
+                                emailSubject = `Alert: you have (${otherWebsites.length}) websites matched your "${alert.title}" alert criteria`;
+                            }
+                            emailText = newEmailText + otherEmailText;
+                        } else {
+                            emailSubject = `Alert: you have (${alertWebsites.count}) websites matched your "${alert.title}" alert criteria`;
+                            emailText = `
+                                <div>The following website(s) matched your criteria for "${alert.title}" alert: </div>
+                                <ul>
+                                    ${alertWebsites.data.map(website => "<li>" + website.title + "</li>").join('')}
+                                </ul>
+                            `
+                        }
+                    } else {
+                        emailSubject = `Alert: you have (${alertWebsites.count}) new websites matching your "${alert.title}" alert criteria`;
+                        emailText = `
+                                <div>The following website(s) matches your criteria for "${alert.title}" alert: </div>
+                                <ul>
+                                    ${alertWebsites.data.map(website => "<li>" + website.title + "</li>").join('')}
+                                </ul>
+                            `
+                    }
+
                     await sendEmail(
                         user.email,
-                        `Alert: you have ${alertWebsites.count} websites matching you "${alert.title}" alert criteria`,
+                        emailSubject,
                         `
                             <div>Hello ${user.firstName} ${user.lastName},</div></br>
-                            <div>The following website(s) matches your criteria for "${alert.title}" alert: </div>
-                            <ul>
-                                ${alertWebsites.data.map(website => "<li>" + website.title + "</li>").join('')}
-                            </ul>
+                            ${emailText}
                             <div>Click on this link to open dashboard ${process.env.APP_URL}</div>
                         `
                     );
@@ -134,8 +196,8 @@ export async function GET(request: NextRequest) {
                         workspace: workspaceId,
                         alert: alert._id,
                         user: user._id,
-                        subject: `Alert: you have ${alertWebsites.count} websites matching you "${alert.title}" alert criteria`,
-                        text: `The following website(s) matches your criteria for "${alert.title}" alert: ${alertWebsites.data.map(website => website.title).join(', ')}`,
+                        subject: emailSubject.replaceAll('Alert: ', ''),
+                        text: emailText,
                         data: JSON.stringify(alertWebsites),
                         isSeen: false,
                         isOpened: false,
@@ -179,15 +241,67 @@ export async function GET(request: NextRequest) {
                             continue;
                         }
                     }
+                    let emailText = '';
+                    let emailSubject = '';
+                    if (lastAlertInfo[0] && alertWebsites.data) {
+                        const alertInfoData = alertWebsites.data;
+                        const newWebsites = alertWebsites.data.filter(website => {
+                            !alertInfoData.find(oldWebsite => oldWebsite.id.toString() === website.id.toString());
+                        });
+                        const otherWebsites = alertInfoData.filter(website => {
+                            !alertWebsites.data.find(oldWebsite => oldWebsite.id.toString() === website.id.toString());
+                        });
+                        let newEmailText = '';
+                        let otherEmailText = '';
+                        if (newWebsites.length) {
+                            newEmailText = `
+                                <div>The following new website(s) matches your criteria for "${alert.title}" alert: </div>
+                                <ul>
+                                    ${newWebsites.map(website => "<li>" + website.title + "</li>").join('')}
+                                </ul>
+                            `
+                        }
+                        if (otherWebsites.length) {
+                            otherEmailText = `
+                                <div>The following website(s) matched your criteria again for "${alert.title}" alert: </div>
+                                <ul>
+                                    ${otherWebsites.map(website => "<li>" + website.title + "</li>").join('')}
+                                </ul>
+                            `
+                        }
+                        if(newEmailText || otherEmailText) {
+                            if (newEmailText && otherEmailText) {
+                                emailSubject = `Alert: you have (${newWebsites.length}) new websites and (${otherWebsites.length}) old matching your "${alert.title}" alert criteria`;
+                            } else if (newEmailText) {
+                                emailSubject = `Alert: you have (${newWebsites.length}) new websites matching your "${alert.title}" alert criteria`;
+                            } else {
+                                emailSubject = `Alert: you have (${otherWebsites.length}) websites matched your "${alert.title}" alert criteria`;
+                            }
+                            emailText = newEmailText + otherEmailText;
+                        } else {
+                            emailSubject = `Alert: you have (${alertWebsites.count}) websites matching you "${alert.title}" alert criteria`;
+                            emailText = `
+                                <div>The following website(s) matches your criteria for "${alert.title}" alert: </div>
+                                <ul>
+                                    ${alertWebsites.data.map(website => "<li>" + website.title + "</li>").join('')}
+                                </ul>
+                            `
+                        }
+                    } else {
+                        emailSubject = `Alert: you have (${alertWebsites.count}) new websites matching your "${alert.title}" alert criteria`;
+                        emailText = `
+                                <div>The following website(s) matches your criteria for "${alert.title}" alert: </div>
+                                <ul>
+                                    ${alertWebsites.data.map(website => "<li>" + website.title + "</li>").join('')}
+                                </ul>
+                            `
+                    }
                     await sendEmail(
                         user.email,
-                        `Alert: you have ${alertWebsites.count} websites matching you "${alert.title}" alert criteria`,
+                        emailSubject,
                         `
-                            <div>Hello ${user.firstName} ${user.lastName}</div>
-                            <div>The following website(s) matches your criteria for "${alert.title}" alert: </div>
-                            <ul>
-                                $(alertWebsites.data.map(website => "<li>" + website.title + "</li>").join(''))
-                            </ul>
+                            <div>Hello ${user.firstName} ${user.lastName},</div></br>
+                            ${emailText}
                             <div>Click on this link to open dashboard ${process.env.APP_URL}</div>
                         `
                     );
@@ -195,8 +309,8 @@ export async function GET(request: NextRequest) {
                         workspace: null,
                         alert: alert._id,
                         user: user._id,
-                        subject: `Alert: you have ${alertWebsites.count} websites matching you "${alert.title}" alert criteria`,
-                        text: `The following website(s) matches your criteria for "${alert.title}" alert: ${alertWebsites.data.map(website => website.title).join(', ')}`,
+                        subject: emailSubject.replaceAll('Alert: ', ''),
+                        text: emailText,
                         data: JSON.stringify(alertWebsites),
                         isSeen: false,
                         isOpened: false,

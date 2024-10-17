@@ -5,6 +5,7 @@ import {IWebsiteTable} from "@/app/actions/websiteActions";
 import {connectMongo} from "@/app/lib/database";
 import {GridFilterModel} from "@mui/x-data-grid-pro";
 import {filterWebsiteTable} from "@/app/lib/utils";
+import {AlertInfo, IAlertInfo} from "@/app/models/AlertInfo";
 
 const versionTypeMapping = {
     NOT_CURRENT: 'Needs Update',
@@ -13,6 +14,18 @@ const versionTypeMapping = {
     REVOKED: 'Revoked',
     UNKNOWN: 'Unknown',
     NOT_SUPPORTED: 'Not Supported',
+}
+
+export async function getAlertInfo(): Promise<IAlertInfo[]> {
+    await connectMongo();
+    const user = await getUser();
+    if (!user) {
+        throw new Error('User not found');
+    }
+    const alerts = await AlertInfo.find({}, {
+        workspace: 1, user: 1, alert: 1, subject:1, text: 1, isSeen: 1, isOpened: 1
+    });
+    return alerts.map((alert) => alert.toJSON());
 }
 
 export async function getAlertWebsites(

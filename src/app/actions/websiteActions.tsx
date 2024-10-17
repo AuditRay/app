@@ -615,6 +615,7 @@ export async function getWebsitesTable(
                 metadata: undefined,
             },
             siteName: websiteObj.title ? websiteObj.title : websiteObj.url,
+            siteUrl: websiteObj.url,
             types: websiteObj.type ? [websiteObj.type.name, ...(websiteObj.type.subTypes.map((subType) => subType.name))] : [],
             tags: websiteObj.tags,
             components,

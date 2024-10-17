@@ -20,7 +20,7 @@ import Button from "@mui/material/Button";
 import SaveFilterViewModal from "@/app/ui/SaveFilterViewModal";
 import {useSearchParams} from "next/navigation";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
-import {getWebsitesTable, tableSourceField} from "@/app/actions/websiteActions";
+import {getWebsitesListing, getWebsitesTable, tableSourceField} from "@/app/actions/websiteActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import UpdateFilterViewModal from "@/app/ui/UpdateFilterViewModal";
 import useRightDrawerStore from "@/app/lib/uiStore";
@@ -67,12 +67,14 @@ const prepareColumnsVisibility = (headers?: { id: string, label: string}[]) => {
     return cols;
 }
 
-const prepareColumns = (viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string, type?: string}[]): GridColDef[] => {
+const prepareColumns = (viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string, type?: string}[], websites: IWebsite[] = []): GridColDef[] => {
 
     const cols: GridColDef[] = [
         { field: 'siteName', headerName: 'Website Name', flex: 1, minWidth: 450,
             align: 'left',
             headerAlign: 'left',
+            type: 'singleSelect',
+            valueOptions: websites.filter((website) => website.title !== undefined).map((website) => website.title),
             renderCell: (params: GridRenderCellParams<GridRow, GridRow['siteName']>) => (
                 params.value && (
                     <>
@@ -482,6 +484,7 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
     const [columnsVisibility, setColumnsVisibility] = React.useState<GridColumnVisibilityModel>();
     const [columns, setColumns] = React.useState<GridColDef[]>([]);
     const [websites, setWebsites] = React.useState<GridRow[]>([])
+    const [websiteListing, setWebsiteListing] = React.useState<IWebsite[]>([]);
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({ page: 0, pageSize: 3 });
     const [sortModel, setSortModel] = React.useState<GridSortModel>();
     const [rowCount, setRowCount] = React.useState<number>(0);
@@ -506,6 +509,10 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
     }) => {
         setIsWebsitesLoading(true);
 
+        if(!websiteListing.length) {
+            const loadWebsitesListing = await getWebsitesListing();
+            setWebsiteListing(loadWebsitesListing);
+        }
         const {data: websites, extraHeaders, count} = await getWebsitesTable(
             undefined,
             data?.pagination || paginationModel,
@@ -517,7 +524,7 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
             setWebsites([]);
             setExtraHeader([]);
             setColumnsVisibility(prepareColumnsVisibility(extraHeaders));
-            setColumns(prepareColumns(openRightDrawer, extraHeaders));
+            setColumns(prepareColumns(openRightDrawer, extraHeaders, websiteListing));
             setIsWebsitesLoading(false);
             return {
                 websites: [],
@@ -569,7 +576,7 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
             setWebsites(WebsiteRows);
             setExtraHeader(extraHeaders);
             setColumnsVisibility(prepareColumnsVisibility(extraHeaders));
-            setColumns(prepareColumns(openRightDrawer, extraHeaders));
+            setColumns(prepareColumns(openRightDrawer, extraHeaders, websiteListing));
             setIsWebsitesLoading(false);
             return {
                 websites: WebsiteRows,
@@ -579,8 +586,14 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
         }
     }
     useEffect(() => {
+        if(!websiteListing.length) {
+            getWebsitesListing().then((data) => {
+                console.log('website listing', data);
+                setWebsiteListing(data);
+            });
+        }
         if(!filters.items.length) {
-            setColumns(prepareColumns(openRightDrawer, []))
+            setColumns(prepareColumns(openRightDrawer, [], []))
         }
         if (extraHeader.length) {
             setColumnsVisibility(prepareColumnsVisibility(extraHeader));
@@ -589,9 +602,9 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
             filters: filters
         }).then((data) => {
             setColumnsVisibility(prepareColumnsVisibility(data?.extraHeaders));
-            setColumns(prepareColumns(openRightDrawer, data?.extraHeaders))
+            setColumns(prepareColumns(openRightDrawer, data?.extraHeaders, websiteListing))
         });
-    }, []);
+    }, [websiteListing]);
 
     return columns.length ? (
         <div style={{ width: '100%' }}>
