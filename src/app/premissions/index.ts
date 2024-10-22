@@ -1,6 +1,7 @@
 import {IUser} from "@/app/models";
 import {buildWorkspaceBasePermissions, type Permissions, PermissionsKeys} from "./BasePermissions";
 import {getFullUser} from "@/app/actions/getUser";
+import {handlers} from "@/app/premissions/handlers";
 
 export * from './BasePermissions';
 
@@ -45,5 +46,8 @@ export const checkUserAccess = async (args: PermissionArgs) => {
     const fullUser = await getFullUser(user.id) || user;
     const userPermissions = await getUserPermissions(fullUser);
     console.log('userPermissions', userPermissions);
+    if(handlers[permissionName]) {
+        return handlers[permissionName](args, userPermissions, fullUser);
+    }
     return userPermissions[permissionName];
 }

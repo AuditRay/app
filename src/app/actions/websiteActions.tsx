@@ -18,6 +18,7 @@ import {IUser, User} from "@/app/models";
 import * as fs from "node:fs";
 import {GridFilterModel, GridPaginationModel, GridSortModel, GridFilterItem} from "@mui/x-data-grid-pro";
 import {filterWebsiteTable} from "@/app/lib/utils";
+import {checkUserAccess} from "@/app/premissions";
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
@@ -550,6 +551,7 @@ export async function getWebsitesTable(
     ];
     const websiteInfos: Record<string, IWebsiteInfo> = {};
     for (const website of websites) {
+        if(!checkUserAccess({user, permissionName: 'View Assigned Websites', data: {website: website, test: 'blabla'} })) continue;
         const websiteInfo = await WebsiteInfo.find({website: website._id}).sort({createdAt: -1}).limit(1);
 
         if (websiteInfo[0]) {
