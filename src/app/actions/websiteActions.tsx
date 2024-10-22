@@ -501,6 +501,7 @@ const versionTypeMapping = {
     NOT_SUPPORTED: 'Not Supported',
 }
 
+
 export async function countWebsites(userId: string): Promise<number> {
     await connectMongo();
     console.log('countWebsites');
