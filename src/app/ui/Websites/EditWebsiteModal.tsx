@@ -45,6 +45,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
         dayjs().startOf('day')
     );
     const [syncIntervalUnit, setIntervalUnit] = useState<'' | 'Hour' | 'Day' | 'Week'>('Day');
+    const [timeViews, setTimeViews] = useState<('hours' | 'minutes' | 'seconds')[]>(['hours', 'minutes']);
     const [timeZone, setTimeZone] = useState('');
     const [tagsError, setTagsError] = useState<string | null>(null);
     const [generalError, setGeneralError] = useState<string | null>(null);
@@ -54,6 +55,11 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
     }
     const handleClose = () => {
         setOpen(false);
+        setTags([]);
+        setTagsError('');
+        setTimeZone('');
+        setTimeViews(['hours', 'minutes']);
+        setIntervalUnit('Day');
     }
 
     useEffect(() => {
@@ -70,6 +76,9 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
             setEnableSync(loadedWebsite.syncConfig?.enabled);
             setSyncInterval(loadedWebsite.syncConfig?.syncInterval || 1);
             setIntervalUnit(loadedWebsite.syncConfig?.intervalUnit || 'Day');
+            if(loadedWebsite.syncConfig?.intervalUnit === 'Hour') {
+                setTimeViews(['minutes', 'seconds']);
+            }
             //default sync time to 12:00 AM
             setSyncTime(loadedWebsite.syncConfig?.syncTime ? dayjs.utc(loadedWebsite.syncConfig?.syncTime) : dayjs().startOf('day'));
             if (loadedWebsite.workspace) {
@@ -81,7 +90,8 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
             }
             setFieldsTemplate(loadedWebsite.fieldsTemplate as string);
         }
-        open && websiteId && getData();
+
+        open && (websiteId || website) && getData();
         setIsSaving(false);
     }, [websiteId, website, open]);
 
@@ -104,6 +114,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                         options={[]}
                         autoSelect={true}
                         defaultValue={tags}
+                        value={tags}
                         freeSolo
                         onChange={(event, newValue) => {
                             setTags(newValue);
@@ -150,7 +161,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                                         helperText={tagsError}
                                         value={syncInterval}
                                         onChange={(e) => {
-                                            setSyncInterval(parseInt(e.target.value));
+                                            setSyncInterval(parseInt(e.target.value) > 0 ? parseInt(e.target.value) : 1);
                                         }}
                                         variant="outlined"
                                         label="Sync Interval"
@@ -169,6 +180,11 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                                             variant="outlined"
                                             onChange={(e) => {
                                                 setIntervalUnit(e.target.value as '');
+                                                if (e.target.value === 'Hour') {
+                                                    setTimeViews(['minutes', 'seconds']);
+                                                } else {
+                                                    setTimeViews(['hours', 'minutes']);
+                                                }
                                             }}
                                         >
                                             <MenuItem value={'Hour'}>Hour</MenuItem>
@@ -184,6 +200,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                                             value={syncTime}
                                             sx={{width: '100%'}}
                                             onChange={setSyncTime}
+                                            views={timeViews}
                                             timezone={timeZone || undefined}
                                             label={`Sync Time in Timezone: ${timeZone || 'UTC'}`}
                                         />

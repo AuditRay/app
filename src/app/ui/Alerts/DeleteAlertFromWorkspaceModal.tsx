@@ -8,13 +8,15 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {IFieldsTemplate, IMemberPopulated, IUser} from "@/app/models";
+import {IAlert, IFieldsTemplate, ITeam, ITeamPopulated, IUser} from "@/app/models";
 import * as React from "react";
 import Typography from "@mui/material/Typography";
 import {deleteFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import {removeUserFromWorkspace} from "@/app/actions/workspaceActions";
+import {deleteTeam} from "@/app/actions/teamActions";
+import {deleteAlert} from "@/app/actions/alertsActions";
 
-export default function DeleteUserFromWorkspaceModal({open, setOpen, member, workspaceId}: {workspaceId: string, member: IMemberPopulated, open: boolean, setOpen: (open: boolean) => void}) {
+export default function DeleteAlertFromWorkspaceModal({open, setOpen, alert}: {alert: IAlert, open: boolean, setOpen: (open: boolean) => void}) {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const handleClose = () => {
@@ -28,9 +30,9 @@ export default function DeleteUserFromWorkspaceModal({open, setOpen, member, wor
             maxWidth={'sm'}
             scroll={'paper'}
         >
-            <DialogTitle>Remove User</DialogTitle>
+            <DialogTitle>Remove Team</DialogTitle>
             <DialogContent>
-                Are you sure you want to remove user from this workspace?.
+                Are you sure you want to remove alert from this workspace?.
                 {error && <Typography color={'error'}>{error}</Typography>}
             </DialogContent>
             <DialogActions>
@@ -42,16 +44,15 @@ export default function DeleteUserFromWorkspaceModal({open, setOpen, member, wor
                         color={'error'}
                         onClick={() => {
                             setIsSaving(true);
-                            async function removeUser() {
-                                await removeUserFromWorkspace(workspaceId, member.user.id);
+                            async function remove() {
+                                await deleteAlert(alert.id);
                             }
-                            removeUser().then(() => {
+                            remove().then(() => {
                                 setIsSaving(false);
                                 handleClose();
                             }).catch((e) => {
-                                console.error(e);
                                 setIsSaving(false);
-                                setError('Error deleting template, please try again.');
+                                setError('Error deleting alert, please try again.');
                             });
                         }}
                     >{isSaving ? 'Removing...' : 'Remove'} </Button>

@@ -34,7 +34,7 @@ export const userSessionState = create<UserSessionState>((set) => ({
     fullUser: null,
     setUser: (user: IUser) => set({ user }),
     setFullUser: (fullUser: IUser) => set({ fullUser }),
-    clearUser: () => set({ user: null }),
+    clearUser: () => set({ user: null, fullUser: null }),
 }))
 
 export default useRightDrawerStore;

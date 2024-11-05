@@ -132,8 +132,8 @@ export async function removeUserFromWorkspace(workspaceId: string, userId: strin
         throw new Error('Workspace not found');
     }
     console.log('userId', userId);
-    workspace.users = workspace.users?.filter(user => user.toString() !== userId);
-    workspace.markModified('users');
+    workspace.members = workspace.members?.filter(member => member.user.toString() !== userId);
+    workspace.markModified('members');
     await workspace.save();
     return workspace.toJSON();
 }

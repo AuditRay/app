@@ -17,6 +17,9 @@ import {Suspense} from "react";
 import UpdateWebsiteFieldValuesModal from "@/app/ui/FieldsTemplate/UpdateWebsiteFieldValuesModal";
 import {FieldsTemplate} from "@/app/models";
 import Loading from "@/app/loading";
+import EditWebsiteModal from "@/app/ui/Websites/EditWebsiteModal";
+import UpdateWebsiteInfoModal from "@/app/ui/Websites/UpdateWebsiteInfoModal";
+import {getWorkspaceFieldTemplate} from "@/app/actions/fieldTemplateActions";
 
 export default async function WebsitePage({ params }: { params: { websiteId: string, viewId: string } }) {
     const { websiteId, viewId } = params;
@@ -42,12 +45,11 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
     }
 
     const websiteFields = [];
-    if(website && website.fieldsTemplate) {
-        const websiteFieldsTemplate = await FieldsTemplate.findOne({_id: website.fieldsTemplate});
-        const websiteFieldsTemplateData = websiteFieldsTemplate?.toJSON();
-        if(websiteFieldsTemplateData?.fields) {
-            for (const field of websiteFieldsTemplateData.fields) {
-                const fieldValue = website.fieldValues?.find((fieldValue) => fieldValue.id === field.id);
+    const workspaceFieldTemplateData = await getWorkspaceFieldTemplate();
+    if(website && workspaceFieldTemplateData?.fields) {
+        for (const field of workspaceFieldTemplateData.fields) {
+            const fieldValue = website.fieldValues?.find((fieldValue) => fieldValue.id === field.id);
+            if(fieldValue?.value) {
                 websiteFields.push({
                     ...field,
                     value: fieldValue?.value
@@ -77,7 +79,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                 </Typography>
                             </div>
                         )}
-                        {website && website.fieldsTemplate && websiteFields && websiteFields.length && (
+                        {website && workspaceFieldTemplateData.fields.length > 0  && websiteFields && websiteFields.length > 0  ? (
                             <>
                                 <Box sx={{mt: 2}}>
                                     {websiteFields.map((field) => (
@@ -88,9 +90,13 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                     ))}
                                 </Box>
                                 <Box sx={{textAlign: 'right'}}>
-                                    <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={website.fieldsTemplate as string}></UpdateWebsiteFieldValuesModal>
+                                    <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id} website={website} fieldsTemplate={workspaceFieldTemplateData}></UpdateWebsiteFieldValuesModal>
                                 </Box>
                             </>
+                        ) : website && workspaceFieldTemplateData.fields.length > 0  && (
+                            <Box sx={{textAlign: 'right'}}>
+                                <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id} website={website} fieldsTemplate={workspaceFieldTemplateData}></UpdateWebsiteFieldValuesModal>
+                            </Box>
                         )}
                     </Paper>
                     <Paper
@@ -137,7 +143,9 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                     >
                         {website && (
                             <div>
-                                <WebsiteConnectionTokenModal websiteId={website.id}/>
+                                <EditWebsiteModal websiteId={website.id} website={website}/>
+                                <WebsiteConnectionTokenModal websiteId={website.id} website={website}/>
+                                <UpdateWebsiteInfoModal websiteId={website.id}/>
                             </div>
                         )}
                     </Paper>

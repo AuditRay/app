@@ -1,15 +1,5 @@
 FROM node:20.13.0-bullseye
 
-
-WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-COPY . .
-
-ENV APP_PATH "/app"
-ENV SCRIPTS_PATH $APP_PATH/Dockerfiles/scripts
-
 RUN apt-get update && apt-get install -y \
     htop \
     openssh-server \
@@ -48,11 +38,22 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     libxtst6 \
     lsb-release \
-    wget \ 
+    wget \
+    cron \
+    curl \
     xdg-utils \
     chromium \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY package.json package-lock.json* ./
+
+COPY . /app/
+RUN rm /app/node_modules -rf
+RUN ls -l /app
+ENV APP_PATH "/app"
+ENV SCRIPTS_PATH $APP_PATH/Dockerfiles/scripts
 
 EXPOSE 3000
 
@@ -65,9 +66,11 @@ RUN chmod -R u+rx $SCRIPTS_PATH/*
 # Env variables
 ENV OPENAI_API_KEY="NA"
 
-
+RUN npm ci
 RUN npm run build
 
-
+COPY ./Dockerfiles/monit-cron /etc/cron.d/monit-cron
+RUN chmod 0744 /etc/cron.d/monit-cron
+RUN crontab /etc/cron.d/monit-cron
 # Define ENTRYPOINT array with arguments for 'entrpoint.sh'.
 ENTRYPOINT ["/bin/bash","Dockerfiles/scripts/entrypoint.sh"]

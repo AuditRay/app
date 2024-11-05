@@ -11,6 +11,7 @@ import GroupsIcon from '@mui/icons-material/Groups';
 import KeyIcon from '@mui/icons-material/Key';
 import {IUser} from "@/app/models";
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
+import EditNotificationsIcon from '@mui/icons-material/EditNotifications';
 import {userSessionState} from "@/app/lib/uiStore";
 
 export default function SettingsLayout({children,}: {
@@ -40,6 +41,12 @@ export default function SettingsLayout({children,}: {
                                 <WorkspacesIcon sx={{marginLeft: '6px'}}/>
                             </ListItemIcon>
                             <ListItemText primary="General"/>
+                        </ListItemButton>
+                        <ListItemButton selected={pathname === '/settings/alerts'} disabled={!user} onClick={() => user && router.push('/settings/alerts')}>
+                            <ListItemIcon>
+                                <EditNotificationsIcon sx={{marginLeft: '6px'}}/>
+                            </ListItemIcon>
+                            <ListItemText primary="Alerts"/>
                         </ListItemButton>
                         <ListItemButton selected={pathname === '/settings/field-templates'} disabled={!user} onClick={() => user && router.push('/settings/field-templates')}>
                             <ListItemIcon>

@@ -8,7 +8,7 @@ export const MemberRole = async (): Promise<IRole> => {
         userPermissions[permission] = permissions[permission].default;
     }
     return {
-        overrideId: 'default_admin',
+        overrideId: 'default_member',
         id: 'default_member',
         name: 'Member',
         workspace: '',

@@ -58,7 +58,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                             </Typography>
                         </Box>
                     )}
-                    {website && workspaceFieldTemplateData.fields.length && websiteFields && websiteFields.length ? (
+                    {website && workspaceFieldTemplateData.fields.length > 0 && websiteFields && websiteFields.length > 0 ? (
                         <>
                             <Box sx={{mt: 2}}>
                                 {websiteFields.map((field) => (
@@ -72,7 +72,7 @@ export default async function WebsitePage({ params }: { params: { websiteId: str
                                 <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id} website={website} fieldsTemplate={workspaceFieldTemplateData}></UpdateWebsiteFieldValuesModal>
                             </Box>
                         </>
-                    ) : website && workspaceFieldTemplateData.fields.length && (
+                    ) : website && workspaceFieldTemplateData.fields.length > 0 && (
                         <Box sx={{textAlign: 'right'}}>
                             <UpdateWebsiteFieldValuesModal websiteId={website.id} fieldsTemplateId={workspaceFieldTemplateData.id} website={website} fieldsTemplate={workspaceFieldTemplateData}></UpdateWebsiteFieldValuesModal>
                         </Box>

@@ -4,7 +4,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-
+service cron restart
 echo "- Current Build Profile: $BUILD_PROFILE"
 
 cd $APP_PATH

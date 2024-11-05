@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react';
 import {
     DataGridPro,
@@ -14,14 +12,15 @@ import {
 } from '@mui/x-data-grid-pro';
 import {diff} from 'deep-object-diff';
 import {IWebsite} from "@/app/models/Website";
-import {Box, Chip, LinearProgress} from "@mui/material";
+import {Box, Chip, debounce, Divider, InputLabel, LinearProgress, Paper} from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import {useCallback, useEffect} from "react";
+import ReactDOM from "react-dom";
 import Button from "@mui/material/Button";
 import SaveFilterViewModal from "@/app/ui/SaveFilterViewModal";
 import {useSearchParams} from "next/navigation";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
-import {getWebsitesTable, tableSourceField} from "@/app/actions/websiteActions";
+import {getWebsitesListing, getWebsitesTable, tableSourceField} from "@/app/actions/websiteActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import UpdateFilterViewModal from "@/app/ui/UpdateFilterViewModal";
 import useRightDrawerStore from "@/app/lib/uiStore";
@@ -31,6 +30,8 @@ import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import ComponentInfo from "@/app/ui/ComponentInfo";
 import {UpdateInfo} from "@/app/models";
 import Link from "@/app/ui/Link";
+import {GridFilterPanel} from "@mui/x-data-grid";
+import {styled} from "@mui/material/styles";
 
 export type GridRow = {
     id: number|string;
@@ -51,7 +52,7 @@ export type GridRow = {
     frameworkVersion?: tableSourceField;
     [key: string]: string | number | string[] | IWebsite['type'] | boolean | tableSourceField | UpdateInfo[] | undefined
 };
-const columnsVisibility = (headers?: { id: string, label: string}[]) => {
+const prepareColumnsVisibility = (headers?: { id: string, label: string}[]) => {
     const cols: { [key: string]: boolean } = {
         frameworkVersion: true,
         componentsNumber: true,
@@ -66,12 +67,14 @@ const columnsVisibility = (headers?: { id: string, label: string}[]) => {
     return cols;
 }
 
-const prepareColumns = (viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string}[]): GridColDef[] => {
+const prepareColumns = (viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string, type?: string}[], websites: IWebsite[] = []): GridColDef[] => {
 
     const cols: GridColDef[] = [
         { field: 'siteName', headerName: 'Website Name', flex: 1, minWidth: 450,
             align: 'left',
             headerAlign: 'left',
+            type: 'singleSelect',
+            valueOptions: websites.filter((website) => website.title !== undefined).map((website) => website.title),
             renderCell: (params: GridRenderCellParams<GridRow, GridRow['siteName']>) => (
                 params.value && (
                     <>
@@ -139,9 +142,6 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
             sortable: false,
             align: 'left',
             headerAlign: 'left',
-            filterOperators: getGridStringOperators().filter((operator) => operator.value === 'contains').map((operator) => {
-                return operator;
-            }),
             renderCell: (params: GridRenderCellParams<GridRow, GridRow['frameworkVersion']>) => {
                 const rawData = params.row.frameworkVersion;
                 const updatedComponent = rawData?.component;
@@ -207,7 +207,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 const rawData = params.row.frameworkVersion;
                 const components = params.row.componentsUpdated;
                 return <Chip
-                    sx={{bgcolor: params.value ? 'green' : undefined, color: params.value ? 'white' : undefined}}
+                    sx={{bgcolor: 'green', color: 'white'}}
                     label={params.value}
                     onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
                 />
@@ -225,7 +225,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 const rawData = params.row.frameworkVersion;
                 const components = params.row.componentsWithUpdates;
                 return <Chip
-                    sx={{bgcolor: params.value ? 'orange' : undefined, color: params.value ? 'white' : undefined}}
+                    sx={{bgcolor: 'orange', color: 'white'}}
                     label={params.value}
                     onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
                 />
@@ -243,7 +243,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 const rawData = params.row.frameworkVersion;
                 const components = params.row.componentsWithSecurityUpdates;
                 return <Chip
-                    sx={{bgcolor: params.value ? 'red' : undefined, color: params.value ? 'white' : undefined}}
+                    sx={{bgcolor: 'red', color: 'white'}}
                     label={params.value}
                     onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
                 />
@@ -319,7 +319,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                     },
                 },
                 {
-                    label: 'Empty',
+                    label: value.type === 'component' ? 'No Installed' : 'Empty',
                     value: 'empty',
                     getApplyFilterFn: (filterItem, column) => {
                         return (value, row, column, apiRef) => {
@@ -331,7 +331,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                     },
                 },
                 {
-                    label: 'Not Empty',
+                    label: value.type === 'component' ? 'Installed' : 'Not Empty',
                     value: 'notEmpty',
                     getApplyFilterFn: (filterItem, column) => {
                         return (value, row, column, apiRef) => {
@@ -430,195 +430,232 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
     return cols;
 };
 
+
+const StyledGridOverlay = styled('div')(({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    padding: 10,
+    '& .no-rows-primary': {
+        fill: theme.palette.mode === 'light' ? '#AEB8C2' : '#3D4751',
+    },
+    '& .no-rows-secondary': {
+        fill: theme.palette.mode === 'light' ? '#E8EAED' : '#1D2126',
+    },
+}));
+
 function CustomNoRowsOverlay() {
     return (
-        <Box sx={{ mt: 2 }}>Loading Data</Box>
+        <StyledGridOverlay>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                width={96}
+                viewBox="0 0 452 257"
+                aria-hidden
+                focusable="false"
+            >
+                <path
+                    className="no-rows-primary"
+                    d="M348 69c-46.392 0-84 37.608-84 84s37.608 84 84 84 84-37.608 84-84-37.608-84-84-84Zm-104 84c0-57.438 46.562-104 104-104s104 46.562 104 104-46.562 104-104 104-104-46.562-104-104Z"
+                />
+                <path
+                    className="no-rows-primary"
+                    d="M308.929 113.929c3.905-3.905 10.237-3.905 14.142 0l63.64 63.64c3.905 3.905 3.905 10.236 0 14.142-3.906 3.905-10.237 3.905-14.142 0l-63.64-63.64c-3.905-3.905-3.905-10.237 0-14.142Z"
+                />
+                <path
+                    className="no-rows-primary"
+                    d="M308.929 191.711c-3.905-3.906-3.905-10.237 0-14.142l63.64-63.64c3.905-3.905 10.236-3.905 14.142 0 3.905 3.905 3.905 10.237 0 14.142l-63.64 63.64c-3.905 3.905-10.237 3.905-14.142 0Z"
+                />
+                <path
+                    className="no-rows-secondary"
+                    d="M0 10C0 4.477 4.477 0 10 0h380c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 20 0 15.523 0 10ZM0 59c0-5.523 4.477-10 10-10h231c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 69 0 64.523 0 59ZM0 106c0-5.523 4.477-10 10-10h203c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 153c0-5.523 4.477-10 10-10h195.5c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 200c0-5.523 4.477-10 10-10h203c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 247c0-5.523 4.477-10 10-10h231c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10Z"
+                />
+            </svg>
+            <Typography sx={{ mt: 2, textAlign: "center" }} variant={'h2'}>No websites currently match the specified criteria yet, which may indicate that there are no sites requiring attention at this time. However, an alert will be triggered as soon as any website meets these parameters.</Typography>
+        </StyledGridOverlay>
     );
 }
 
-export default function WebsitesGrid() {
-    const searchParams = useSearchParams();
-    const [filters, setFilters] = React.useState<GridFilterModel>();
-    const [isFiltersLoaded, setIsFiltersLoaded] = React.useState<boolean>(false);
+export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filters: GridFilterModel, setFilters: (filters: GridFilterModel) => void}) {
     const [isWebsitesLoading, setIsWebsitesLoading] = React.useState<boolean>(true);
-    const [filtersView, setFiltersView] = React.useState<IFiltersView>();
-    const [columns, setColumns] = React.useState<GridColumnVisibilityModel>();
-    const [isSaveOpened, setIsSaveOpened] = React.useState<boolean>(false);
-    const [isUpdateOpened, setIsUpdateOpened] = React.useState<boolean>(false);
+    const [columnsVisibility, setColumnsVisibility] = React.useState<GridColumnVisibilityModel>();
+    const [columns, setColumns] = React.useState<GridColDef[]>([]);
     const [websites, setWebsites] = React.useState<GridRow[]>([])
-    const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({ page: 0, pageSize: 10 });
+    const [websiteListing, setWebsiteListing] = React.useState<IWebsite[]>([]);
+    const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({ page: 0, pageSize: 3 });
     const [sortModel, setSortModel] = React.useState<GridSortModel>();
     const [rowCount, setRowCount] = React.useState<number>(0);
     const [extraHeader, setExtraHeader] = React.useState<{ id: string, label: string}[]>([]);
     const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
+    // Inside your AlertsWebsitesPreviewGrid component
+
     const CustomToolbar = useCallback(() => {
-        const filterViewParam = searchParams.get('filterView');
-        let enableSave = false;
-        if (filters) {
-            const compare = diff(filters, filtersView?.filters || { items: [] });
-            enableSave = compare && Object.keys(compare).length > 0;
-        }
-        if(columns) {
-            const compare = diff(columns, filtersView?.columns || columnsVisibility(extraHeader));
-            enableSave = compare && Object.keys(compare).length > 0;
-        }
         return (
-            <GridToolbarContainer>
-                <GridToolbarColumnsButton />
-                <GridToolbarFilterButton />
-                <GridToolbarExport />
-                {!filterViewParam && (
-                    <Button variant={'contained'} onClick={() => setIsSaveOpened(true)}>
-                        Save View
-                    </Button>
+            <Box>
+                {ReactDOM.createPortal(
+                    <GridFilterPanel />,
+                    document.getElementById("header")!
                 )}
-                {filterViewParam && enableSave && (
-                    <Button variant={'outlined'} onClick={() => setIsUpdateOpened(true)}>
-                        Update View
-                    </Button>
-                )}
-            </GridToolbarContainer>
+            </Box>
         );
-    }, [searchParams, filters, columns, filtersView, extraHeader])
+    }, []);
     const getWebsites = async (data?: {
         filters?: GridFilterModel,
         pagination?: GridPaginationModel
         sort?: GridSortModel
     }) => {
         setIsWebsitesLoading(true);
-        console.log('filters', filters);
 
+        if(!websiteListing.length) {
+            const loadWebsitesListing = await getWebsitesListing();
+            setWebsiteListing(loadWebsitesListing);
+        }
         const {data: websites, extraHeaders, count} = await getWebsitesTable(
             undefined,
             data?.pagination || paginationModel,
-            data?.filters || filters,
+            data?.filters || filters || { items: [] },
             data?.sort || sortModel
         );
-        setRowCount(count);
-        const WebsiteRows: GridRow[] = websites.map((website) => {
-            const websiteData: GridRow = {
-                id: website.id,
-                url: website.url,
-                favicon: website.favicon,
-                siteName: website.title ? website.title : website.url,
-                type: website.type,
-                types:  website.type ? [website.type.name, ...(website.type.subTypes.map((subType) => subType.name))] : [],
-                tags: website.tags || [],
-                components: website.components,
-                componentsNumber: website.components.length,
-                componentsUpdated: website.componentsUpdated,
-                componentsUpdatedNumber: website.componentsUpdated.length,
-                componentsWithUpdates: website.componentsWithUpdates,
-                componentsWithUpdatesNumber: website.componentsWithUpdates.length,
-                componentsWithSecurityUpdates: website.componentsWithSecurityUpdates,
-                componentsWithSecurityUpdatesNumber: website.componentsWithSecurityUpdates.length,
-                frameWorkUpdateStatus: website.frameWorkUpdateStatus,
-                frameworkVersion: website.frameworkVersion,
+        if(!data?.filters?.items.length && !filters?.items.length) {
+            setRowCount(0);
+            setWebsites([]);
+            setExtraHeader([]);
+            setColumnsVisibility(prepareColumnsVisibility(extraHeaders));
+            setColumns(prepareColumns(openRightDrawer, extraHeaders, websiteListing));
+            setIsWebsitesLoading(false);
+            return {
+                websites: [],
+                extraHeaders: extraHeaders,
+                count: count
             }
-            for (const [key, value] of Object.entries(website)) {
-                if(!websiteData[key]) {
-                    if(typeof value === 'object') {
-                        switch (value.type) {
-                            case 'text':
-                                websiteData[key] = value.value
-                                break
-                            case 'status':
-                                websiteData[key] = value.status === 'success' ? "Success" : value.status === 'warning' ? "Warning" : "Error"
-                                break
-                            case 'version':
-                                websiteData[key] = value.value
-                                break
+        } else {
+            setRowCount(count);
+            const WebsiteRows: GridRow[] = websites.map((website) => {
+                const websiteData: GridRow = {
+                    id: website.id,
+                    url: website.url,
+                    favicon: website.favicon,
+                    siteName: website.title ? website.title : website.url,
+                    type: website.type,
+                    types: website.type ? [website.type.name, ...(website.type.subTypes.map((subType) => subType.name))] : [],
+                    tags: website.tags || [],
+                    components: website.components,
+                    componentsNumber: website.components.length,
+                    componentsUpdated: website.componentsUpdated,
+                    componentsUpdatedNumber: website.componentsUpdated.length,
+                    componentsWithUpdates: website.componentsWithUpdates,
+                    componentsWithUpdatesNumber: website.componentsWithUpdates.length,
+                    componentsWithSecurityUpdates: website.componentsWithSecurityUpdates,
+                    componentsWithSecurityUpdatesNumber: website.componentsWithSecurityUpdates.length,
+                    frameWorkUpdateStatus: website.frameWorkUpdateStatus,
+                    frameworkVersion: website.frameworkVersion,
+                }
+                for (const [key, value] of Object.entries(website)) {
+                    if (!websiteData[key]) {
+                        if (typeof value === 'object') {
+                            switch (value.type) {
+                                case 'text':
+                                    websiteData[key] = value.value
+                                    break
+                                case 'status':
+                                    websiteData[key] = value.status === 'success' ? "Success" : value.status === 'warning' ? "Warning" : "Error"
+                                    break
+                                case 'version':
+                                    websiteData[key] = value.value
+                                    break
+                            }
+                            websiteData[`${key}_raw`] = value;
                         }
-                        websiteData[`${key}_raw`] = value;
                     }
                 }
+                return websiteData;
+            });
+            setWebsites(WebsiteRows);
+            setExtraHeader(extraHeaders);
+            setColumnsVisibility(prepareColumnsVisibility(extraHeaders));
+            setColumns(prepareColumns(openRightDrawer, extraHeaders, websiteListing));
+            setIsWebsitesLoading(false);
+            return {
+                websites: WebsiteRows,
+                extraHeaders: extraHeaders,
+                count: count
             }
-            return websiteData;
-        });
-        setWebsites(WebsiteRows);
-        setColumns(columns || columnsVisibility(extraHeader));
-        setExtraHeader(extraHeaders);
-        setIsWebsitesLoading(false);
+        }
     }
     useEffect(() => {
-        const filterView = searchParams.get('filterView');
-        if(filterView) return;
-        setFilters({ items: [] });
-        getWebsites({
-            filters: { items: [] }
-        }).then(() => {
-            console.log('extraHeader', extraHeader);
-            setColumns(columnsVisibility(extraHeader));
-        });
-    }, [searchParams]);
-    useEffect(() => {
-        const filterView = searchParams.get('filterView');
-        if (filterView) {
-            getFiltersView(filterView).then((filter) => {
-                if (filter) {
-                    setIsFiltersLoaded(true);
-                    setFiltersView(filter);
-                    setFilters(filter.filters as GridFilterModel);
-                    if (filter.columns) {
-                        setColumns(filter.columns as GridColumnVisibilityModel);
-                    }
-                    getWebsites({
-                        filters: filter.filters as GridFilterModel,
-                    });
-                }
-            })
-        } else {
-            setFilters({ items: [] });
-            if (extraHeader.length) {
-                setColumns(columnsVisibility(extraHeader));
-            }
-            setFiltersView(undefined);
+        if(!websiteListing.length) {
+            getWebsitesListing().then((data) => {
+                console.log('website listing', data);
+                setWebsiteListing(data);
+            });
         }
-    }, [searchParams]);
+        if(!filters.items.length) {
+            setColumns(prepareColumns(openRightDrawer, [], []))
+        }
+        if (extraHeader.length) {
+            setColumnsVisibility(prepareColumnsVisibility(extraHeader));
+        }
+        getWebsites({
+            filters: filters
+        }).then((data) => {
+            setColumnsVisibility(prepareColumnsVisibility(data?.extraHeaders));
+            setColumns(prepareColumns(openRightDrawer, data?.extraHeaders, websiteListing))
+        });
+    }, [websiteListing]);
 
-    return (
+    return columns.length ? (
         <div style={{ width: '100%' }}>
-            <SaveFilterViewModal open={isSaveOpened} setOpen={setIsSaveOpened} filtersModel={filters} columnsModel={columns}/>
-            {filtersView && (
-                <UpdateFilterViewModal open={isUpdateOpened} setOpen={setIsUpdateOpened} filtersView={filtersView} filtersModel={filters} columnsModel={columns}/>
-            )}
+            <Paper id="header" sx={{ mb: 2 }} />
+            <Divider sx={{my: 1}}/>
+            <InputLabel id="interval-unit-select-label" sx={{my: 1}}>Results Preview ({rowCount})</InputLabel>
             <DataGridPro
                 autoHeight={true}
                 sx={{ '--DataGrid-overlayHeight': '300px' }}
                 slots={{
                     loadingOverlay: LinearProgress as GridSlots['loadingOverlay'],
-                    toolbar: CustomToolbar
+                    noRowsOverlay: CustomNoRowsOverlay,
+                    toolbar: CustomToolbar,
+                    columnHeaders: rowCount > 0 ? undefined: Box,
+                    footer:  rowCount > 0 ? undefined: Box
                 }}
                 loading={isWebsitesLoading}
                 rows={websites}
-                columns={prepareColumns(openRightDrawer, extraHeader)}
+                columns={columns}
                 rowSelection={false}
                 filterMode={'server'}
                 onPaginationModelChange={(model) => {
-                    console.log('model', model);
                     setPaginationModel(model);
                     getWebsites({
                         pagination: model,
+                    }).then((data) => {
+                        setColumnsVisibility(prepareColumnsVisibility(data?.extraHeaders));
                     });
                 }}
-                onFilterModelChange={(model) => {
-                    console.log('model', model);
+                onFilterModelChange={(model, details) => {
+                    //debounce the filter change
+                    // console.log('filter model change', model, details);
+                    // if(!details.reason) return;
                     setFilters(model);
                     getWebsites({
                         filters: model,
+                    }).then((data) => {
+                        setColumnsVisibility(prepareColumnsVisibility(data?.extraHeaders));
                     });
                 }}
                 onColumnVisibilityModelChange={(model) => {
-                    setColumns(model);  // save columns visibility
+                    setColumnsVisibility(model);  // save columns visibility
                 }}
                 filterModel={filters}
-                columnVisibilityModel={columns}
+                columnVisibilityModel={columnsVisibility}
                 initialState={{
                     pagination: {
                         paginationModel: paginationModel,
                     },
                     columns: {
-                        columnVisibilityModel: columnsVisibility(extraHeader),
+                        columnVisibilityModel: prepareColumnsVisibility(extraHeader),
                     },
                 }}
                 sortingMode={'server'}
@@ -626,13 +663,15 @@ export default function WebsitesGrid() {
                   setSortModel(model);
                   getWebsites({
                       sort: model,
+                  }).then(() => {
+                      setColumnsVisibility(prepareColumnsVisibility(extraHeader));
                   });
                 }}
                 pagination={true}
                 paginationMode={'server'}
                 rowCount={rowCount}
-                pageSizeOptions={[5, 10, 20]}
+                pageSizeOptions={[1, 2, 3]}
             />
         </div>
-    );
+    ) : <LinearProgress></LinearProgress>;
 }

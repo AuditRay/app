@@ -16,7 +16,8 @@ import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
 import {IUser, User} from "@/app/models";
 import * as fs from "node:fs";
-import {GridFilterModel, GridPaginationModel, GridSortModel} from "@mui/x-data-grid-pro";
+import {GridFilterModel, GridPaginationModel, GridSortModel, GridFilterItem} from "@mui/x-data-grid-pro";
+import {filterWebsiteTable} from "@/app/lib/utils";
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
@@ -173,7 +174,6 @@ export async function getLatestWebsiteInfo(websiteId: string): Promise<IWebsiteI
 export async function fetchUpdates(websiteId: string, sync: boolean = false): Promise<IWebsiteInfo | null> {
     await connectMongo();
     console.log('fetchUpdates');
-    const user = await getUser();
     const website = await Website.findOne({_id: websiteId});
     //get existing WebsiteInfo components
     const websiteLatestInfos = await WebsiteInfo.find({website: websiteId}).sort({createdAt: -1}).limit(1);
@@ -257,6 +257,7 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             body: new URLSearchParams({
                 token: website.token,
             }),
+            cache: 'no-cache',
         });
 
         if (response.status === 404) {
@@ -265,6 +266,7 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
                 body: new URLSearchParams({
                     token: website.token,
                 }),
+                cache: 'no-cache',
             });
         }
 
@@ -435,7 +437,7 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
     await connectMongo();
     console.log('updateWebsite');
     const user = await getUser();
-    const website = await Website.findOne({_id: websiteId, user: user.id});
+    const website = await Website.findOne({_id: websiteId});
     if (!website) {
         return null;
     }
@@ -543,7 +545,7 @@ export async function getWebsitesTable(
         });
     }
     const websitesData: IWebsiteTable[] = [];
-    const extraHeaders: { id: string, label: string }[] = [
+    const extraHeaders: { id: string, label: string, type?: string }[] = [
         {id: 'frameworkVersion', label: 'Framework'},
     ];
     const websiteInfos: Record<string, IWebsiteInfo> = {};
@@ -556,7 +558,7 @@ export async function getWebsitesTable(
         if (websiteInfo[0]?.websiteComponentsInfo) {
             for (const component of websiteInfo[0].websiteComponentsInfo) {
                 if (!extraHeaders.find((header) => header.id === component.name)) {
-                    extraHeaders.push({id: component.name, label: component.title});
+                    extraHeaders.push({id: component.name, label: component.title, type: 'component'});
                 }
             }
         }
@@ -613,6 +615,7 @@ export async function getWebsitesTable(
                 metadata: undefined,
             },
             siteName: websiteObj.title ? websiteObj.title : websiteObj.url,
+            siteUrl: websiteObj.url,
             types: websiteObj.type ? [websiteObj.type.name, ...(websiteObj.type.subTypes.map((subType) => subType.name))] : [],
             tags: websiteObj.tags,
             components,
@@ -703,184 +706,7 @@ export async function getWebsitesTable(
     if(filters.items.length) {
         console.log('filters.items', filters, filters.items);
         const filteredData = websitesData.filter((website) => {
-            let valid = false;
-            for(const filter of filters.items) {
-                const logicOperator = filters.logicOperator || 'and';
-                const val = website[filter.field]?.value || website[filter.field];
-                if(filter.operator === 'notEmpty' || filter.operator === 'isNotEmpty') {
-                    console.log('notEmpty', filter.field, website[filter.field]);
-                    if (val?.toString() != "" && val?.toString() != 'N/A') {
-                        valid = true;
-                    }
-                    if (logicOperator == 'and' && (val?.toString() == "" || val?.toString() == 'N/A')) {
-                        valid = false;
-                        break;
-                    }
-                    if (logicOperator == 'or' && (val?.toString() != "" && val?.toString() != 'N/A')) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator === 'empty' || filter.operator === 'isEmpty') {
-                    if(val?.toString() == "" || val?.toString() == 'N/A') {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && (val?.toString() != "" && val?.toString() != 'N/A')) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && (val?.toString() == "" || val?.toString() == 'N/A')) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(!filter.value) continue;
-                if(filter.operator === 'contains') {
-                    if(val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && !val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
-                        console.log('contains', filter.field, website[filter.field], filter.value.toString().toLowerCase());
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator === 'notContains') {
-                    if(!val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && !val?.toString().toLowerCase().includes(filter.value.toString().toLowerCase())) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator === '=' || filter.operator === 'equals') {
-                    if(val?.toString().toLowerCase() == filter.value.toString().toLowerCase()) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && val?.toString().toLowerCase() != filter.value.toString().toLowerCase()) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && val?.toString().toLowerCase() == filter.value.toString().toLowerCase()) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator == "startsWith") {
-                    if(val?.toString().toLowerCase().startsWith(filter.value.toString().toLowerCase())) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && !val?.toString().toLowerCase().startsWith(filter.value.toString().toLowerCase())) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && val?.toString().toLowerCase().startsWith(filter.value.toString().toLowerCase())) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator == "endsWith") {
-                    if(val?.toString().toLowerCase().endsWith(filter.value.toString().toLowerCase())) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && !val?.toString().toLowerCase().endsWith(filter.value.toString().toLowerCase())) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && val?.toString().toLowerCase().endsWith(filter.value.toString().toLowerCase())) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator === '!=') {
-                    if(val?.toString().toLowerCase() != filter.value.toString().toLowerCase()) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && val?.toString().toLowerCase() == filter.value.toString().toLowerCase()) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && val?.toString().toLowerCase() != filter.value.toString().toLowerCase()) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator === '>') {
-                    if(website[filter.field] > filter.value) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && website[filter.field] <= filter.value) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && website[filter.field] > filter.value) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator === '<') {
-                    if(website[filter.field] < filter.value) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && website[filter.field] >= filter.value) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && website[filter.field] < filter.value) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator === '>=') {
-                    if(website[filter.field] >= filter.value) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && website[filter.field] < filter.value) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && website[filter.field] >= filter.value) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator === '<=') {
-                    if(website[filter.field] <= filter.value) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && website[filter.field] > filter.value) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && website[filter.field] <= filter.value) {
-                        valid = true;
-                        break;
-                    }
-                }
-                if(filter.operator === 'isAnyOf') {
-                    if(filter.value.includes(val?.toString().toLowerCase())) {
-                        valid = true;
-                    }
-                    if(logicOperator == 'and' && !filter.value.includes(val?.toString().toLowerCase())) {
-                        valid = false;
-                        break;
-                    }
-                    if(logicOperator == 'or' && filter.value.includes(val?.toString().toLowerCase())) {
-                        valid = true;
-                        break;
-                    }
-                }
-            }
-            return valid;
+            return filterWebsiteTable(website, filters);
         });
         console.log('filteredData', filteredData.length);
         websitesData.length = 0;

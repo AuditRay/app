@@ -8,7 +8,7 @@ import theme from '@/theme';
 import React from "react";
 import 'material-icons/iconfont/material-icons.css';
 
-
+export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: "Monit",
   description: "Monitor your website's modules and components",
