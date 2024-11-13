@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import {AllConditions, AnyConditions, ConditionProperties, NotConditions} from "@/app/types";
 import MenuItem from "@mui/material/MenuItem";
-import {Switch} from "@mui/base";
 import {minWidth} from "@mui/system";
 
 export default function ConditionComponent(

@@ -82,7 +82,7 @@ export async function getTeams(): Promise<ITeamPopulated[]> {
         }
     }>('owner');
 
-    return teams.map(team => team.toJSON());
+    return teams.map(team => team.toJSON()) as any as ITeamPopulated[];
 }
 
 export async function getTeam(teamId: string): Promise<ITeam> {

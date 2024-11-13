@@ -14,7 +14,7 @@ import {detailedDiff} from 'deep-object-diff';
 import OpenAI from 'openai';
 import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
-import {IUser, User} from "@/app/models";
+import {ITeamPopulated, IUser, User} from "@/app/models";
 import * as fs from "node:fs";
 import {GridFilterModel, GridPaginationModel, GridSortModel, GridFilterItem} from "@mui/x-data-grid-pro";
 import {filterWebsiteTable} from "@/app/lib/utils";
@@ -470,7 +470,7 @@ export async function getWebsiteInfo(websiteId: string): Promise<IWebsite | null
     await connectMongo();
     console.log('getWebsiteInfo');
     const websiteInfo = await WebsiteInfo.findOne({_id: websiteId}).sort({createdAt: -1});
-    return websiteInfo?.toJSON() ?? null;
+    return websiteInfo?.toJSON() as any as IWebsite ?? null;
 }
 
 export type frameWorkUpdateStatus =
