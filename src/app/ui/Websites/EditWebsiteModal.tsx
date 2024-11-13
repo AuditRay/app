@@ -19,9 +19,9 @@ import MenuItem from "@mui/material/MenuItem";
 import * as React from "react";
 import {getFieldsTemplates, updateFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import {IFieldsTemplate, IWebsite} from "@/app/models";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import Typography from "@mui/material/Typography";
-import {getWorkspace} from "@/app/actions/workspaceActions";
+import {getWorkspace, getWorkspaceMembers} from "@/app/actions/workspaceActions";
 import Link from "@/app/ui/Link";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -29,6 +29,7 @@ import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import dayjs, {Dayjs} from "dayjs";
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import DeleteWebsiteModal from "@/app/ui/Websites/DeleteWebsiteModal";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -36,6 +37,7 @@ dayjs.extend(timezone);
 export default function EditWebsiteModal({websiteId, website}: {websiteId: string, website?: IWebsite}) {
     const [isSaving, setIsSaving] = useState(false);
     const [open, setOpen] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [fieldsTemplate, setFieldsTemplate] = useState<string | undefined>();
     const [fieldsTemplateError, setFieldsTemplateError] = useState<string | null>(null);
     const [tags, setTags] = useState<string[] | undefined>([]);
@@ -52,6 +54,9 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
     const [fieldTemplates, setFieldTemplates] = useState<IFieldsTemplate[]>([]);
     const handleOpen = () => {
         setOpen(true);
+    }
+    const handleDeleteOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
+        setIsOpen(isOpen);
     }
     const handleClose = () => {
         setOpen(false);
@@ -144,7 +149,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                         <Typography variant={'subtitle2'} sx={{mt:2}}>Sync configuration</Typography>
                     </Box>
                     <Grid container spacing={2}>
-                        <Grid xs={12}>
+                        <Grid size={12}>
                             <FormControlLabel
                                 label="Enable auto update"
                                 control={<Checkbox checked={enableSync} onChange={(e) => {setEnableSync(e.target.checked)}} />}
@@ -152,7 +157,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                         </Grid>
                         {enableSync && (
                             <>
-                                <Grid xs={6}>
+                                <Grid size={6}>
                                     <TextField
                                         margin="dense"
                                         fullWidth={true}
@@ -169,7 +174,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                                         type={'number'}
                                     />
                                 </Grid>
-                                <Grid xs={6}>
+                                <Grid size={6}>
                                     <FormControl margin="dense" fullWidth>
                                         <InputLabel id="interval-unit-select-label">Interval Unit</InputLabel>
                                         <Select
@@ -193,7 +198,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     <LocalizationProvider
                                         dateAdapter={AdapterDayjs}>
                                         <TimePicker
@@ -206,7 +211,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                                         />
                                     </LocalizationProvider>
                                 </Grid>
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     {timeZone ? (
                                         <Typography variant={'caption'}>Timezone: {timeZone} (Timezone can be changed from <Link href={"/settings"}>workspace setting</Link>)</Typography>
                                     ) : (
@@ -240,6 +245,17 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                     {/*</Box>*/}
                 </DialogContent>
                 <DialogActions>
+                    <Box sx={{ m: 1, position: 'relative', mr: 'auto' }}>
+                        <Button
+                            disabled={isSaving}
+                            type="submit"
+                            variant={'contained'}
+                            color={'error'}
+                            onClick={() => {
+                                setIsDeleteOpen(true);
+                            }}
+                        > Delete Website </Button>
+                    </Box>
                     <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>
                     <Box sx={{ m: 1, position: 'relative' }}>
                         <Button
@@ -287,6 +303,9 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
                     </Box>
                 </DialogActions>
             </Dialog>
+            {isDeleteOpen && (
+                <DeleteWebsiteModal open={isDeleteOpen} setOpen={(isOpen) => handleDeleteOpen(isOpen, setIsDeleteOpen)} websiteId={websiteId}></DeleteWebsiteModal>
+            )}
         </div>
     );
 }

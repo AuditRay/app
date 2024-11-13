@@ -619,7 +619,7 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
                     noRowsOverlay: CustomNoRowsOverlay,
                     toolbar: CustomToolbar,
                     columnHeaders: rowCount > 0 ? undefined: Box,
-                    footer:  rowCount > 0 ? undefined: Box
+                    footer: undefined
                 }}
                 loading={isWebsitesLoading}
                 rows={websites}

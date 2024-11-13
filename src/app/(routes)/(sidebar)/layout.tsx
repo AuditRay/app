@@ -1,6 +1,6 @@
 'use client'
 import * as React from "react";
-import {Box, Container, Grid, IconButton, Typography, Divider, List, Toolbar, Badge} from "@mui/material";
+import {Box, Container, Grid, IconButton, Typography, Divider, List, Toolbar, Badge, Breadcrumbs} from "@mui/material";
 import {AppBar, Drawer} from "@/app/ui/NavBar";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
@@ -9,17 +9,33 @@ import {usePathname} from "next/navigation"
 import {getFiltersViews} from "@/app/actions/filterViewsActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import { LicenseInfo } from '@mui/x-license';
+import HomeIcon from '@mui/icons-material/Home';
+import SettingsIcon from '@mui/icons-material/Settings';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import LanguageIcon from '@mui/icons-material/Language';
 import Gleap from 'gleap';
 import AccountMenu from "@/app/ui/AccountMenu";
 import {IUser} from "@/app/models";
 import {getFullUser, getUser} from "@/app/actions/getUser";
 import {userSessionState} from "@/app/lib/uiStore";
+import Link from "@/app/ui/Link";
+import MenuItem from "@mui/material/MenuItem";
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ListItemIcon from "@mui/material/ListItemIcon";
+import WorkspacesIcon from "@mui/icons-material/Workspaces";
+import Menu from "@mui/material/Menu";
+import {setCurrentSelectedWorkspace} from "@/app/actions/workspaceActions";
+import AddWorkspaceModal from "@/app/ui/AddWorkspaceModal";
+import DomainAddIcon from "@mui/icons-material/DomainAdd";
 LicenseInfo.setLicenseKey('d180cacff967bbf4eb0152899dacbe68Tz05MzI0OCxFPTE3NTEwNDc4MDIwMDAsUz1wcm8sTE09c3Vic2NyaXB0aW9uLEtWPTI=');
 
 export default function DashboardLayout({children,}: {
     children: React.ReactNode
 }) {
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [filterViews, setFilterViews] = React.useState<IFiltersView[]>([]);
+    const [isAddWorkspaceModalOpen, setIsAddWorkspaceModalOpen] = React.useState(false);
     const [user, setUser] = React.useState<IUser | null>(null);
     const sessionUser = userSessionState((state) => state.user);
     const sessionFullUser = userSessionState((state) => state.fullUser);
@@ -37,9 +53,23 @@ export default function DashboardLayout({children,}: {
         '/settings/roles': 'Workspace Roles',
     }
     const [open, setOpen] = React.useState(true);
+    const breadcrumbOpen = Boolean(anchorEl);
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
     const toggleDrawer = () => {
         setOpen(!open);
     };
+    const switchUserWorkSpace = (workspaceId?: string) => {
+        async function switchWorkspace() {
+            await setCurrentSelectedWorkspace(workspaceId);
+            window.location.reload();
+        }
+        switchWorkspace().then();
+    }
     React.useEffect(() => {
         getFiltersViews().then((filtersViews) => {
             setFilterViews(filtersViews);
@@ -95,15 +125,113 @@ export default function DashboardLayout({children,}: {
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography
-                        component="h1"
-                        variant="h1"
-                        color="inherit"
-                        noWrap
-                        sx={{ flexGrow: 1 }}
-                    >
-                        {TitlesMap[pathname] ? TitlesMap[pathname] : pathname.includes('/websites') ? 'Website' : 'Dashboard'}
-                    </Typography>
+                    <Breadcrumbs aria-label="breadcrumb" sx={{ color: "white", flexGrow: 1}}>
+                        <Box>
+                            {sessionFullUser?.workspaces && !user?.currentSelectedWorkspace && (
+                                <Typography onClick={handleClick} key={'presonal'} sx={{cursor: 'pointer'}}>
+                                    <WorkspacesIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> Personal Workspace  <ArrowDropDownIcon sx={{verticalAlign: 'middle'}} />
+                                </Typography>
+                            )}
+                            {sessionFullUser?.workspaces ? (
+                                sessionFullUser?.workspaces?.map((workspace) => {
+                                    console.log("test", user?.currentSelectedWorkspace, workspace.id);
+                                    if(user?.currentSelectedWorkspace === workspace.id) {
+                                        return (
+                                            <Typography onClick={handleClick} key={workspace.id} sx={{cursor: 'pointer'}}>
+                                                <WorkspacesIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> {workspace.name}  <ArrowDropDownIcon sx={{verticalAlign: 'middle'}} />
+                                            </Typography>
+                                        );
+                                    }
+                                })
+                            ) : ('Loading...')}
+                            <Menu
+                                anchorEl={anchorEl}
+                                id="account-menu"
+                                open={breadcrumbOpen}
+                                onClose={handleClose}
+                                onClick={handleClose}
+                                elevation={0}
+                                transformOrigin={{ horizontal: 'left', vertical: 'top' }}
+                                anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+                            >
+                                <MenuItem disabled={true}>
+                                    Workspaces
+                                </MenuItem>
+                                <MenuItem key={'personal-workspace'} onClick={() => switchUserWorkSpace()} selected={!sessionFullUser?.workspaces?.length || !user?.currentSelectedWorkspace}>
+                                    <ListItemIcon>
+                                        <WorkspacesIcon />
+                                    </ListItemIcon>
+                                    <Typography variant="inherit">Personal Workspace</Typography>
+                                </MenuItem>
+
+                                {sessionFullUser?.workspaces?.map((workspace) => (
+                                    <MenuItem key={workspace.id} onClick={() => switchUserWorkSpace(workspace.id)} selected={user?.currentSelectedWorkspace === workspace.id}>
+                                        <ListItemIcon>
+                                            <WorkspacesIcon />
+                                        </ListItemIcon>
+                                        <Typography variant="inherit">{workspace.name}</Typography>
+                                    </MenuItem>
+                                ))}
+                                <Divider />
+                                <MenuItem onClick={() => setIsAddWorkspaceModalOpen(true)}>
+                                    <ListItemIcon>
+                                        <DomainAddIcon />
+                                    </ListItemIcon>
+                                    Add New Workspace
+                                </MenuItem>
+                            </Menu>
+                        </Box>
+                        {pathname.includes('/dashboard') && (
+                            <Link underline="hover" color="inherit" href="/dashboard">
+                                <DashboardIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> Dashboard
+                            </Link>
+                        )}
+                        {pathname.includes('/websites') && (
+                            <Link underline="hover" color="inherit" href="/websites">
+                                <LanguageIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> Websites
+                            </Link>
+                        )}
+                        {pathname == '/alerts' && (
+                            <Link underline="hover" color="inherit" href="/websites">
+                                <NotificationsIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> Alerts
+                            </Link>
+                        )}
+                        {pathname.includes('/settings') && (
+                            <Link underline="hover" color="inherit" href="/settings">
+                                <SettingsIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> Workspace Settings
+                            </Link>
+                        )}
+                        {pathname === '/settings' && (
+                            <Link underline="hover" color="inherit" href="/settings">
+                                 General
+                            </Link>
+                        )}
+                        {pathname.includes('/settings/alerts') && (
+                            <Link underline="hover" color="inherit" href="/settings/alerts">
+                                Alerts
+                            </Link>
+                        )}
+                        {pathname.includes('/settings/field-templates') && (
+                            <Link underline="hover" color="inherit" href="/settings/field-templates">
+                                Field Templates
+                            </Link>
+                        )}
+                        {pathname.includes('/settings/users') && (
+                            <Link underline="hover" color="inherit" href="/settings/users">
+                                Users
+                            </Link>
+                        )}
+                        {pathname.includes('/settings/teams') && (
+                            <Link underline="hover" color="inherit" href="/settings/teams">
+                                Teams
+                            </Link>
+                        )}
+                        {pathname.includes('/settings/roles') && (
+                            <Link underline="hover" color="inherit" href="/settings/roles">
+                                Roles
+                            </Link>
+                        )}
+                    </Breadcrumbs>
                     {sessionFullUser && (<AccountMenu user={sessionFullUser}></AccountMenu>)}
                 </Toolbar>
             </AppBar>
@@ -144,6 +272,7 @@ export default function DashboardLayout({children,}: {
                     </Grid>
                 </Container>
             </Box>
+            <AddWorkspaceModal open={isAddWorkspaceModalOpen} setOpen={setIsAddWorkspaceModalOpen}/>
         </Box>
     );
 }

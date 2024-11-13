@@ -15,7 +15,7 @@ import {getWorkspaceUsers} from "@/app/actions/workspaceActions";
 import {updateTeam} from "@/app/actions/teamActions";
 import {IRole, ITeamPopulated, IUser, IWebsite} from "@/app/models";
 import Typography from "@mui/material/Typography";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import {getWorkspaceTeamRoles} from "@/app/actions/rolesActions";
 import Tooltip from "@mui/material/Tooltip";
@@ -143,7 +143,7 @@ export default function EditTeamModal({team, open, setOpen}: {team: ITeamPopulat
                 <Box>
                     {newTeamErrorData.members && <Typography color={'error'}>{newTeamErrorData.members}</Typography>}
                     <Grid container key={`member-owner`} columnSpacing={3} >
-                        <Grid xs={6}>
+                        <Grid size={6}>
                             {ownerUser && <Autocomplete
                                 disablePortal
                                 fullWidth
@@ -156,7 +156,7 @@ export default function EditTeamModal({team, open, setOpen}: {team: ITeamPopulat
                                 renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="User" />}
                             />}
                         </Grid>
-                        <Grid xs={5}>
+                        <Grid size={5}>
                             <Autocomplete
                                 disablePortal
                                 fullWidth
@@ -171,7 +171,7 @@ export default function EditTeamModal({team, open, setOpen}: {team: ITeamPopulat
                     {workspaceUsers.length ? newTeamData.members?.map((member, index) => {
                         return (
                             <Grid container key={`member-${index}`} columnSpacing={3} >
-                                <Grid xs={6}>
+                                <Grid size={6}>
                                     <Autocomplete
                                         disablePortal
                                         fullWidth
@@ -217,7 +217,7 @@ export default function EditTeamModal({team, open, setOpen}: {team: ITeamPopulat
                                         renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="User" />}
                                     />
                                 </Grid>
-                                <Grid xs={5}>
+                                <Grid size={5}>
                                     <Autocomplete
                                         disablePortal
                                         fullWidth
@@ -243,7 +243,7 @@ export default function EditTeamModal({team, open, setOpen}: {team: ITeamPopulat
                                         renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="Role" />}
                                     />
                                 </Grid>
-                                <Grid xs={1}>
+                                <Grid size={1}>
                                     <IconButton sx={{
                                         mt: 2,
                                     }} color={'error'} onClick={() => {
@@ -305,7 +305,7 @@ export default function EditTeamModal({team, open, setOpen}: {team: ITeamPopulat
                     {workspaceWebsites.length ? newTeamData.websites?.map((website, index) => {
                         return (
                             <Grid container key={`website-${index}`} columnSpacing={3}>
-                                <Grid xs={11}>
+                                <Grid size={11}>
                                     <Autocomplete
                                         disablePortal
                                         fullWidth
@@ -333,7 +333,7 @@ export default function EditTeamModal({team, open, setOpen}: {team: ITeamPopulat
                                                                             label="Website"/>}
                                     />
                                 </Grid>
-                                <Grid xs={1}>
+                                <Grid size={1}>
                                     <IconButton sx={{
                                         mt: 2,
                                     }} color={'error'} onClick={() => {

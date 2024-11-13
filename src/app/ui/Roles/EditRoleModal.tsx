@@ -21,7 +21,6 @@ import {createTeam} from "@/app/actions/teamActions";
 import {IRole, IUser, IWebsite} from "@/app/models";
 import Typography from "@mui/material/Typography";
 import {Label} from "@mui/icons-material";
-import Grid from "@mui/material/Unstable_Grid2";
 import {createRole, updateRole} from "@/app/actions/rolesActions";
 
 export default function EditRoleModal({role, open, setOpen}: {role: IRole ,open: boolean, setOpen: (open: boolean) => void}) {

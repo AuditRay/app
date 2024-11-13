@@ -16,7 +16,7 @@ import {getWorkspaceUsers} from "@/app/actions/workspaceActions";
 import {createTeam} from "@/app/actions/teamActions";
 import {IRole, IUser, IWebsite} from "@/app/models";
 import Typography from "@mui/material/Typography";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import {getWorkspaceTeamRoles} from "@/app/actions/rolesActions";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
@@ -123,7 +123,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
                 <Box>
                     {newTeamErrorData.members && <Typography color={'error'}>{newTeamErrorData.members}</Typography>}
                     <Grid container key={`member-owner`} columnSpacing={3} >
-                        <Grid xs={6}>
+                        <Grid size={6}>
                             <Autocomplete
                                 disablePortal
                                 fullWidth
@@ -136,7 +136,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
                                 renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="User" />}
                             />
                         </Grid>
-                        <Grid xs={5}>
+                        <Grid size={5}>
                             <Autocomplete
                                 disablePortal
                                 fullWidth
@@ -150,7 +150,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
                     </Grid>
                     {newTeamData.members?.map((member, index) => (
                         <Grid container key={`member-${index}`} columnSpacing={3} >
-                            <Grid xs={6}>
+                            <Grid size={6}>
                                 <Autocomplete
                                     disablePortal
                                     fullWidth
@@ -197,7 +197,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
                                     renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="User" />}
                                 />
                             </Grid>
-                            <Grid xs={5}>
+                            <Grid size={5}>
                                 <Autocomplete
                                     disablePortal
                                     fullWidth
@@ -223,7 +223,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
                                     renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="Role" />}
                                 />
                             </Grid>
-                            <Grid xs={1}>
+                            <Grid size={1}>
                                 <IconButton sx={{
                                     mt: 2,
                                 }} color={'error'} onClick={() => {
@@ -281,7 +281,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
                     {newTeamErrorData.websites && <Typography color={'error'}>{newTeamErrorData.websites}</Typography>}
                     {newTeamData.websites?.map((website, index) => (
                         <Grid container key={`website-${index}`} columnSpacing={3} >
-                            <Grid xs={11}>
+                            <Grid size={11}>
                                 <Autocomplete
                                     disablePortal
                                     fullWidth
@@ -308,7 +308,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
                                     renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="Website" />}
                                 />
                             </Grid>
-                            <Grid xs={1}>
+                            <Grid size={1}>
                                 <IconButton sx={{
                                     mt: 2,
                                 }} color={'error'} onClick={() => {

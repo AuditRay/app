@@ -13,7 +13,7 @@ import {Autocomplete, Divider, FormControl, FormHelperText, IconButton, InputLab
 import {IUser} from "@/app/models";
 import {userSessionState} from "@/app/lib/uiStore";
 import {createAlert} from "@/app/actions/alertsActions";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import MenuItem from "@mui/material/MenuItem";
 import * as React from "react";
 import AlertsWebsitesPreviewGrid from "@/app/ui/Alerts/AlertsWebsitesPreviewGrid";
@@ -146,7 +146,7 @@ export default function AddAlertModal({open, setOpen}: {open: boolean, setOpen: 
                     fullWidth
                     variant="outlined"
                 />
-                <Grid xs={6}>
+                <Grid size={6}>
                     <TextField
                         margin="dense"
                         fullWidth={true}
@@ -163,7 +163,7 @@ export default function AddAlertModal({open, setOpen}: {open: boolean, setOpen: 
                         type={'number'}
                     />
                 </Grid>
-                <Grid xs={6}>
+                <Grid size={6}>
                     <FormControl margin="dense" fullWidth>
                         <InputLabel id="interval-unit-select-label">Interval Unit</InputLabel>
                         <Select
@@ -189,7 +189,7 @@ export default function AddAlertModal({open, setOpen}: {open: boolean, setOpen: 
                     {newAlertErrorData.notifyUsers && <Typography color={'error'}>{newAlertErrorData.notifyUsers}</Typography>}
                     {newAlertData.notifyUsers?.map((member, index) => (
                         <Grid container key={`member-${index}`} columnSpacing={3} >
-                            <Grid xs={6}>
+                            <Grid size={6}>
                                 <Autocomplete
                                     disablePortal
                                     fullWidth
@@ -221,7 +221,7 @@ export default function AddAlertModal({open, setOpen}: {open: boolean, setOpen: 
                                     renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="User" />}
                                 />
                             </Grid>
-                            <Grid xs={1}>
+                            <Grid size={1}>
                                 <IconButton sx={{
                                     mt: 2,
                                 }} color={'error'} onClick={() => {

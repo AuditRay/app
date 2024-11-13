@@ -5,6 +5,7 @@ import {DataGrid, GridColDef, GridRenderCellParams, GridSlots} from '@mui/x-data
 import {Box, Chip, LinearProgress, Link} from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import {IWebsiteInfo, UpdateInfo} from "@/app/models/WebsiteInfo";
+import Typography from "@mui/material/Typography";
 
 export type WebsiteInfoRow = Partial<UpdateInfo>
 const columns: GridColDef[] = [
@@ -66,7 +67,39 @@ export default function ComponentInfo(props: { component: WebsiteInfoRow }) {
                     expand: true
                 }}
             />
-            {props.component.available_releases && (
+            <Box>
+                {(props.component.recommended_version != props.component.current_version ||  props.component.latest_version != props.component.current_version) && (
+                    <h3>Update Helper</h3>
+                )}
+                {props.component.recommended_version != props.component.current_version && (
+                    <>
+                    <Typography variant={'body1'}>
+                        To upgrade this module to recommended version {props.component.name}@<b>{props.component.recommended_version}</b>, you can use the following command in your terminal.
+                        Please make sure you are in the root directory of your Drupal project.
+                    </Typography>
+                    <Typography sx={{backgroundColor: 'black', color: '#0FFF50', fontWeight: 'bold', padding: 2, mb: 3}}>
+                        composer update drupal/{props.component.name}:^{props.component.recommended_version} --with-dependencies
+                    </Typography>
+                    </>
+                )}
+
+                {props.component.recommended_version != props.component.latest_version && (
+                    <>
+                        <Typography variant={'caption'} sx={{color: 'orange'}}>
+                            It seems there is a newer version available. You can upgrade to the latest version by using the following command.
+                        </Typography>
+                        <Typography variant={'body1'}>
+                            To upgrade this module to the latest version {props.component.name}@<b>{props.component.latest_version}</b>,
+                            you can use the following command in your terminal.
+                            Please make sure you are in the root directory of your Drupal project.
+                        </Typography>
+                        <Typography sx={{backgroundColor: 'black', color: '#0FFF50', fontWeight: 'bold', padding: 2, mb:3}}>
+                            composer update drupal/{props.component.name}:^{props.component.latest_version} --with-dependencies
+                        </Typography>
+                    </>
+                )}
+            </Box>
+            {props.component.available_releases && props.component.available_releases.length > 0 && (
                 <Box>
                     <h3>Available Releases</h3>
                     <ul>

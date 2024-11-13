@@ -21,7 +21,7 @@ import {getFieldsTemplates} from "@/app/actions/fieldTemplateActions";
 import {IFieldsTemplate} from "@/app/models";
 import PermissionsAccessCheck from "@/app/ui/PermissionsAccessCheck";
 import Typography from "@mui/material/Typography";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import Link from "@/app/ui/Link";
 import {userSessionState} from "@/app/lib/uiStore";
 import {getWorkspace} from "@/app/actions/workspaceActions";
@@ -145,7 +145,7 @@ export default function AddWebsiteModal() {
                         <Typography variant={'subtitle2'} sx={{mt:2}}>Sync configuration</Typography>
                     </Box>
                     <Grid container spacing={2}>
-                        <Grid xs={12}>
+                        <Grid size={12}>
                             <FormControlLabel
                                 label="Enable auto update"
                                 control={<Checkbox
@@ -160,7 +160,7 @@ export default function AddWebsiteModal() {
                         </Grid>
                         {syncConfig.enabled && (
                             <>
-                                <Grid xs={6}>
+                                <Grid size={6}>
                                     <TextField
                                         margin="dense"
                                         fullWidth={true}
@@ -177,7 +177,7 @@ export default function AddWebsiteModal() {
                                         type={'number'}
                                     />
                                 </Grid>
-                                <Grid xs={6}>
+                                <Grid size={6}>
                                     <FormControl margin="dense" fullWidth>
                                         <InputLabel id="interval-unit-select-label">Interval Unit</InputLabel>
                                         <Select
@@ -197,7 +197,7 @@ export default function AddWebsiteModal() {
                                         </Select>
                                     </FormControl>
                                 </Grid>
-                                <Grid xs={12}>
+                                <Grid size={12}>
                                     {timeZone ? (
                                         <Typography variant={'caption'}>Timezone: {timeZone} (Timezone can be changed from <Link href={"/settings"}>workspace setting</Link>)</Typography>
                                     ) : (

@@ -448,6 +448,12 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
     return updatedWebsite.toJSON();
 }
 
+export async function deleteWebsite(websiteId: string): Promise<IWebsite | null> {
+    await connectMongo();
+    console.log('deleteWebsite');
+    return updateWebsite(websiteId, {isDeleted: true});
+}
+
 export async function getWebsite(websiteId: string): Promise<IWebsite | null> {
     await connectMongo();
     console.log('getWebsite', websiteId);
@@ -538,10 +544,11 @@ export async function getWebsitesTable(
     console.time('getWebsitesTable');
     let websites = [];
     if (!user.currentSelectedWorkspace) {
-        websites = await Website.find({user: userId});
+        websites = await Website.find({user: userId, isDeleted: {$ne: true}});
     } else {
         websites = await Website.find({
-            workspace: user.currentSelectedWorkspace
+            workspace: user.currentSelectedWorkspace,
+            isDeleted: {$ne: true}
         });
     }
     const websitesData: IWebsiteTable[] = [];

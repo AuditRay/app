@@ -21,7 +21,6 @@ import {createTeam} from "@/app/actions/teamActions";
 import {IUser, IWebsite} from "@/app/models";
 import Typography from "@mui/material/Typography";
 import {Label} from "@mui/icons-material";
-import Grid from "@mui/material/Unstable_Grid2";
 import {createRole} from "@/app/actions/rolesActions";
 
 export default function AddRoleModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {

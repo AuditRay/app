@@ -14,7 +14,7 @@ import {
 } from '@mui/x-data-grid-pro';
 import {diff} from 'deep-object-diff';
 import {IWebsite} from "@/app/models/Website";
-import {Box, Chip, LinearProgress} from "@mui/material";
+import {Box, Chip, LinearProgress, Paper} from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import {useCallback, useEffect} from "react";
 import Button from "@mui/material/Button";
@@ -31,6 +31,9 @@ import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import ComponentInfo from "@/app/ui/ComponentInfo";
 import {UpdateInfo} from "@/app/models";
 import Link from "@/app/ui/Link";
+import Grid from '@mui/material/Grid2';
+import {BarChart, Gauge, gaugeClasses, PieChart} from "@mui/x-charts";
+import theme from "@/theme";
 
 export type GridRow = {
     id: number|string;
@@ -449,6 +452,8 @@ export default function WebsitesGrid() {
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({ page: 0, pageSize: 10 });
     const [sortModel, setSortModel] = React.useState<GridSortModel>();
     const [rowCount, setRowCount] = React.useState<number>(0);
+    const [barChart, setBarChart] = React.useState<number[]>();
+    const [pieChart, setPieChart] = React.useState<{ id: number, value: number, label: string }[]>();
     const [extraHeader, setExtraHeader] = React.useState<{ id: string, label: string}[]>([]);
     const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
     const CustomToolbar = useCallback(() => {
@@ -495,7 +500,27 @@ export default function WebsitesGrid() {
             data?.sort || sortModel
         );
         setRowCount(count);
+        const chartNumbers = [
+            0, 11, 10, 29
+        ]
+        const pieChart: {id: number, value: number, label: string}[] = [
+            { id: 0, value: 5, label: '10.3.x' },
+            { id: 2, value: 5, label: '10.2.x' },
+            { id: 3, value: 5, label: '8.9.x' },
+            { id: 4, value: 1, label: '8.8.x' },
+            { id: 5, value: 5, label: '9.5.x' },
+
+        ]
         const WebsiteRows: GridRow[] = websites.map((website) => {
+            // chartNumbers[0] += website.componentsUpdated.length ? 1 : 0;
+            // chartNumbers[1] += website.componentsWithUpdates.length ? 1 : 0;
+            // chartNumbers[2] += website.componentsWithSecurityUpdates.length ? 1 : 0;
+            // if(!pieChart.find((item) => item.label === website.frameworkVersion.value)) {
+            //     pieChart.push({ id: pieChart.length, value: 1, label: website.frameworkVersion.value });
+            // } else {
+            //     const index = pieChart.findIndex((item) => item.label === website.frameworkVersion.value);
+            //     pieChart[index].value += 1;
+            // }
             const websiteData: GridRow = {
                 id: website.id,
                 url: website.url,
@@ -535,6 +560,8 @@ export default function WebsitesGrid() {
             }
             return websiteData;
         });
+        setBarChart(chartNumbers);
+        setPieChart(pieChart);
         setWebsites(WebsiteRows);
         setColumns(columns || columnsVisibility(extraHeader));
         setExtraHeader(extraHeaders);
@@ -582,6 +609,88 @@ export default function WebsitesGrid() {
             {filtersView && (
                 <UpdateFilterViewModal open={isUpdateOpened} setOpen={setIsUpdateOpened} filtersView={filtersView} filtersModel={filters} columnsModel={columns}/>
             )}
+            <Grid container spacing={2} sx={{mb: 3}}>
+                <Grid size={4}>
+                    <Paper
+                        sx={{
+                            p: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: 240,
+                        }}
+                    >
+                        {barChart && (
+                            <BarChart
+                                xAxis={[
+                                    {
+                                        id: 'barCategories',
+                                        data: ['Updated', 'Needs Update', 'Not Secure', 'Unknown'],
+                                        scaleType: 'band',
+                                        colorMap: {
+                                            type: 'ordinal',
+                                            colors: ['green', 'orange', 'red', 'gray'],
+                                        }
+                                    },
+                                ]}
+                                series={[
+                                    {
+                                        data: barChart,
+                                    },
+                                ]}
+                            />
+                        )}
+                    </Paper>
+                </Grid>
+                <Grid size={4}>
+                    <Paper
+                        sx={{
+                            p: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: 240,
+                        }}
+                    >
+                        <PieChart
+                            series={[
+                                {
+                                    data: pieChart || [],
+                                },
+                            ]}
+                        />
+                    </Paper>
+                </Grid>
+                <Grid size={4}>
+                    <Paper
+                        sx={{
+                            p: 2,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: 240,
+                        }}
+                    >
+                        <Gauge
+                            value={10}
+                            startAngle={-110}
+                            endAngle={110}
+                            sx={{
+                                [`& .${gaugeClasses.valueText}`]: {
+                                    fontSize: 15,
+                                    transform: 'translate(0px, 0px)',
+                                },
+                                [`& .${gaugeClasses.valueArc}`]: {
+                                    fill: 'red',
+                                },
+                                [`& .${gaugeClasses.referenceArc}`]: {
+                                    fill: theme.palette.text.disabled,
+                                },
+                            }}
+                            text={
+                                ({ value, valueMax }) => `Security Index ${value}%`
+                            }
+                        />
+                    </Paper>
+                </Grid>
+            </Grid>
             <DataGridPro
                 autoHeight={true}
                 sx={{ '--DataGrid-overlayHeight': '300px' }}

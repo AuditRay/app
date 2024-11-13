@@ -45,6 +45,7 @@ export interface IWebsite {
     metadata: any;
     technologies: WebsiteTechnology[];
     fieldValues: FieldValue[];
+    isDeleted: boolean
     defaultViewsConfiguration: {
         id: string;
         weight: number;
@@ -77,6 +78,7 @@ const ModelSchema = new Schema<IWebsite>(
         metadata: {},
         attributes: {},
         defaultViewsConfiguration: {},
+        isDeleted: Boolean,
         syncConfig: {
             enabled: Boolean,
             lastSync: Date,

@@ -21,7 +21,7 @@ import {
 } from "@mui/material";
 import {IAlert} from "@/app/models";
 import {updateAlert} from "@/app/actions/alertsActions";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import MenuItem from "@mui/material/MenuItem";
 import * as React from "react";
 import {userSessionState} from "@/app/lib/uiStore";
@@ -142,7 +142,7 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
                     fullWidth
                     variant="outlined"
                 />
-                <Grid xs={6}>
+                <Grid size={6}>
                     <TextField
                         margin="dense"
                         fullWidth={true}
@@ -159,7 +159,7 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
                         type={'number'}
                     />
                 </Grid>
-                <Grid xs={6}>
+                <Grid size={6}>
                     <FormControl margin="dense" fullWidth>
                         <InputLabel id="interval-unit-select-label">Interval Unit</InputLabel>
                         <Select
@@ -185,7 +185,7 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
                     {newAlertErrorData.notifyUsers && <Typography color={'error'}>{newAlertErrorData.notifyUsers}</Typography>}
                     {notificationUserOptions.length ? newAlertData.notifyUsers?.map((member, index) => (
                         <Grid container key={`member-${index}`} columnSpacing={3} >
-                            <Grid xs={6}>
+                            <Grid size={6}>
                                 <Autocomplete
                                     disablePortal
                                     fullWidth
@@ -218,7 +218,7 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
                                     renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="User" />}
                                 />
                             </Grid>
-                            <Grid xs={1}>
+                            <Grid size={1}>
                                 <IconButton sx={{
                                     mt: 2,
                                 }} color={'error'} onClick={() => {
