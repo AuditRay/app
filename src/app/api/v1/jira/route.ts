@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
             "client_id": "O7gNWsjkktg2YsCjQAFysD3ZZF5yH3aq",
             "client_secret": "ATOApFPc4FfNrEt36ecK7VONa7Js5gB4FghLiBJiVFsB6UCyfXn2JVmai2L2iQtFLfrk9496313A",
             "code": code,
-            "redirect_uri": "https://local.monit.dev/api/v1/jira"
+            "redirect_uri": "https://beta.monit.dev/api/v1/jira"
         })
     })
     const response: {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         workspace.jira.status = true;
         workspace.markModified('jira');
         await workspace.save();
-        return Response.redirect(`https://monit.waleedq.dev/workspace/${workspace.id}/settings/integrations`);
+        return Response.redirect(`https://beta.monit.dev/workspace/${workspace.id}/settings/integrations`);
     }
-    return Response.redirect(`https://monit.waleedq.dev/dashboard`);
+    return Response.redirect(`https://beta.monit.dev/dashboard`);
 }
