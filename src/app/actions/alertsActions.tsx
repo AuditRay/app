@@ -16,13 +16,25 @@ const versionTypeMapping = {
     NOT_SUPPORTED: 'Not Supported',
 }
 
-export async function getAlertInfo(): Promise<IAlertInfo[]> {
+export async function getAlertInfo(workspaceId: string): Promise<IAlertInfo[]> {
     await connectMongo();
     const user = await getUser();
     if (!user) {
         throw new Error('User not found');
     }
-    const alerts = await AlertInfo.find({user: user.id}, {
+    if (workspaceId == 'personal') {
+        const alerts = await AlertInfo.find({
+            user: user.id,
+            workspace: null,
+        }, {
+            workspace: 1, user: 1, alert: 1, subject:1, text: 1, isSeen: 1, isOpened: 1
+        }).sort({createdAt: -1});
+        return alerts.map((alert) => alert.toJSON());
+    }
+    const alerts = await AlertInfo.find({
+        user: user.id,
+        workspace: workspaceId,
+    }, {
         workspace: 1, user: 1, alert: 1, subject:1, text: 1, isSeen: 1, isOpened: 1
     }).sort({createdAt: -1});
     return alerts.map((alert) => alert.toJSON());
@@ -230,7 +242,7 @@ export async function createAlert(alertData: Partial<IAlert>) {
     const user = await getUser();
 
     const alert = new Alert({
-        workspace: user.currentSelectedWorkspace || null,
+        workspace: alertData.workspace && alertData.workspace != 'personal' ? alertData.workspace : null,
         user: user.id,
         title: alertData.title,
         enabled: alertData.enabled,
@@ -246,15 +258,15 @@ export async function createAlert(alertData: Partial<IAlert>) {
     }
 }
 
-export async function getWorkspaceAllAlerts(): Promise<IAlert[]> {
+export async function getWorkspaceAllAlerts(workspaceId: string): Promise<IAlert[]> {
     await connectMongo();
     const user = await getUser();
 
     let alerts;
-    if(!user.currentSelectedWorkspace) {
-        alerts = await Alert.find({workspace: user.currentSelectedWorkspace});
+    if(workspaceId === 'personal') {
+        alerts = await Alert.find({user: user.id, workspace: null});
     } else {
-        alerts = await Alert.find({user: user.id});
+        alerts = await Alert.find({workspace: workspaceId});
     }
     return alerts.map((a) => a.toJSON());
 }

@@ -93,37 +93,11 @@ export default function AccountMenu({user}: {user: IUser | null}) {
                     <Avatar /> {user?.firstName} {user?.lastName}
                 </MenuItem>
                 <Divider />
-                <MenuItem disabled={true}>
-                   Workspaces
-                </MenuItem>
-                <MenuItem key={'personal-workspace'} onClick={() => switchUserWorkSpace()} selected={!user?.workspaces?.length || !user?.currentSelectedWorkspace}>
-                    <ListItemIcon>
-                        <WorkspacesIcon />
-                    </ListItemIcon>
-                    <Typography variant="inherit">Personal Workspace</Typography>
-                </MenuItem>
-
-                {user?.workspaces?.map((workspace) => (
-                    <MenuItem key={workspace.id} onClick={() => switchUserWorkSpace(workspace.id)} selected={user?.currentSelectedWorkspace === workspace.id}>
-                        <ListItemIcon>
-                            <WorkspacesIcon />
-                        </ListItemIcon>
-                        <Typography variant="inherit">{workspace.name}</Typography>
-                    </MenuItem>
-                ))}
-
-                <MenuItem onClick={() => setIsAddWorkspaceModalOpen(true)}>
-                    <ListItemIcon>
-                        <DomainAddIcon />
-                    </ListItemIcon>
-                    Add New Workspace
-                </MenuItem>
-                <Divider />
-                <MenuItem onClick={() => router.push('/settings')}>
+                <MenuItem>
                     <ListItemIcon>
                         <Settings fontSize="small" />
                     </ListItemIcon>
-                    Workspace Settings
+                    Account Settings
                 </MenuItem>
 
                 <Divider />

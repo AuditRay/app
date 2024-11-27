@@ -20,7 +20,7 @@ import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import {getWorkspaceTeamRoles} from "@/app/actions/rolesActions";
 import Tooltip from "@mui/material/Tooltip";
 
-export default function EditTeamModal({team, open, setOpen}: {team: ITeamPopulated, open: boolean, setOpen: (open: boolean) => void}) {
+export default function EditTeamModal({team, open, setOpen, workspaceId}: {team: ITeamPopulated, open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
     const [workspaceUsers, setWorkspaceUsers] = useState<IUser[]>([]);
     const [ownerUser, setOwnerUser] = useState<IUser>();
@@ -61,9 +61,9 @@ export default function EditTeamModal({team, open, setOpen}: {team: ITeamPopulat
 
     useEffect(() => {
         async function loadWorkspaceUsers() {
-            const users = await getWorkspaceUsers();
-            const websites = await getWebsitesListing();
-            const roles = await getWorkspaceTeamRoles();
+            const users = await getWorkspaceUsers(workspaceId);
+            const websites = await getWebsitesListing(workspaceId);
+            const roles = await getWorkspaceTeamRoles(workspaceId);
             //remove team members that are not in workspace
             const filteredMembers = team.members?.filter((member) => users.find((user) => user.id == member.user.id));
             setOwnerUser(team.owner);

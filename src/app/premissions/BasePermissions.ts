@@ -233,11 +233,11 @@ export type PermissionsValue = {
 };
 export type Permissions = Record<PermissionsKeys, PermissionsValue>;
 
-export const buildWorkspaceBasePermissions = async (): Promise<Permissions> => {
+export const buildWorkspaceBasePermissions = async (workspaceId: string): Promise<Permissions> => {
     //load website view & filter names
     const permissions: Permissions = JSON.parse(JSON.stringify(BasePermissions));
-    const websites = await getWebsitesListing();
-    const viewsFilter = await getFiltersViews();
+    const websites = await getWebsitesListing(workspaceId);
+    const viewsFilter = await getFiltersViews(workspaceId);
     for (const filter of viewsFilter) {
         permissions[`View Filters View ${filter.title}`] = {
             id: `View Filters View ${filter.title}`,
@@ -305,8 +305,8 @@ export const buildWorkspaceBasePermissions = async (): Promise<Permissions> => {
     }
 }
 
-export const MemberRolePermissions = async (): Promise<Permissions> => {
-    const permissions = await buildWorkspaceBasePermissions();
+export const MemberRolePermissions = async (workspaceId: string): Promise<Permissions> => {
+    const permissions = await buildWorkspaceBasePermissions(workspaceId);
     return {
         ...permissions,
         'View Dashboard': {
@@ -324,8 +324,8 @@ export const MemberRolePermissions = async (): Promise<Permissions> => {
     }
 }
 
-export const AdminRolePermissions = async (): Promise<Permissions> => {
-    const permissions = await buildWorkspaceBasePermissions();
+export const AdminRolePermissions = async (workspaceId: string): Promise<Permissions> => {
+    const permissions = await buildWorkspaceBasePermissions(workspaceId);
     for (const key in permissions) {
         permissions[key].default = true;
     }

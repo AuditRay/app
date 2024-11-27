@@ -7,7 +7,7 @@ import {JoinForm} from "@/app/ui/JoinForm";
 export default async function Join({searchParams}: {searchParams: Record<string, string>}) {
     const inviteToken = searchParams['inviteToken'] || '';
     if(!inviteToken) {
-        return redirect('/login');
+        //return redirect('/login');
     }
     const user = await getUserByInviteToken(inviteToken);
     if(!user) {

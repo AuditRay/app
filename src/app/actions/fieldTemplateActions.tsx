@@ -19,15 +19,15 @@ export async function getFieldsTemplate(fieldsTemplateId: string): Promise<IFiel
     return fieldsTemplate.toJSON();
 }
 
-export async function getWorkspaceFieldTemplate(): Promise<IFieldsTemplate> {
+export async function getWorkspaceFieldTemplate(workspaceId: string): Promise<IFieldsTemplate> {
     await connectMongo();
-    console.log('getWorkspaceFieldTemplate');
+    console.log('getWorkspaceFieldTemplate', workspaceId);
     const user = await getUser();
     if(!user) {
         throw new Error('Unauthorized');
     }
-    const workspace = user.currentSelectedWorkspace;
-    if (workspace) {
+    const workspace = workspaceId;
+    if (workspace != 'personal') {
         const fieldTemplate = await FieldsTemplate.findOne({workspace});
         if(!fieldTemplate) {
             // Create default field template
@@ -35,8 +35,7 @@ export async function getWorkspaceFieldTemplate(): Promise<IFieldsTemplate> {
                 workspace: workspace,
                 user: user.id,
                 name: 'Default',
-                fields: [
-                ]
+                fields: []
             });
             const savedTemplate = await defaultFieldTemplate.save();
             return savedTemplate.toJSON();
@@ -44,15 +43,14 @@ export async function getWorkspaceFieldTemplate(): Promise<IFieldsTemplate> {
             return fieldTemplate.toJSON();
         }
     } else {
-        const fieldTemplate = await FieldsTemplate.findOne({user: user.id});
+        const fieldTemplate = await FieldsTemplate.findOne({user: user.id, workspace: null});
         if(!fieldTemplate) {
             // Create default field template
             const defaultFieldTemplate = new FieldsTemplate({
                 workspace: null,
                 user: user.id,
                 name: 'Default',
-                fields: [
-                ]
+                fields: []
             });
             const savedTemplate = await defaultFieldTemplate.save();
             return savedTemplate.toJSON();
@@ -62,15 +60,15 @@ export async function getWorkspaceFieldTemplate(): Promise<IFieldsTemplate> {
     }
 }
 
-export async function getFieldsTemplates(): Promise<IFieldsTemplate[]> {
+export async function getFieldsTemplates(workspaceId: string): Promise<IFieldsTemplate[]> {
     await connectMongo();
     console.log('getFieldsTemplates');
     const user = await getUser();
     if(!user) {
         throw new Error('Unauthorized');
     }
-    const workspace = user.currentSelectedWorkspace;
-    if (workspace) {
+    const workspace = workspaceId;
+    if (workspace && workspace != 'personal') {
         const fieldTemplates = await FieldsTemplate.find({workspace});
         return fieldTemplates.map(fieldTemplate => fieldTemplate.toJSON());
     } else {
@@ -79,7 +77,7 @@ export async function getFieldsTemplates(): Promise<IFieldsTemplate[]> {
     }
 }
 
-export async function createFieldsTemplate(fieldTemplateData: Partial<IFieldsTemplate>) {
+export async function createFieldsTemplate(fieldTemplateData: Partial<IFieldsTemplate>, workspaceId: string) {
     await connectMongo();
     console.log('createFieldsTemplate');
     const user = await getUser();
@@ -87,7 +85,7 @@ export async function createFieldsTemplate(fieldTemplateData: Partial<IFieldsTem
         throw new Error('Unauthorized');
     }
     const fieldTemplate = new FieldsTemplate({
-        workspace: user.currentSelectedWorkspace,
+        workspace: workspaceId != 'personal' ? workspaceId : null,
         user: user.id,
         ...fieldTemplateData
     });
@@ -117,7 +115,7 @@ export async function deleteFieldsTemplate(fieldTemplateId: string) {
     }
 }
 
-export async function updateFieldsTemplate(fieldTemplateId: string, fieldTemplateData: Partial<IFieldsTemplate>) {
+export async function updateFieldsTemplate(fieldTemplateId: string, fieldTemplateData: Partial<IFieldsTemplate>, workspaceId: string) {
     await connectMongo();
     console.log('updateFieldsTemplate');
     const user = await getUser();
@@ -132,7 +130,7 @@ export async function updateFieldsTemplate(fieldTemplateId: string, fieldTemplat
             }
         })
     }
-    if (!user.currentSelectedWorkspace) {
+    if (workspaceId != 'personal') {
         const fieldTemplate = await FieldsTemplate.findOne({_id: fieldTemplateId, user: user.id});
         if (!fieldTemplate) {
             throw new Error('Field Template not found');
@@ -141,19 +139,19 @@ export async function updateFieldsTemplate(fieldTemplateId: string, fieldTemplat
         fieldTemplate.set(fieldTemplateData);
         const savedFieldTemplate = await fieldTemplate.save();
         console.log('fieldTemplate', savedFieldTemplate.fields);
-        revalidatePath(`/settings/field-templates`);
+        revalidatePath(`/workspace/${workspaceId}/settings/field-templates`);
         return {
             data: savedFieldTemplate.toJSON()
         }
     } else {
-        const fieldTemplate = await FieldsTemplate.findOne({_id: fieldTemplateId, workspace: user.currentSelectedWorkspace});
+        const fieldTemplate = await FieldsTemplate.findOne({_id: fieldTemplateId, workspace: null});
         if (!fieldTemplate) {
             throw new Error('Field Template not found');
         }
         fieldTemplate.set(fieldTemplateData);
         const savedFieldTemplate = await fieldTemplate.save();
 
-        revalidatePath(`/settings/field-templates`);
+        revalidatePath(`/workspace/personal/settings/field-templates`);
         return {
             data: savedFieldTemplate.toJSON()
         }

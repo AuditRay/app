@@ -74,7 +74,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
             align: 'left',
             headerAlign: 'left',
             type: 'singleSelect',
-            valueOptions: websites.filter((website) => website.title !== undefined).map((website) => website.title),
+            valueOptions: (websites || []).filter((website) => website.title !== undefined).map((website) => website.title),
             renderCell: (params: GridRenderCellParams<GridRow, GridRow['siteName']>) => (
                 params.value && (
                     <>
@@ -479,12 +479,12 @@ function CustomNoRowsOverlay() {
     );
 }
 
-export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filters: GridFilterModel, setFilters: (filters: GridFilterModel) => void}) {
+export default function AlertsWebsitesPreviewGrid({filters, setFilters, workspaceId}: {filters: GridFilterModel, setFilters: (filters: GridFilterModel) => void, workspaceId: string}) {
     const [isWebsitesLoading, setIsWebsitesLoading] = React.useState<boolean>(true);
     const [columnsVisibility, setColumnsVisibility] = React.useState<GridColumnVisibilityModel>();
     const [columns, setColumns] = React.useState<GridColDef[]>([]);
     const [websites, setWebsites] = React.useState<GridRow[]>([])
-    const [websiteListing, setWebsiteListing] = React.useState<IWebsite[]>([]);
+    const [websiteListing, setWebsiteListing] = React.useState<IWebsite[]>();
     const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({ page: 0, pageSize: 3 });
     const [sortModel, setSortModel] = React.useState<GridSortModel>();
     const [rowCount, setRowCount] = React.useState<number>(0);
@@ -509,12 +509,12 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
     }) => {
         setIsWebsitesLoading(true);
 
-        if(!websiteListing.length) {
-            const loadWebsitesListing = await getWebsitesListing();
+        if(!websiteListing) {
+            const loadWebsitesListing = await getWebsitesListing(workspaceId);
             setWebsiteListing(loadWebsitesListing);
         }
         const {data: websites, extraHeaders, count} = await getWebsitesTable(
-            undefined,
+            workspaceId,
             data?.pagination || paginationModel,
             data?.filters || filters || { items: [] },
             data?.sort || sortModel
@@ -586,8 +586,8 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
         }
     }
     useEffect(() => {
-        if(!websiteListing.length) {
-            getWebsitesListing().then((data) => {
+        if(!websiteListing) {
+            getWebsitesListing(workspaceId).then((data) => {
                 console.log('website listing', data);
                 setWebsiteListing(data);
             });
@@ -604,7 +604,7 @@ export default function AlertsWebsitesPreviewGrid({filters, setFilters}: {filter
             setColumnsVisibility(prepareColumnsVisibility(data?.extraHeaders));
             setColumns(prepareColumns(openRightDrawer, data?.extraHeaders, websiteListing))
         });
-    }, [websiteListing]);
+    }, [workspaceId, websiteListing]);
 
     return columns.length ? (
         <div style={{ width: '100%' }}>

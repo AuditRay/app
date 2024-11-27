@@ -17,7 +17,7 @@ import MenuItem from "@mui/material/MenuItem";
 import {v4 as uuidV4} from "uuid";
 import {createFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 
-export default function AddFieldsTemplateModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {
+export default function AddFieldsTemplateModal({open, setOpen, workspaceId}: {workspaceId: string, open: boolean, setOpen: (open: boolean) => void}) {
     const [isSaving, setIsSaving] = useState(false);
     const [name, setName] = useState<string>('');
     const [nameError, setNameError] = useState<string>('');
@@ -273,7 +273,7 @@ export default function AddFieldsTemplateModal({open, setOpen}: {open: boolean, 
                                 await createFieldsTemplate({
                                     title: name,
                                     fields: fields
-                                });
+                                }, workspaceId);
                             }
                             save().then(() => {
                                 setIsSaving(false);

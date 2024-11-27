@@ -22,7 +22,7 @@ import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import {userSessionState} from "@/app/lib/uiStore";
 
-export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {
+export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
     const [ownerUser, setOwnerUser] = useState<IUser>();
     const [workspaceUsers, setWorkspaceUsers] = useState<IUser[]>([]);
@@ -61,9 +61,9 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
     useEffect(() => {
         async function loadWorkspaceUsers() {
             if(!sessionUser) return;
-            const users = await getWorkspaceUsers();
-            const websites = await getWebsitesListing();
-            const roles = await getWorkspaceTeamRoles();
+            const users = await getWorkspaceUsers(workspaceId);
+            const websites = await getWebsitesListing(workspaceId);
+            const roles = await getWorkspaceTeamRoles(workspaceId);
             setOwnerUser(sessionUser);
             setWorkspaceRoles([
                 {
@@ -78,7 +78,7 @@ export default function AddTeamModal({open, setOpen}: {open: boolean, setOpen: (
             setWorkspaceWebsites(websites);
         }
         loadWorkspaceUsers().then(() => {}).catch(() => {});
-    }, [sessionUser]);
+    }, [workspaceId, sessionUser]);
     return (
         <Dialog
             open={open}

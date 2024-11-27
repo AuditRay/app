@@ -34,16 +34,16 @@ export async function createTeam(teamData: Partial<ITeam>) {
     }
 }
 
-export async function getTeams(): Promise<ITeamPopulated[]> {
+export async function getTeams(workspaceId: string): Promise<ITeamPopulated[]> {
     await connectMongo();
     console.log('getTeams');
     const user = await getUser();
-    if(!user.currentSelectedWorkspace) {
+    if(workspaceId == 'personal') {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
     }
 
     const workspace = await Workspace.findOne({
-        _id: user.currentSelectedWorkspace,
+        _id: workspaceId,
         $or: [{owner: user.id}, {users: user.id}, {"members.user": user.id}]
     });
     if(!workspace) {

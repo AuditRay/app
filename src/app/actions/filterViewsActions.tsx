@@ -12,15 +12,15 @@ export async function getFiltersView(filtersViewID: string): Promise<IFiltersVie
     return filterView ? filterView.toJSON() : null;
 }
 
-export async function getFiltersViews(): Promise<IFiltersView[]> {
+export async function getFiltersViews(workspaceId: string): Promise<IFiltersView[]> {
     await connectMongo();
     console.log('getFiltersViews');
     const user = await getUser();
-    if(user.currentSelectedWorkspace) {
-        const filterViews = await FiltersView.find({user: user.id, workspace: user.currentSelectedWorkspace});
+    if(workspaceId == 'personal') {
+        const filterViews = await FiltersView.find({user: user.id, workspaceId: null});
         return filterViews.map(filterView => filterView.toJSON());
     } else {
-        const filterViews = await FiltersView.find({user: user.id});
+        const filterViews = await FiltersView.find({workspace: workspaceId});
         return filterViews.map(filterView => filterView.toJSON());
     }
 }

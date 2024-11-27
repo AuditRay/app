@@ -6,15 +6,16 @@ export * from './BasePermissions';
 
 export type PermissionArgs = {
     user: IUser;
+    workspaceId: string;
     permissionName: PermissionsKeys;
     data?: any;
 };
 
 export type UserPermissions = Record<PermissionsKeys, boolean>
 
-const getUserPermissions = async (user: IUser): Promise<UserPermissions> => {
+const getUserPermissions = async (user: IUser, workspaceId: string): Promise<UserPermissions> => {
     console.log("getUserPermissions");
-    const permissions = await buildWorkspaceBasePermissions();
+    const permissions = await buildWorkspaceBasePermissions(workspaceId);
     const userPermissions: UserPermissions = {};
     for (const permission in permissions) {
         userPermissions[permission] = permissions[permission].default;
@@ -41,9 +42,9 @@ const getUserPermissions = async (user: IUser): Promise<UserPermissions> => {
 }
 
 export const checkUserAccess = async (args: PermissionArgs) => {
-    const {user, permissionName} = args;
+    const {user, permissionName, workspaceId} = args;
     const fullUser = await getFullUser(user.id) || user;
-    const userPermissions = await getUserPermissions(fullUser);
+    const userPermissions = await getUserPermissions(fullUser, workspaceId);
     console.log('userPermissions', userPermissions);
     return userPermissions[permissionName];
 }

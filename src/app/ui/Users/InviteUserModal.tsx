@@ -19,7 +19,7 @@ import {createWorkspace, inviteWorkspaceUser} from "@/app/actions/workspaceActio
 import {IRole} from "@/app/models";
 import {getWorkspaceAllRoles, getWorkspaceRoles} from "@/app/actions/rolesActions";
 
-export default function InviteUserModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {
+export default function InviteUserModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
     const [workspaceRoles, setWorkspaceRoles] = useState<IRole[]>([]);
     const [newUserData, setNewUserData] = useState<{
@@ -57,11 +57,11 @@ export default function InviteUserModal({open, setOpen}: {open: boolean, setOpen
 
     useEffect(() => {
         const fetchRoles = async () => {
-            const roles = await getWorkspaceRoles();
+            const roles = await getWorkspaceRoles(workspaceId);
             setWorkspaceRoles(roles);
         }
         fetchRoles().then(() => {}).catch((e) => {});
-    }, []);
+    }, [workspaceId]);
     return (
         <Dialog
             open={open}

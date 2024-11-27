@@ -23,7 +23,7 @@ import MenuItem from "@mui/material/MenuItem";
 import {v4 as uuidV4} from "uuid";
 import {createFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 
-export default function CloneFieldsTemplateModal({open, setOpen, fieldsTemplate}: {fieldsTemplate: IFieldsTemplate, open: boolean, setOpen: (open: boolean) => void}) {
+export default function CloneFieldsTemplateModal({open, setOpen, fieldsTemplate, workspaceId}: {workspaceId: string; fieldsTemplate: IFieldsTemplate, open: boolean, setOpen: (open: boolean) => void}) {
     const [isSaving, setIsSaving] = useState(false);
     const [name, setName] = useState<string>(`${fieldsTemplate.title} - Copy`);
     const [nameError, setNameError] = useState<string>('');
@@ -282,7 +282,7 @@ export default function CloneFieldsTemplateModal({open, setOpen, fieldsTemplate}
                                 await createFieldsTemplate({
                                     title: name,
                                     fields: fields
-                                });
+                                }, workspaceId);
                             }
                             save().then(() => {
                                 setIsSaving(false);

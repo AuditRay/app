@@ -6,6 +6,10 @@ import {Box, Chip, LinearProgress, Link} from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import {IWebsiteInfo, UpdateInfo} from "@/app/models/WebsiteInfo";
 import Typography from "@mui/material/Typography";
+import {userSessionState} from "@/app/lib/uiStore";
+import JiraTicketModal from "@/app/ui/Integration/JiraTicketModal";
+import Button from "@mui/material/Button";
+import { useParams } from 'next/navigation'
 
 export type WebsiteInfoRow = Partial<UpdateInfo>
 const columns: GridColDef[] = [
@@ -48,6 +52,23 @@ const columns: GridColDef[] = [
 
 
 export default function ComponentInfo(props: { component: WebsiteInfoRow }) {
+    const [open, setOpen] = React.useState(false);
+    const params = useParams<{ workspaceId: string; }>()
+    const [jiraIntegration, setJiraIntegration] = React.useState<{
+        status: boolean;
+        token: string;
+    }>({
+        status: false,
+        token: ''
+    });
+    const sessionUser = userSessionState((state) => state.fullUser);
+
+    React.useEffect(() => {
+        const currentWorkspace = sessionUser?.workspaces?.find(workspace => workspace.id === params.workspaceId);
+        if (currentWorkspace){
+            setJiraIntegration(currentWorkspace.jira || {status: false, token: ''});
+        }
+    }, [params.workspaceId, sessionUser]);
     return (
         <div style={{ width: '100%', marginTop: '10px' }}>
             <DataGrid
@@ -67,6 +88,14 @@ export default function ComponentInfo(props: { component: WebsiteInfoRow }) {
                     expand: true
                 }}
             />
+            {jiraIntegration.status && (
+                <Box sx={{mt: 2}}>
+                    <Button onClick={() => setOpen(true)} variant={"contained"}>
+                        Create Jira Issue
+                    </Button>
+                    <JiraTicketModal open={open} setOpen={setOpen} context={props.component}/>
+                </Box>
+            )}
             <Box>
                 {(props.component.recommended_version != props.component.current_version ||  props.component.latest_version != props.component.current_version) && (
                     <h3>Update Helper</h3>

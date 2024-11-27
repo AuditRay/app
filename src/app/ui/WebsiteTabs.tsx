@@ -72,6 +72,7 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
     const [isSaving, setIsSaving] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [selectedView, setSelectedView] = React.useState<DefaultView | null>(null);
+    const [websiteWorkspaceId, setWebsiteWorkspaceId] = React.useState<string>(website.workspace ? website.workspace.toString() : 'personal');
     useEffect(() => {
         //format websiteInfo.dataSourcesInfo to TreeViewBaseItem
         const items: TreeViewBaseItem[] = [];
@@ -86,6 +87,7 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
                 })),
             });
         });
+        setWebsiteWorkspaceId(website.workspace ? website.workspace.toString() : 'personal');
         setItems(items);
     }, [websiteInfo, websiteInfo.dataSourcesInfo]);
 
@@ -183,7 +185,7 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
             <Tabs value={selectedViewId} aria-label="basic tabs example">
                 <Tab value='' label="Updates"
                      onClick={(e: any) => {
-                         router.push(`/websites/${website.id}`)
+                         router.push(`/workspace/${websiteWorkspaceId}/websites/${website.id}`)
                      }}
 
                      sx={{mb: 0.4}}
@@ -211,7 +213,7 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
                             if (e.target.tagName === 'svg') {
                                 e.preventDefault();
                             } else {
-                                router.push(`/websites/${website.id}/${view.id}`)
+                                router.push(`/workspace/${websiteWorkspaceId}/websites/${website.id}/${view.id}`)
                             }
                         }}
                     />

@@ -34,7 +34,7 @@ import DeleteWebsiteModal from "@/app/ui/Websites/DeleteWebsiteModal";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export default function EditWebsiteModal({websiteId, website}: {websiteId: string, website?: IWebsite}) {
+export default function EditWebsiteModal({websiteId, website, workspaceId}: {websiteId: string, website?: IWebsite, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
     const [open, setOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -74,7 +74,7 @@ export default function EditWebsiteModal({websiteId, website}: {websiteId: strin
         async function getData(){
             const loadedWebsite = website || await getWebsite(websiteId);
             console.log('website', loadedWebsite);
-            const fieldTemplates = await getFieldsTemplates();
+            const fieldTemplates = await getFieldsTemplates(workspaceId);
             setFieldTemplates(fieldTemplates);
             if(!loadedWebsite) return '';
             setTags(loadedWebsite.tags);

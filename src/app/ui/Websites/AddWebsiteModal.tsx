@@ -26,7 +26,7 @@ import Link from "@/app/ui/Link";
 import {userSessionState} from "@/app/lib/uiStore";
 import {getWorkspace} from "@/app/actions/workspaceActions";
 
-export default function AddWebsiteModal() {
+export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) {
     const [state, action, isPending] = useFormState(createWebsite, undefined)
     const [open, setOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -54,7 +54,7 @@ export default function AddWebsiteModal() {
     }
     const sessionUser = userSessionState((state) => state.user);
     useEffect(() => {
-        getFieldsTemplates().then((fieldTemplates) => {
+        getFieldsTemplates(workspaceId).then((fieldTemplates) => {
             setFieldTemplates(fieldTemplates);
         })
         if(sessionUser?.currentSelectedWorkspace) {

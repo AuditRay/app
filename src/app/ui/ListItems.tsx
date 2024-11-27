@@ -9,36 +9,99 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import {useRouter} from "next/navigation";
 import {IFiltersView} from "@/app/models/FiltersView";
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import {IWorkspace} from "@/app/models";
+import WorkspaceDrawerSwitcher from "@/app/ui/Nav/WorkspaceDrawerSwitcher";
+import {Box, Collapse, Divider, IconButton, List, ListItem} from "@mui/material";
+import WorkspacesIcon from "@mui/icons-material/Workspaces";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import ViewCozyIcon from '@mui/icons-material/ViewCozy';
+import Settings from "@mui/icons-material/Settings";
 
-export const MainListItems = ({filtersViews} : {filtersViews: IFiltersView[]}) => {
+export const MainListItems = ({
+  filtersViews,
+  workspaces,
+  workspaceId,
+  pathname
+} : {
+    filtersViews: IFiltersView[],
+    workspaces?: IWorkspace[],
+    workspaceId: string,
+    pathname?: string
+}) => {
     const router = useRouter()
+    const [openWebsites, setOpenWebsites] = React.useState(false);
     return (
         <>
-            <ListItemButton onClick={() => router.push('/dashboard')}>
+            <ListItemButton onClick={() => router.push(`/dashboard`)}>
                 <ListItemIcon>
                     <DashboardIcon sx={{marginLeft: '6px'}}/>
                 </ListItemIcon>
-                <ListItemText primary="Dashboard"/>
+                <ListItemText primary="Account Dashboard"/>
             </ListItemButton>
-            <ListItemButton onClick={() => router.push('/websites')}>
+            {workspaces && (
+                <>
+                    <WorkspaceDrawerSwitcher
+                        workspaces={workspaces}
+                        currentWorkspaceId={workspaceId}
+                        defaultOpenWorkSpaces={false}
+                    />
+                    <Divider />
+                </>
+            )}
+            <ListItemButton
+                onClick={() => router.push(`/workspace/${workspaceId}/websites`)} selected={pathname == `/workspace/${workspaceId}/websites`}
+            >
                 <ListItemIcon>
                     <LanguageIcon sx={{marginLeft: '6px'}}/>
                 </ListItemIcon>
-                <ListItemText primary="Websites"/>
+                <ListItemText primary={"Websites"} />
             </ListItemButton>
-            <ListItemButton onClick={() => router.push('/alerts')}>
+            {filtersViews && (
+                <>
+                    <ListItem component="div" disablePadding sx={{
+                        '&:hover .workspace-settings': {
+                            display: 'flex',
+                        },
+                    }}>
+                        <ListItemButton
+                            onClick={(e) => {
+                                setOpenWebsites(!openWebsites);
+                            }}
+                           >
+                            <ListItemIcon>
+                                <ViewCozyIcon  sx={{marginLeft: '6px'}} />
+                            </ListItemIcon>
+                            <ListItemText primary={"Views"} />
+                            {openWebsites ? <ExpandLess /> : <ExpandMore />}
+                        </ListItemButton>
+                    </ListItem>
+                    <Collapse in={openWebsites} timeout="auto" unmountOnExit>
+                        <List component="div" disablePadding>
+                            {filtersViews && filtersViews.map((filterView) => (
+                                <ListItemButton sx={{ pl: 5 }} key={filterView.id} onClick={() => router.push(`/workspace/${workspaceId}/websites?filterView=${filterView.id}`)}>
+                                    <ListItemText primary={filterView.title}/>
+                                </ListItemButton>
+                            ))}
+                            <List component="div" sx={{px: 2}} disablePadding>
+                                <Divider/>
+                            </List>
+                        </List>
+                    </Collapse>
+                </>
+            )}
+            <ListItemButton onClick={() => router.push(`/workspace/${workspaceId}/alerts`)} selected={pathname == `/workspace/${workspaceId}/alerts`}>
                 <ListItemIcon>
                     <NotificationsIcon sx={{marginLeft: '6px'}}/>
                 </ListItemIcon>
                 <ListItemText primary="Alerts"/>
             </ListItemButton>
-            {filtersViews && filtersViews.map((filterView) => (
-                <ListItemButton key={filterView.id} onClick={() => router.push(`/websites?filterView=${filterView.id}`)}>
-                    <ListItemIcon>
-                    </ListItemIcon>
-                    <ListItemText primary={`- ${filterView.title}`} sx={{color: 'gray'}}/>
-                </ListItemButton>
-            ))}
+            <ListItemButton onClick={() => router.push(`/workspace/${workspaceId}/settings`)} selected={pathname == `/workspace/${workspaceId}/settings`}>
+                <ListItemIcon>
+                    <Settings sx={{marginLeft: '6px'}}/>
+                </ListItemIcon>
+                <ListItemText primary="Settings"/>
+            </ListItemButton>
         </>
     );
 }

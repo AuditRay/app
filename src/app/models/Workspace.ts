@@ -9,6 +9,11 @@ export interface IWorkspace {
     owner: string | typeof Schema.Types.ObjectId;
     users: (string | typeof Schema.Types.ObjectId)[];
     timezone: string;
+    jira: {
+        status: boolean;
+        token: string;
+        refreshToken: string;
+    }
     members?: {
         user: typeof Schema.Types.ObjectId | string,
         roles: (string | typeof Schema.Types.ObjectId)[];
@@ -34,6 +39,7 @@ const ModelSchema = new Schema<IWorkspace>(
         owner: {type: Schema.Types.ObjectId, ref: 'User'},
         users: [{type: Schema.Types.ObjectId, ref: 'User'}],
         timezone: String,
+        jira: {},
         members: [
             {
                 user: {type: Schema.Types.ObjectId, ref: 'User'},

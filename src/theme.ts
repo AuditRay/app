@@ -11,6 +11,18 @@ const roboto = Roboto({
 const theme = createTheme({
     palette: {
         mode: 'light',
+        primary: {
+            main: '#00b8b1',
+            light: '#97d9d5',
+            dark: '#01a59f',
+            contrastText: '#fff',
+        },
+        secondary: {
+            main: '#045673',
+            light: '#4f7e9f',
+            dark: '#00364b',
+            contrastText: '#fff',
+        },
     },
     typography: {
         fontFamily: roboto.style.fontFamily,
@@ -35,6 +47,13 @@ const theme = createTheme({
         }
     },
     components: {
+        MuiButtonBase: {
+            styleOverrides: {
+                root: {
+                    borderRadius: 5,
+                },
+            }
+        },
         MuiAlert: {
             styleOverrides: {
                 root: ({ ownerState }) => ({

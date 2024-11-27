@@ -3,7 +3,7 @@
 import { useFormStatus, useFormState } from 'react-dom'
 import { signup } from '@/app/actions/auth'
 import {useEffect, useState} from "react";
-import {Box, TextField} from '@mui/material';
+import {Box, Card, TextField} from '@mui/material';
 import Avatar from "@mui/material/Avatar";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Typography from "@mui/material/Typography";
@@ -11,6 +11,8 @@ import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 import Link from "@/app/ui/Link";
 import Container from "@mui/material/Container";
+import Header from "@/app/ui/Layout/Header";
+import Footer from "@/app/ui/Layout/Footer";
 
 export function SignupButton() {
     const { pending } = useFormStatus()
@@ -31,13 +33,29 @@ export function SignupForm() {
     }, []);
 
     return isReady &&  (
-        <Container>
-            <Box
+        <Box sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            bgcolor: 'gray',
+            flexDirection: 'column',
+            justifyContent: 'center',
+        }}>
+            <Box sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                color: 'white'
+            }}>
+                <Header></Header>
+            </Box>
+            <Card
+                variant="outlined"
                 sx={{
-                    marginTop: 8,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
+                    width: 'fit-content',
+                    margin: 'auto',
+                    p: 4
                 }}
             >
                 <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
@@ -115,7 +133,15 @@ export function SignupForm() {
                         </Grid>
                     </form>
                 </Box>
+            </Card>
+            <Box sx={{
+                mt: 3,
+                display: 'flex',
+                justifyContent: 'center',
+                color: 'white'
+            }}>
+                <Footer></Footer>
             </Box>
-        </Container>
+        </Box>
     )
 }

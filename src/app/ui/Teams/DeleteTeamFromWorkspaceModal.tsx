@@ -15,7 +15,7 @@ import {deleteFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import {removeUserFromWorkspace} from "@/app/actions/workspaceActions";
 import {deleteTeam} from "@/app/actions/teamActions";
 
-export default function DeleteTeamFromWorkspaceModal({open, setOpen, team}: {team: ITeamPopulated, open: boolean, setOpen: (open: boolean) => void}) {
+export default function DeleteTeamFromWorkspaceModal({open, setOpen, team, workspaceId}: {team: ITeamPopulated, open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const handleClose = () => {

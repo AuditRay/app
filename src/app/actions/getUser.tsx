@@ -18,15 +18,15 @@ export async function getUser(fullUser = false) {
             const memberRoles = workspace.members?.find(member => member.user.toString() === user.id)?.roles;
             const workspaceOwner = workspace.owner.toString() === user.id;
             if(workspaceOwner){
-                const roleData = await AdminRole();
+                const roleData = await AdminRole(workspace.id);
                 roles.push(roleData);
             }else if(memberRoles){
                 for (const memberRole of memberRoles) {
                     if (memberRole == "default_admin"){
-                        const roleData = await AdminRole();
+                        const roleData = await AdminRole(workspace.id);
                         roles.push(roleData);
                     } else if (memberRole == "default_member"){
-                        const roleData = await MemberRole();
+                        const roleData = await MemberRole(workspace.id);
                         roles.push(roleData);
                     } else {
                         const roleData = await Role.findOne({_id: memberRole});
@@ -51,15 +51,15 @@ export async function getFullUser(userId: string) {
             const memberRoles = workspace.members?.find(member => member.user.toString() === user.id)?.roles;
             const workspaceOwner = workspace.owner.toString() === user.id;
             if(workspaceOwner){
-                const roleData = await AdminRole();
+                const roleData = await AdminRole(workspace.id);
                 roles.push(roleData);
             }else if(memberRoles){
                 for (const memberRole of memberRoles) {
                     if (memberRole == "default_admin"){
-                        const roleData = await AdminRole();
+                        const roleData = await AdminRole(workspace.id);
                         roles.push(roleData);
                     } else if (memberRole == "default_member"){
-                        const roleData = await MemberRole();
+                        const roleData = await MemberRole(workspace.id);
                         roles.push(roleData);
                     } else {
                         const roleData = await Role.findOne({_id: memberRole});

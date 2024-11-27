@@ -33,7 +33,7 @@ import {notificationUserOptionsType} from "@/app/ui/Alerts/AddAlertModal";
 import {getWorkspaceUsers} from "@/app/actions/workspaceActions";
 import {getTeams} from "@/app/actions/teamActions";
 
-export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, open: boolean, setOpen: (open: boolean) => void}) {
+export default function EditAlertModal({alert, open, setOpen, workspaceId}: {alert: IAlert, open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
     const [newAlertData, setNewAlertData] = useState<{
         title?: string;
@@ -68,8 +68,8 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
     useEffect(() => {
         async function loadWorkspaceUsers() {
             const currentUser = sessionUser;
-            const users = await getWorkspaceUsers().catch(() => []);
-            const teams = await getTeams().catch(() => []);
+            const users = await getWorkspaceUsers(workspaceId).catch(() => []);
+            const teams = await getTeams(workspaceId).catch(() => []);
             const options: notificationUserOptionsType[] = [];
             for(const user of users) {
                 options.push({
@@ -98,7 +98,7 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
             setNotificationUserOptions(options);
         }
         loadWorkspaceUsers().then(() => {}).catch(() => {});
-    }, [sessionUser]);
+    }, [workspaceId, sessionUser]);
 
     const handleClose = () => {
         setNewAlertErrorData({});
@@ -262,7 +262,7 @@ export default function EditAlertModal({alert, open, setOpen}: {alert: IAlert, o
                 <Divider sx={{my: 1}}/>
                 <InputLabel id="interval-unit-select-label" sx={{my: 1}}>Alert Criteria</InputLabel>
                 <FormHelperText error={!!newAlertErrorData.filters}>{newAlertErrorData.filters}</FormHelperText>
-                <AlertsWebsitesPreviewGrid filters={newAlertData.filters} setFilters={(filters) => {
+                <AlertsWebsitesPreviewGrid filters={newAlertData.filters} workspaceId={workspaceId} setFilters={(filters) => {
                     setNewAlertData({...newAlertData, filters});
                 }}></AlertsWebsitesPreviewGrid>
             </DialogContent>

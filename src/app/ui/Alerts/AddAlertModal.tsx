@@ -24,7 +24,7 @@ import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 export type notificationUserOptionsType = { id: string, label: string, type: 'user' | 'team', members: IUser[] };
-export default function AddAlertModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {
+export default function AddAlertModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
 
     const [notificationUserOptions, setNotificationUserOptions] = useState<notificationUserOptionsType[]>([]);
@@ -33,8 +33,9 @@ export default function AddAlertModal({open, setOpen}: {open: boolean, setOpen: 
     useEffect(() => {
         async function loadWorkspaceUsers() {
             const currentUser = sessionUser;
-            const users = await getWorkspaceUsers().catch(() => []);
-            const teams = await getTeams().catch(() => []);
+            const users = await getWorkspaceUsers(workspaceId).catch(() => []);
+            const teams = await getTeams(workspaceId).catch(() => []);
+            console.log('teams', teams);
             const options: notificationUserOptionsType[] = [];
             for(const user of users) {
                 options.push({
@@ -63,7 +64,7 @@ export default function AddAlertModal({open, setOpen}: {open: boolean, setOpen: 
             setNotificationUserOptions(options);
         }
         loadWorkspaceUsers().then(() => {}).catch(() => {});
-    }, [sessionUser]);
+    }, [sessionUser, workspaceId]);
 
     const [newAlertData, setNewAlertData] = useState<{
         title?: string;
@@ -265,7 +266,7 @@ export default function AddAlertModal({open, setOpen}: {open: boolean, setOpen: 
                 <Divider sx={{my: 1}}/>
                 <InputLabel id="interval-unit-select-label" sx={{my: 1}}>Alert Criteria</InputLabel>
                 <FormHelperText error={!!newAlertErrorData.filters}>{newAlertErrorData.filters}</FormHelperText>
-                <AlertsWebsitesPreviewGrid filters={filters} setFilters={setFilters}></AlertsWebsitesPreviewGrid>
+                <AlertsWebsitesPreviewGrid filters={filters} setFilters={setFilters} workspaceId={workspaceId}></AlertsWebsitesPreviewGrid>
             </DialogContent>
             <DialogActions>
                 <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>
@@ -296,6 +297,7 @@ export default function AddAlertModal({open, setOpen}: {open: boolean, setOpen: 
                             async function save() {
                                 if(newAlertData.title) {
                                     await createAlert({
+                                        workspace: workspaceId,
                                         title: newAlertData.title,
                                         enabled: newAlertData.enabled,
                                         filters: filters,

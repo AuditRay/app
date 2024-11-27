@@ -1,8 +1,8 @@
 import {IRole} from "@/app/models";
 import {AdminRolePermissions} from "@/app/premissions";
 import {type UserPermissions} from "@/app/premissions";
-export const AdminRole = async (): Promise<IRole> => {
-    const permissions = await AdminRolePermissions();
+export const AdminRole = async (workspaceId: string): Promise<IRole> => {
+    const permissions = await AdminRolePermissions(workspaceId);
     const userPermissions: UserPermissions = {};
     for (const permission in permissions) {
         userPermissions[permission] = permissions[permission].default;

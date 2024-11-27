@@ -16,7 +16,7 @@ import {removeUserFromWorkspace} from "@/app/actions/workspaceActions";
 import {deleteTeam} from "@/app/actions/teamActions";
 import {deleteAlert} from "@/app/actions/alertsActions";
 
-export default function DeleteAlertFromWorkspaceModal({open, setOpen, alert}: {alert: IAlert, open: boolean, setOpen: (open: boolean) => void}) {
+export default function DeleteAlertFromWorkspaceModal({open, setOpen, alert, workspaceId}: {alert: IAlert, open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const handleClose = () => {

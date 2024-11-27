@@ -31,6 +31,18 @@ const openai = setupOpenAI();
 const websiteSecretKey = process.env.WEBSITE_SECRET
 const encodedKey = new TextEncoder().encode(websiteSecretKey)
 
+export type WebsiteStatistics = {
+    status: {
+        updated: number,
+        withUpdates: number,
+        withSecurityUpdates: number,
+        notSupported: number,
+        unknown: number,
+    },
+    frameworkVersions: Record<string, number>,
+    securityIndex: number,
+};
+
 export type WebsiteTokenPayload = {
     websiteId: string;
 }
@@ -506,24 +518,20 @@ const versionTypeMapping = {
     NOT_SUPPORTED: 'Not Supported',
 }
 
-export async function countWebsites(userId: string): Promise<number> {
+export async function countWebsites(workspaceId: string): Promise<number> {
     await connectMongo();
     console.log('countWebsites');
-    let user = await getUser();
-    if (!userId) {
-        userId = user.id;
-    } else {
-        user = await User.findOne({_id: userId}) || user;
-    }
-    if (!user.currentSelectedWorkspace) {
+    if (workspaceId === 'personal') {
+        let user = await getUser();
+        let userId = user.id;
         return Website.countDocuments({user: userId});
     } else {
-        return Website.countDocuments({workspace: user.currentSelectedWorkspace});
+        return Website.countDocuments({workspace: workspaceId});
     }
 }
 
 export async function getWebsitesTable(
-        userId?: string,
+        workspaceId: string,
         pagination: GridPaginationModel = { page: 0, pageSize: 10 },
         filters: GridFilterModel = { items: [] },
         sort: GridSortModel = []
@@ -532,22 +540,20 @@ export async function getWebsitesTable(
         count: number;
         remaining: number;
         extraHeaders: { id: string, label: string }[];
+        statistics: WebsiteStatistics
     }> {
     await connectMongo();
     console.log('getWebsitesTable');
-    let user = await getUser();
-    if (!userId) {
-        userId = user.id;
-    } else {
-        user = await User.findOne({_id: userId}) || user;
-    }
+
     console.time('getWebsitesTable');
     let websites = [];
-    if (!user.currentSelectedWorkspace) {
+    if (workspaceId == "personal") {
+        let user = await getUser();
+        let userId = user.id;
         websites = await Website.find({user: userId, isDeleted: {$ne: true}});
     } else {
         websites = await Website.find({
-            workspace: user.currentSelectedWorkspace,
+            workspace:workspaceId,
             isDeleted: {$ne: true}
         });
     }
@@ -626,11 +632,11 @@ export async function getWebsitesTable(
             types: websiteObj.type ? [websiteObj.type.name, ...(websiteObj.type.subTypes.map((subType) => subType.name))] : [],
             tags: websiteObj.tags,
             components,
-            componentsNumber:  components.length,
+            componentsNumber: components.length,
             componentsUpdated,
-            componentsUpdatedNumber:  componentsUpdated.length,
+            componentsUpdatedNumber: componentsUpdated.length,
             componentsWithUpdates,
-            componentsWithUpdatesNumber:  componentsWithUpdates.length,
+            componentsWithUpdatesNumber: componentsWithUpdates.length,
             componentsWithSecurityUpdates,
             componentsWithSecurityUpdatesNumber: componentsWithSecurityUpdates.length,
             frameWorkUpdateStatus: status
@@ -709,8 +715,39 @@ export async function getWebsitesTable(
         websitesData.push(siteData);
     }
 
+    const statistics: WebsiteStatistics = {
+        status: {
+            updated: 0,
+            withUpdates: 0,
+            withSecurityUpdates: 0,
+            notSupported: 0,
+            unknown: 0,
+        },
+        frameworkVersions: {},
+        securityIndex: 0,
+    }
 
-    if(filters.items.length) {
+    for (const website of websitesData) {
+        if (website.frameWorkUpdateStatus === "Up to Date") statistics.status.updated++;
+        if (website.frameWorkUpdateStatus === "Needs Update") statistics.status.withUpdates++;
+        if (website.frameWorkUpdateStatus === "Security Update") statistics.status.withSecurityUpdates++;
+        if (website.frameWorkUpdateStatus === "Not Supported") statistics.status.notSupported++;
+        if (website.frameWorkUpdateStatus === "Unknown") statistics.status.unknown++;
+        //get the first 2 parts of the version and replace the last part with x
+        const frameworkVersion = website.frameworkVersion.value?.split('.').slice(0, 2).join('.');
+        if (statistics.frameworkVersions[frameworkVersion]) {
+            statistics.frameworkVersions[frameworkVersion]++;
+        } else {
+            statistics.frameworkVersions[frameworkVersion] = 1;
+        }
+    }
+    if (statistics.frameworkVersions['N/A']) {
+        delete statistics.frameworkVersions['N/A'];
+    }
+
+    statistics.securityIndex = Math.ceil((statistics.status.withSecurityUpdates / (websitesData.length - statistics.status.updated)) * 100);
+
+    if (filters.items.length) {
         console.log('filters.items', filters, filters.items);
         const filteredData = websitesData.filter((website) => {
             return filterWebsiteTable(website, filters);
@@ -761,7 +798,8 @@ export async function getWebsitesTable(
         data: websitesData.slice(start > websitesData.length ? websitesData.length - pagination.pageSize : start, end > websitesData.length ? websitesData.length : end),
         count: websitesData.length,
         remaining: websitesData.length - end,
-        extraHeaders: extraHeaders
+        extraHeaders: extraHeaders,
+        statistics
     };
 }
 
@@ -784,23 +822,24 @@ export async function getWebsites(userId?: string): Promise<IWebsite[]> {
     return websites.map(website => website.toJSON());
 }
 
-export async function getWebsitesListing(): Promise<IWebsite[]> {
+export async function getWebsitesListing(workspaceId: string): Promise<IWebsite[]> {
     await connectMongo();
     console.log('getWebsitesListing');
     let user: IUser = await getUser();
     if (!user) {
         throw new Error('User not found');
     }
-    let websites = await Website.find({workspace: user.currentSelectedWorkspace}, {
+    if (workspaceId === 'personal') {
+        const websites = await Website.find({user: user.id, workspace: null}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
+        return websites.map(website => website.toJSON());
+    }
+    const websites = await Website.find({workspace: workspaceId}, {
         _id: 1,
         title: 1,
         url: 1,
         type: 1,
         favicon: 1
     });
-    if (!user.currentSelectedWorkspace) {
-        websites = await Website.find({user: user.id}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
-    }
     return websites.map(website => website.toJSON());
 }
 

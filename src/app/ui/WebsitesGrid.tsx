@@ -69,7 +69,7 @@ const columnsVisibility = (headers?: { id: string, label: string}[]) => {
     return cols;
 }
 
-const prepareColumns = (viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string}[]): GridColDef[] => {
+const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string}[]): GridColDef[] => {
 
     const cols: GridColDef[] = [
         { field: 'siteName', headerName: 'Website Name', flex: 1, minWidth: 450,
@@ -79,7 +79,7 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 params.value && (
                     <>
                         <Box>
-                            <Link href={`/websites/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
+                            <Link href={`/workspace/${workspaceId}/websites/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
                                 <Box component={'img'}  src={`${params.row.favicon ?? '/tech/other.png'}`} alt={params.value} sx={{width: '20px', verticalAlign: 'middle', mr: '10px'}} />{params.value}
                             </Link>
                             <Link href={params.row.url} target={'_blank'}>
@@ -439,7 +439,7 @@ function CustomNoRowsOverlay() {
     );
 }
 
-export default function WebsitesGrid() {
+export default function WebsitesGrid({ workspaceId }: {workspaceId: string}) {
     const searchParams = useSearchParams();
     const [filters, setFilters] = React.useState<GridFilterModel>();
     const [isFiltersLoaded, setIsFiltersLoaded] = React.useState<boolean>(false);
@@ -453,6 +453,7 @@ export default function WebsitesGrid() {
     const [sortModel, setSortModel] = React.useState<GridSortModel>();
     const [rowCount, setRowCount] = React.useState<number>(0);
     const [barChart, setBarChart] = React.useState<number[]>();
+    const [securityIndex, setSecurityIndex] = React.useState<number>();
     const [pieChart, setPieChart] = React.useState<{ id: number, value: number, label: string }[]>();
     const [extraHeader, setExtraHeader] = React.useState<{ id: string, label: string}[]>([]);
     const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
@@ -493,24 +494,13 @@ export default function WebsitesGrid() {
         setIsWebsitesLoading(true);
         console.log('filters', filters);
 
-        const {data: websites, extraHeaders, count} = await getWebsitesTable(
-            undefined,
+        const {data: websites, extraHeaders, count, statistics} = await getWebsitesTable(
+            workspaceId,
             data?.pagination || paginationModel,
             data?.filters || filters,
             data?.sort || sortModel
         );
         setRowCount(count);
-        const chartNumbers = [
-            0, 11, 10, 29
-        ]
-        const pieChart: {id: number, value: number, label: string}[] = [
-            { id: 0, value: 5, label: '10.3.x' },
-            { id: 2, value: 5, label: '10.2.x' },
-            { id: 3, value: 5, label: '8.9.x' },
-            { id: 4, value: 1, label: '8.8.x' },
-            { id: 5, value: 5, label: '9.5.x' },
-
-        ]
         const WebsiteRows: GridRow[] = websites.map((website) => {
             // chartNumbers[0] += website.componentsUpdated.length ? 1 : 0;
             // chartNumbers[1] += website.componentsWithUpdates.length ? 1 : 0;
@@ -560,9 +550,25 @@ export default function WebsitesGrid() {
             }
             return websiteData;
         });
-        setBarChart(chartNumbers);
+
+        const pieChart: {id: number, value: number, label: string}[] = [];
+        for (const pieChartKey in statistics.frameworkVersions) {
+            pieChart.push({
+                id: pieChart.length,
+                value: statistics.frameworkVersions[pieChartKey],
+                label: pieChartKey,
+            });
+        }
+        setBarChart([
+            statistics.status.updated,
+            statistics.status.withUpdates + statistics.status.withSecurityUpdates,
+            statistics.status.withSecurityUpdates,
+            statistics.status.notSupported,
+            statistics.status.unknown,
+        ]);
         setPieChart(pieChart);
         setWebsites(WebsiteRows);
+        setSecurityIndex(statistics.securityIndex);
         setColumns(columns || columnsVisibility(extraHeader));
         setExtraHeader(extraHeaders);
         setIsWebsitesLoading(false);
@@ -621,14 +627,18 @@ export default function WebsitesGrid() {
                     >
                         {barChart && (
                             <BarChart
+                                borderRadius={10}
                                 xAxis={[
                                     {
                                         id: 'barCategories',
-                                        data: ['Updated', 'Needs Update', 'Not Secure', 'Unknown'],
+                                        data: ['Updated', 'Needs Update', 'Not Secure', 'Not Supported', 'Unknown'],
                                         scaleType: 'band',
+                                        labelStyle: {
+                                            fontSize: 5,
+                                        },
                                         colorMap: {
                                             type: 'ordinal',
-                                            colors: ['green', 'orange', 'red', 'gray'],
+                                            colors: ['green', 'orange', 'red', 'darkkhaki', 'gray'],
                                         }
                                     },
                                 ]}
@@ -654,6 +664,11 @@ export default function WebsitesGrid() {
                             series={[
                                 {
                                     data: pieChart || [],
+                                    innerRadius: 30,
+                                    outerRadius: 100,
+                                    paddingAngle: 5,
+                                    cornerRadius: 5,
+                                    startAngle: -45,
                                 },
                             ]}
                         />
@@ -669,9 +684,10 @@ export default function WebsitesGrid() {
                         }}
                     >
                         <Gauge
-                            value={10}
+                            value={securityIndex}
                             startAngle={-110}
                             endAngle={110}
+                            cornerRadius="50%"
                             sx={{
                                 [`& .${gaugeClasses.valueText}`]: {
                                     fontSize: 15,
@@ -700,7 +716,7 @@ export default function WebsitesGrid() {
                 }}
                 loading={isWebsitesLoading}
                 rows={websites}
-                columns={prepareColumns(openRightDrawer, extraHeader)}
+                columns={prepareColumns(workspaceId, openRightDrawer, extraHeader)}
                 rowSelection={false}
                 filterMode={'server'}
                 onPaginationModelChange={(model) => {

@@ -33,24 +33,24 @@ export async function createRole(roleData: Partial<IRole>) {
     }
 }
 
-export async function getWorkspaceAllRoles(): Promise<IRole[]> {
+export async function getWorkspaceAllRoles(workspaceId: string): Promise<IRole[]> {
     await connectMongo();
     console.log('getWorkspaceAllRoles');
     const user = await getUser();
-    if(!user.currentSelectedWorkspace) {
+    if(workspaceId == 'personal') {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
     }
 
     const workspace = await Workspace.findOne({
-        _id: user.currentSelectedWorkspace,
+        _id: workspaceId,
         $or: [{owner: user.id}, {users: user.id}, {"members.user": user.id}]
     });
     if(!workspace) {
         throw new Error('Workspace not found');
     }
     let roles = await Role.find({workspace: workspace._id});
-    const adminRole = await AdminRole();
-    const memberRole = await MemberRole();
+    const adminRole = await AdminRole(workspace._id.toString());
+    const memberRole = await MemberRole(workspace._id.toString());
     const memberOverride = roles.find((role) => role.overrideId == 'default_member');
     memberRole.permissions = memberOverride?.permissions || memberRole.permissions;
     roles = roles.filter((role) => role.overrideId != 'default_member');
@@ -61,24 +61,25 @@ export async function getWorkspaceAllRoles(): Promise<IRole[]> {
     ];
 }
 
-export async function getWorkspaceRoles(): Promise<IRole[]> {
+export async function getWorkspaceRoles(workspaceId: string): Promise<IRole[]> {
     await connectMongo();
     console.log('getWorkspaceRoles');
+    console.log('workspaceId', workspaceId);
     const user = await getUser();
-    if(!user.currentSelectedWorkspace) {
+    if(workspaceId == 'personal') {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
     }
 
     const workspace = await Workspace.findOne({
-        _id: user.currentSelectedWorkspace,
+        _id: workspaceId,
         $or: [{owner: user.id}, {users: user.id}, {"members.user": user.id}]
     });
     if(!workspace) {
         throw new Error('Workspace not found');
     }
     let roles = await Role.find({workspace: workspace._id, isWorkspace: true});
-    const adminRole = await AdminRole();
-    const memberRole = await MemberRole();
+    const adminRole = await AdminRole(workspace._id.toString());
+    const memberRole = await MemberRole(workspace._id.toString());
     const memberOverride = roles.find((role) => role.overrideId == 'default_member');
     memberRole.permissions = memberOverride?.permissions || memberRole.permissions;
     roles = roles.filter((role) => role.overrideId != 'default_member');
@@ -89,16 +90,16 @@ export async function getWorkspaceRoles(): Promise<IRole[]> {
     ];
 }
 
-export async function getWorkspaceTeamRoles(): Promise<IRole[]> {
+export async function getWorkspaceTeamRoles(workspaceId: string): Promise<IRole[]> {
     await connectMongo();
     console.log('getWorkspaceTeamRoles');
     const user = await getUser();
-    if(!user.currentSelectedWorkspace) {
+    if(workspaceId == 'personal') {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
     }
 
     const workspace = await Workspace.findOne({
-        _id: user.currentSelectedWorkspace,
+        _id: workspaceId,
         $or: [{owner: user.id}, {users: user.id}, {"members.user": user.id}]
     });
     if(!workspace) {
