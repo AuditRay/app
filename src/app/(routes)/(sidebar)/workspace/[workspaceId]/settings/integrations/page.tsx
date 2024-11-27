@@ -32,7 +32,7 @@ export default function IntegrationsSettings({params}: { params: { workspaceId: 
         console.log('currentWorkspace', currentWorkspace, sessionUser);
         if (currentWorkspace){
             setJiraIntegration(currentWorkspace.jira || {status: false, token: ''});
-            setSetupUrl(`https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id=O7gNWsjkktg2YsCjQAFysD3ZZF5yH3aq&scope=offline_access%20read%3Ajira-work%20write%3Ajira-work%20read%3Ajira-user&redirect_uri=https%3A%2F%2Flocal.monit.dev%2Fapi%2Fv1%2Fjira&state==${sessionUser?.currentSelectedWorkspace}&response_type=code&prompt=consent`)
+            setSetupUrl(`https://auth.atlassian.com/authorize?audience=api.atlassian.com&client_id=O7gNWsjkktg2YsCjQAFysD3ZZF5yH3aq&scope=offline_access%20read%3Ajira-work%20write%3Ajira-work%20read%3Ajira-user&redirect_uri=https%3A%2F%2Fbeta.monit.dev%2Fapi%2Fv1%2Fjira&state=${sessionUser?.currentSelectedWorkspace}&response_type=code&prompt=consent`)
         }
     }, [sessionUser]);
 
