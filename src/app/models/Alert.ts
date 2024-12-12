@@ -41,4 +41,4 @@ const ModelSchema = new Schema<IAlert>(
 
 ModelSchema.index({ workspace: -1});
 ModelSchema.index({ user: -1});
-export const Alert = (models?.Alert || model('Alert', ModelSchema)) as Model<IAlert>;
+export const Alert = (models?.Alert || model<IAlert>('Alert', ModelSchema)) as Model<IAlert>;

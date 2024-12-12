@@ -3,7 +3,7 @@
 import {getUser} from "@/app/actions/getUser";
 import {revalidatePath} from "next/cache";
 import {v4 as uuid4} from "uuid";
-import {IMemberPopulated, IRole, IUser, IWorkspace, IWorkspacePopulated, User, Website, Workspace} from "@/app/models";
+import {IMemberPopulated, IRole, IUser, IWorkspace, IWorkspacePopulated, User, Workspace} from "@/app/models";
 import {sendEmail} from "@/app/lib/email";
 import {getWorkspaceRoles} from "@/app/actions/rolesActions";
 import {connectMongo} from "@/app/lib/database";
@@ -144,14 +144,13 @@ export async function getJiraResources(currentWorkspaceId: string): Promise<any>
         }
     })
 
-    const response = await rawResponse.json();
-    console.log('response', response);
-    return response;
+    return await rawResponse.json();
 }
 
 export async function getJiraProjects(currentWorkspaceId: string, jiraResourceId: string): Promise<any> {
     await connectMongo();
     console.log('getJiraProjects');
+    const projects = [];
     const updateToken = await updateJiraToken(currentWorkspaceId);
     const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/project/search`, {
         method: 'GET',
@@ -162,18 +161,38 @@ export async function getJiraProjects(currentWorkspaceId: string, jiraResourceId
         }
     })
 
-    const response = await rawResponse.json();
-    console.log('response', response);
-    return response.values || [];
+    let response = await rawResponse.json();
+    if (response.values?.length > 0) {
+        projects.push(...response.values);
+        while (response.nextPage) {
+            const rawResponse = await fetch(response.nextPage, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${updateToken.token}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            response = await rawResponse.json();
+            if (response.values?.length > 0) {
+                projects.push(...response.values);
+            }
+            if(!response.nextPage) {
+                break;
+            }
+        }
+    }
+    return projects || [];
 }
 
-export async function getJiraUsers(currentWorkspaceId: string, jiraResourceId: string): Promise<any> {
+export async function getJiraUsers(currentWorkspaceId: string, jiraResourceId: string, jiraProjectId: string): Promise<any> {
     await connectMongo();
     console.log('getJiraUsers');
     const updateToken = await updateJiraToken(currentWorkspaceId);
 
 
-    const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/groupuserpicker?query=*`, {
+    const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/groupuserpicker?query=*&projectId=${jiraProjectId}`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${updateToken.token}`,
@@ -194,7 +213,6 @@ export async function getJiraUsers(currentWorkspaceId: string, jiraResourceId: s
             header: string;
         }
     } = await rawResponse.json();
-    console.log('response users', response.users?.users);
     return response.users?.users.filter(user => user.accountType === 'atlassian') || [];
 }
 
@@ -220,23 +238,24 @@ export async function getJiraIssues(currentWorkspaceId: string, jiraResourceId: 
     })
 
     const response: jiraIssueType[] = await rawResponse.json();
-    console.log('response issues', response);
     return (response || []).filter(issue => !issue.subtask);
 }
 
-export async function createJiraTicket(currentWorkspaceId: string, jiraResourceId: string, newTicketData: {
-    resource: string;
-    project: string;
-    dueDate: string;
-    title?: string;
-    text?: string;
-    assignee?: string;
-    issueType?: string;
-}): Promise<any> {
+export type jiraIssueFields = {
+    startAt: string;
+    maxResults: string;
+    total: string;
+    nextPage: string;
+    fields: any[]
+};
+export async function getJiraIssueFields(currentWorkspaceId: string, jiraResourceId: string, jiraProjectId: string, jiraIssueId: string): Promise<any> {
     await connectMongo();
-    console.log('createJiraTicket');
+    const fields = [];
+    console.log('getJiraIssues');
     const updateToken = await updateJiraToken(currentWorkspaceId);
-    const rawResponseFields = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/field`, {
+
+
+    const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/issue/createmeta/${jiraProjectId}/issuetypes/${jiraIssueId}`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${updateToken.token}`,
@@ -244,33 +263,171 @@ export async function createJiraTicket(currentWorkspaceId: string, jiraResourceI
             'Content-Type': 'application/json'
         }
     })
-    const responseFields = await rawResponseFields.json();
-    console.log('responseFields', responseFields);
 
-    const contentSchema = convertHtmlToSchema(newTicketData.text || '<p></p>');
-    console.log('contentSchema', JSON.stringify(contentSchema, null, 2));
+    let response: jiraIssueFields = await rawResponse.json();
+    if (response.fields?.length > 0) {
+        fields.push(...response.fields);
+        while (response.nextPage) {
+            const rawResponse = await fetch(response.nextPage, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${updateToken.token}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+
+            response = await rawResponse.json();
+            if (response.fields?.length > 0) {
+                fields.push(...response.fields);
+            }
+            if(!response.nextPage) {
+                break;
+            }
+        }
+    }
+
+    const skipField = [
+        'issuelinks',
+        'issuetype',
+        'reporter',
+        'labels',
+        'attachment',
+        'project'
+    ]
+
+    const JIRA_CUSTOM_FIELD_TYPES = {
+        "select": "com.atlassian.jira.plugin.system.customfieldtypes:select",
+        "textarea": "com.atlassian.jira.plugin.system.customfieldtypes:textarea",
+        "multiuserpicker": "com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker",
+        "tempo_account": "com.tempoplugin.tempo-accounts:accounts.customfield",
+        "multicheckboxes": "com.atlassian.jira.plugin.system.customfieldtypes:multicheckboxes",
+    }
+
+    let users: any[] = [];
+    try {
+        const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/groupuserpicker?query=*&projectId=${jiraProjectId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${updateToken.token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+
+        const response: {
+            users?: {
+                users: {
+                    accountId: string;
+                    accountType: string;
+                    html: string;
+                    displayName: string;
+                }[];
+                total: number;
+                header: string;
+            }
+        } = await rawResponse.json();
+        users = response.users?.users.filter(user => user.accountType === 'atlassian') || [];
+    } catch (e) {
+        users = [];
+    }
+
+    const formattedFields = [];
+
+    for (const field of fields) {
+        if (skipField.includes(field.schema.system)) continue;
+        if (['worklog', 'attachment'].includes(field.schema.system)) continue;
+        if (['timetracking'].includes(field.schema.type)) continue;
+
+        if (["securitylevel", "priority"].includes(field.schema.type) && field.schema.custom == JIRA_CUSTOM_FIELD_TYPES['select']) {
+            field.fieldType = "select";
+            formattedFields.push(field);
+        } else if (field.autoCompleteUrl && (field.schema.items == 'user' || field.schema.type == 'user')) {
+            try {
+                const rawResponse = await fetch(field.autoCompleteUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${updateToken.token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                field.fieldType = "select";
+                field['allowedValues'] = await rawResponse.json();
+                formattedFields.push(field);
+                console.log('response autocomplete', field.fieldId, field.autoCompleteUrl, JSON.stringify(response, null, 2));
+            } catch (e) {
+                if(!field.required) continue;
+                if(field.hasDefaultValue) continue;
+                field.fieldType = "select";
+                field['allowedValues'] = users;
+                formattedFields.push(field);
+            }
+        } else if (field.schema.custom == JIRA_CUSTOM_FIELD_TYPES['multicheckboxes']) {
+            field.fieldType = "select";
+            field.multiple = true;
+            formattedFields.push(field);
+        } else if (field.schema.type == 'array' && field.schema.items != 'string' && field.allowedValues) {
+            field.fieldType = "select";
+            formattedFields.push(field);
+        } else if (field.schema.system == 'description') {
+            field.fieldType = "description";
+            formattedFields.push(field);
+        } else if (field.schema.system == 'summary') {
+            field.fieldType = "summary";
+            formattedFields.push(field);
+        } else if (field.schema.type == 'string') {
+            field.fieldType = "text";
+            formattedFields.push(field);
+        } else if (field.schema.type == 'number') {
+            field.fieldType = "number";
+            formattedFields.push(field);
+        } else if (field.schema.type == 'date') {
+            field.fieldType = "date";
+            formattedFields.push(field);
+        } else if (field.schema.custom == JIRA_CUSTOM_FIELD_TYPES['textarea']) {
+            field.fieldType = "textarea";
+            formattedFields.push(field);
+        }
+    }
+    console.log('response', JSON.stringify(fields, null, 2));
+    return formattedFields || [];
+}
+
+
+export async function createJiraTicket(currentWorkspaceId: string, jiraResourceId: string, newTicketData: {
+    project: string;
+    issuetype: string;
+    [key: string]: string;
+}): Promise<any> {
+    await connectMongo();
+    console.log('createJiraTicket');
+    const updateToken = await updateJiraToken(currentWorkspaceId);
+    delete newTicketData.resource;
     const bodyData: any = {
       "fields": {
-        "description": contentSchema,
+        ...newTicketData,
         "project": {
           "id": newTicketData.project
-        },
-        "summary": newTicketData.title,
-        "duedate": newTicketData.dueDate
+        }
       },
       "update": {}
     };
+
+    if (newTicketData.description) {
+        bodyData.fields.description = convertHtmlToSchema(newTicketData.description || '<p></p>');
+    }
     if(newTicketData.assignee) {
         bodyData.fields.assignee = {
             "accountId": newTicketData.assignee
         }
     }
-    if(newTicketData.issueType) {
+    if(newTicketData.issuetype) {
         bodyData.fields.issuetype = {
-            "id": newTicketData.issueType
+            "id": newTicketData.issuetype
         }
     }
-    console.log('bodyData', bodyData);
+    console.log('bodyData', JSON.stringify(bodyData, null, 2));
     const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/issue`, {
         method: 'POST',
         headers: {
@@ -282,7 +439,7 @@ export async function createJiraTicket(currentWorkspaceId: string, jiraResourceI
     })
 
     const response = await rawResponse.json();
-    console.log('response', response, updateToken);
+    console.log('response', JSON.stringify(response, null, 2));
     return response;
 }
 

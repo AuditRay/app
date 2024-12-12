@@ -31,4 +31,4 @@ const ModelSchema = new Schema<IRole>(
         },
     },
 );
-export const Role = (models?.Role || model('Role', ModelSchema)) as Model<IRole>;
+export const Role = (models?.Role || model<IRole>('Role', ModelSchema)) as Model<IRole>;

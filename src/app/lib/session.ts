@@ -27,7 +27,7 @@ export const verifySession = cache(async (): Promise<{isAuth: Boolean, userId: s
     const session = await decrypt(cookie)
 
     if (!session?.userId) {
-        redirect('/login')
+        redirect('/logout')
     }
 
     await connectMongo();

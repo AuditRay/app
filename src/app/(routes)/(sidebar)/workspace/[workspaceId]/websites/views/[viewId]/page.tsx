@@ -8,13 +8,11 @@ import AddWebsiteModal from "@/app/ui/Websites/AddWebsiteModal";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
 import RightDrawer from "@/app/ui/RightDrawer";
 export default async function Websites(
-    {searchParams, params}: {
-        searchParams: Record<string, string>,
-        params: { workspaceId: string }
+    {params}: {
+        params: { workspaceId: string, viewId: string }
     }
 ) {
-    const filterViewId = searchParams['filterView'] || '';
-    const filterView = filterViewId ? await getFiltersView(filterViewId) : {title: ''};
+    const filterView = await getFiltersView(params.viewId);
     const websitesCount = await countWebsites(params.workspaceId);
     return (
         <Grid item xs={12}>
@@ -37,7 +35,7 @@ export default async function Websites(
                                 <AddWebsiteModal workspaceId={params.workspaceId}></AddWebsiteModal>
                             </Box>
                         </Box>
-                        <WebsitesGrid workspaceId={params.workspaceId}/>
+                        <WebsitesGrid workspaceId={params.workspaceId} viewId={params.viewId}/>
                     </div>
                 )}
                 {websitesCount == 0 && (

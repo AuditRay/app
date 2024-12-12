@@ -376,42 +376,72 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                             sx={{bgcolor: 'green', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component} websiteInfo={{
+                                websiteName: params.row.siteName,
+                                websiteUrl: params.row.url,
+                                frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
+                                frameworkType: params.row.type.name,
+                            }}/>)}
                         ></Chip>
                     } else if (rawData.status === 'Needs Update') {
                         return <Chip
                             sx={{bgcolor: 'orange', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component} websiteInfo={{
+                                websiteName: params.row.siteName,
+                                websiteUrl: params.row.url,
+                                frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
+                                frameworkType: params.row.type.name,
+                            }}/>)}
                         />
                     } else if (rawData.status === 'Not Supported') {
                         return <Chip
                             sx={{bgcolor: 'darkkhaki', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component} websiteInfo={{
+                                websiteName: params.row.siteName,
+                                websiteUrl: params.row.url,
+                                frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
+                                frameworkType: params.row.type.name,
+                            }}/>)}
                         />
                     } else if (rawData.status === 'Revoked') {
                         return <Chip
                             sx={{bgcolor: 'brown', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component} websiteInfo={{
+                                websiteName: params.row.siteName,
+                                websiteUrl: params.row.url,
+                                frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
+                                frameworkType: params.row.type.name,
+                            }}/>)}
                         />
                     } else if (rawData.status === 'Security Update') {
                         return <Chip
                             sx={{bgcolor: 'red', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component} websiteInfo={{
+                                websiteName: params.row.siteName,
+                                websiteUrl: params.row.url,
+                                frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
+                                frameworkType: params.row.type.name,
+                            }}/>)}
                         />
                     } else {
                         return <Chip
                             sx={{bgcolor: 'yellowgreen', color: 'white'}}
                             title={rawData.status}
                             label={rawData.value}
-                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component}/>)}
+                            onClick={() => rawData.component && rawData.status && viewMore(rawData.component.title,  <ComponentInfo component={rawData.component} websiteInfo={{
+                                websiteName: params.row.siteName,
+                                websiteUrl: params.row.url,
+                                frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
+                                frameworkType: params.row.type.name,
+                            }}/>)}
                         />
                     }
                 } else {

@@ -1,4 +1,5 @@
 export * from './FiltersView';
+export * from './UpdateRun';
 export * from './User';
 export * from './Website';
 export * from './WebsiteInfo';

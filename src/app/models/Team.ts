@@ -80,4 +80,4 @@ const ModelSchema = new Schema<ITeam>(
         },
     },
 );
-export const Team = (models?.Team || model('Team', ModelSchema)) as Model<ITeam>;
+export const Team = (models?.Team || model<ITeam>('Team', ModelSchema)) as Model<ITeam>;

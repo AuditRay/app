@@ -67,4 +67,4 @@ const ModelSchema = new Schema<IFieldsTemplate>(
 
 ModelSchema.index({ workspace: -1});
 ModelSchema.index({ user: -1});
-export const FieldsTemplate = (models?.FieldsTemplate || model('FieldsTemplate', ModelSchema)) as Model<IFieldsTemplate>;
+export const FieldsTemplate = (models?.FieldsTemplate || model<IFieldsTemplate>('FieldsTemplate', ModelSchema)) as Model<IFieldsTemplate>;

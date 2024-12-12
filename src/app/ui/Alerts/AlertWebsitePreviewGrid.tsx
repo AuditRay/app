@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react';
 import {
     DataGridPro,
@@ -14,14 +12,15 @@ import {
 } from '@mui/x-data-grid-pro';
 import {diff} from 'deep-object-diff';
 import {IWebsite} from "@/app/models/Website";
-import {Box, Chip, LinearProgress, Paper} from "@mui/material";
+import {Box, Chip, debounce, Divider, InputLabel, LinearProgress, Paper} from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import {useCallback, useEffect} from "react";
+import ReactDOM from "react-dom";
 import Button from "@mui/material/Button";
 import SaveFilterViewModal from "@/app/ui/SaveFilterViewModal";
 import {useSearchParams} from "next/navigation";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
-import {getWebsitesTable, tableSourceField} from "@/app/actions/websiteActions";
+import {getWebsitesListing, getWebsitesTable, IWebsiteTable, tableSourceField} from "@/app/actions/websiteActions";
 import {IFiltersView} from "@/app/models/FiltersView";
 import UpdateFilterViewModal from "@/app/ui/UpdateFilterViewModal";
 import useRightDrawerStore from "@/app/lib/uiStore";
@@ -31,9 +30,8 @@ import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import ComponentInfo from "@/app/ui/ComponentInfo";
 import {UpdateInfo} from "@/app/models";
 import Link from "@/app/ui/Link";
-import Grid from '@mui/material/Grid2';
-import {BarChart, Gauge, gaugeClasses, PieChart} from "@mui/x-charts";
-import theme from "@/theme";
+import {GridFilterPanel} from "@mui/x-data-grid";
+import {styled} from "@mui/material/styles";
 
 export type GridRow = {
     id: number|string;
@@ -66,21 +64,22 @@ const prepareColumnsVisibility = (headers?: { id: string, label: string}[]) => {
         if(value.id === 'frameworkVersion') continue;
         cols[value.id] = false;
     }
-    console.log('cols', cols);
     return cols;
 }
 
-const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string}[]): GridColDef[] => {
+const prepareColumns = (viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string, type?: string}[], websites: IWebsite[] = []): GridColDef[] => {
 
     const cols: GridColDef[] = [
         { field: 'siteName', headerName: 'Website Name', flex: 1, minWidth: 450,
             align: 'left',
             headerAlign: 'left',
+            type: 'singleSelect',
+            valueOptions: (websites || []).filter((website) => website.title !== undefined).map((website) => website.title),
             renderCell: (params: GridRenderCellParams<GridRow, GridRow['siteName']>) => (
                 params.value && (
                     <>
                         <Box>
-                            <Link href={`/workspace/${workspaceId}/websites/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
+                            <Link href={`/websites/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
                                 <Box component={'img'}  src={`${params.row.favicon ?? '/tech/other.png'}`} alt={params.value} sx={{width: '20px', verticalAlign: 'middle', mr: '10px'}} />{params.value}
                             </Link>
                             <Link href={params.row.url} target={'_blank'}>
@@ -143,9 +142,6 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
             sortable: false,
             align: 'left',
             headerAlign: 'left',
-            filterOperators: getGridStringOperators().filter((operator) => operator.value === 'contains').map((operator) => {
-                return operator;
-            }),
             renderCell: (params: GridRenderCellParams<GridRow, GridRow['frameworkVersion']>) => {
                 const rawData = params.row.frameworkVersion;
                 const updatedComponent = rawData?.component;
@@ -211,7 +207,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                 const rawData = params.row.frameworkVersion;
                 const components = params.row.componentsUpdated;
                 return <Chip
-                    sx={{bgcolor: params.value ? 'green' : undefined, color: params.value ? 'white' : undefined}}
+                    sx={{bgcolor: 'green', color: 'white'}}
                     label={params.value}
                     onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
                 />
@@ -229,7 +225,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                 const rawData = params.row.frameworkVersion;
                 const components = params.row.componentsWithUpdates;
                 return <Chip
-                    sx={{bgcolor: params.value ? 'orange' : undefined, color: params.value ? 'white' : undefined}}
+                    sx={{bgcolor: 'orange', color: 'white'}}
                     label={params.value}
                     onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
                 />
@@ -247,7 +243,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                 const rawData = params.row.frameworkVersion;
                 const components = params.row.componentsWithSecurityUpdates;
                 return <Chip
-                    sx={{bgcolor: params.value ? 'red' : undefined, color: params.value ? 'white' : undefined}}
+                    sx={{bgcolor: 'red', color: 'white'}}
                     label={params.value}
                     onClick={() => rawData?.component && params.value && viewMore("Components",  <WebsitesInfoGrid websiteInfo={components}/>)}
                 />
@@ -323,7 +319,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                     },
                 },
                 {
-                    label: 'Empty',
+                    label: value.type === 'component' ? 'No Installed' : 'Empty',
                     value: 'empty',
                     getApplyFilterFn: (filterItem, column) => {
                         return (value, row, column, apiRef) => {
@@ -335,7 +331,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                     },
                 },
                 {
-                    label: 'Not Empty',
+                    label: value.type === 'component' ? 'Installed' : 'Not Empty',
                     value: 'notEmpty',
                     getApplyFilterFn: (filterItem, column) => {
                         return (value, row, column, apiRef) => {
@@ -385,7 +381,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                                 websiteUrl: params.row.url,
                                 frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
                                 frameworkType: params.row.type.name,
-                            }} />)}
+                            }}/>)}
                         ></Chip>
                     } else if (rawData.status === 'Needs Update') {
                         return <Chip
@@ -397,7 +393,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                                 websiteUrl: params.row.url,
                                 frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
                                 frameworkType: params.row.type.name,
-                            }} />)}
+                            }}/>)}
                         />
                     } else if (rawData.status === 'Not Supported') {
                         return <Chip
@@ -409,7 +405,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                                 websiteUrl: params.row.url,
                                 frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
                                 frameworkType: params.row.type.name,
-                            }} />)}
+                            }}/>)}
                         />
                     } else if (rawData.status === 'Revoked') {
                         return <Chip
@@ -421,7 +417,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                                 websiteUrl: params.row.url,
                                 frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
                                 frameworkType: params.row.type.name,
-                            }} />)}
+                            }}/>)}
                         />
                     } else if (rawData.status === 'Security Update') {
                         return <Chip
@@ -433,7 +429,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                                 websiteUrl: params.row.url,
                                 frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
                                 frameworkType: params.row.type.name,
-                            }} />)}
+                            }}/>)}
                         />
                     } else {
                         return <Chip
@@ -445,7 +441,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                                 websiteUrl: params.row.url,
                                 frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
                                 frameworkType: params.row.type.name,
-                            }} />)}
+                            }}/>)}
                         />
                     }
                 } else {
@@ -464,88 +460,91 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
     return cols;
 };
 
+
+const StyledGridOverlay = styled('div')(({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    padding: 10,
+    '& .no-rows-primary': {
+        fill: theme.palette.mode === 'light' ? '#AEB8C2' : '#3D4751',
+    },
+    '& .no-rows-secondary': {
+        fill: theme.palette.mode === 'light' ? '#E8EAED' : '#1D2126',
+    },
+}));
+
 function CustomNoRowsOverlay() {
     return (
-        <Box sx={{ mt: 2 }}>Loading Data</Box>
+        <StyledGridOverlay>
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                width={96}
+                viewBox="0 0 452 257"
+                aria-hidden
+                focusable="false"
+            >
+                <path
+                    className="no-rows-primary"
+                    d="M348 69c-46.392 0-84 37.608-84 84s37.608 84 84 84 84-37.608 84-84-37.608-84-84-84Zm-104 84c0-57.438 46.562-104 104-104s104 46.562 104 104-46.562 104-104 104-104-46.562-104-104Z"
+                />
+                <path
+                    className="no-rows-primary"
+                    d="M308.929 113.929c3.905-3.905 10.237-3.905 14.142 0l63.64 63.64c3.905 3.905 3.905 10.236 0 14.142-3.906 3.905-10.237 3.905-14.142 0l-63.64-63.64c-3.905-3.905-3.905-10.237 0-14.142Z"
+                />
+                <path
+                    className="no-rows-primary"
+                    d="M308.929 191.711c-3.905-3.906-3.905-10.237 0-14.142l63.64-63.64c3.905-3.905 10.236-3.905 14.142 0 3.905 3.905 3.905 10.237 0 14.142l-63.64 63.64c-3.905 3.905-10.237 3.905-14.142 0Z"
+                />
+                <path
+                    className="no-rows-secondary"
+                    d="M0 10C0 4.477 4.477 0 10 0h380c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 20 0 15.523 0 10ZM0 59c0-5.523 4.477-10 10-10h231c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 69 0 64.523 0 59ZM0 106c0-5.523 4.477-10 10-10h203c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 153c0-5.523 4.477-10 10-10h195.5c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 200c0-5.523 4.477-10 10-10h203c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 247c0-5.523 4.477-10 10-10h231c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10Z"
+                />
+            </svg>
+            <Typography sx={{ mt: 2, textAlign: "center" }} variant={'h2'}>No websites currently match the specified criteria yet, which may indicate that there are no sites requiring attention at this time. However, an alert will be triggered as soon as any website meets these parameters.</Typography>
+        </StyledGridOverlay>
     );
 }
 
-export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: string, viewId?: string}) {
-    const [filters, setFilters] = React.useState<GridFilterModel>();
-    const [isFiltersLoaded, setIsFiltersLoaded] = React.useState<boolean>(false);
+export default function AlertWebsitePreviewGrid(
+    {filters, workspaceId, gridData}:
+    {
+        gridData: {data: IWebsiteTable[], count: number, extraHeaders: {id: string, label: string}[]},
+        filters?: GridFilterModel,
+        workspaceId?: string
+    }
+) {
     const [isWebsitesLoading, setIsWebsitesLoading] = React.useState<boolean>(true);
-    const [filtersView, setFiltersView] = React.useState<IFiltersView>();
     const [columnsVisibility, setColumnsVisibility] = React.useState<GridColumnVisibilityModel>();
-    const [columns, setColumns] = React.useState<GridColDef[]>();
-    const [isSaveOpened, setIsSaveOpened] = React.useState<boolean>(false);
-    const [isUpdateOpened, setIsUpdateOpened] = React.useState<boolean>(false);
+    const [columns, setColumns] = React.useState<GridColDef[]>([]);
     const [websites, setWebsites] = React.useState<GridRow[]>([])
-    const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({ page: 0, pageSize: 10 });
-    const [sortModel, setSortModel] = React.useState<GridSortModel>();
+    const [websiteListing, setWebsiteListing] = React.useState<IWebsite[]>([]);
     const [rowCount, setRowCount] = React.useState<number>(0);
-    const [barChart, setBarChart] = React.useState<number[]>();
-    const [securityIndex, setSecurityIndex] = React.useState<number>();
-    const [pieChart, setPieChart] = React.useState<{ id: number, value: number, label: string }[]>();
     const [extraHeader, setExtraHeader] = React.useState<{ id: string, label: string}[]>([]);
     const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
-    const CustomToolbar = useCallback(() => {
-        const filterViewParam = viewId;
-        let enableSave = false;
-        if (filters) {
-            const compare = diff(filters, filtersView?.filters || { items: [] });
-            enableSave = compare && Object.keys(compare).length > 0;
-        }
-        if(columns) {
-            const compare = diff(columns, filtersView?.columns || prepareColumnsVisibility(extraHeader));
-            enableSave = compare && Object.keys(compare).length > 0;
-        }
-        return (
-            <GridToolbarContainer>
-                <GridToolbarColumnsButton />
-                <GridToolbarFilterButton />
-                <GridToolbarExport />
-                {!filterViewParam && (
-                    <Button variant={'contained'} onClick={() => setIsSaveOpened(true)}>
-                        Save View
-                    </Button>
-                )}
-                {filterViewParam && enableSave && (
-                    <Button variant={'outlined'} onClick={() => setIsUpdateOpened(true)}>
-                        Update View
-                    </Button>
-                )}
-            </GridToolbarContainer>
-        );
-    }, [viewId, filters, columns, filtersView, extraHeader])
-    const getWebsites = async (data?: { filters?: GridFilterModel, pagination?: GridPaginationModel, sort?: GridSortModel }) => {
-        console.log('data', data);
-        setIsWebsitesLoading(true);
-        console.log('filters', filters);
+    // Inside your AlertsWebsitesPreviewGrid component
 
-        const {data: websites, extraHeaders, count, statistics} = await getWebsitesTable(
-            workspaceId,
-            data?.pagination || paginationModel,
-            data?.filters || filters,
-            data?.sort || sortModel
-        );
+    const getWebsites = async (data?: {
+        filters?: GridFilterModel,
+        pagination?: GridPaginationModel
+        sort?: GridSortModel
+    }) => {
+        setIsWebsitesLoading(true);
+
+        setWebsiteListing([]);
+        const {data: websites, extraHeaders, count} = gridData
         setRowCount(count);
         const WebsiteRows: GridRow[] = websites.map((website) => {
-            // chartNumbers[0] += website.componentsUpdated.length ? 1 : 0;
-            // chartNumbers[1] += website.componentsWithUpdates.length ? 1 : 0;
-            // chartNumbers[2] += website.componentsWithSecurityUpdates.length ? 1 : 0;
-            // if(!pieChart.find((item) => item.label === website.frameworkVersion.value)) {
-            //     pieChart.push({ id: pieChart.length, value: 1, label: website.frameworkVersion.value });
-            // } else {
-            //     const index = pieChart.findIndex((item) => item.label === website.frameworkVersion.value);
-            //     pieChart[index].value += 1;
-            // }
             const websiteData: GridRow = {
                 id: website.id,
                 url: website.url,
                 favicon: website.favicon,
                 siteName: website.title ? website.title : website.url,
                 type: website.type,
-                types:  website.type ? [website.type.name, ...(website.type.subTypes.map((subType) => subType.name))] : [],
+                types: website.type ? [website.type.name, ...(website.type.subTypes.map((subType) => subType.name))] : [],
                 tags: website.tags || [],
                 components: website.components,
                 componentsNumber: website.components.length,
@@ -559,8 +558,8 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
                 frameworkVersion: website.frameworkVersion,
             }
             for (const [key, value] of Object.entries(website)) {
-                if(!websiteData[key]) {
-                    if(typeof value === 'object') {
+                if (!websiteData[key]) {
+                    if (typeof value === 'object') {
                         switch (value.type) {
                             case 'text':
                                 websiteData[key] = value.value
@@ -578,221 +577,56 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
             }
             return websiteData;
         });
-
-        const pieChart: {id: number, value: number, label: string}[] = [];
-        for (const pieChartKey in statistics.frameworkVersions) {
-            pieChart.push({
-                id: pieChart.length,
-                value: statistics.frameworkVersions[pieChartKey],
-                label: pieChartKey,
-            });
-        }
-        setBarChart([
-            statistics.status.updated,
-            statistics.status.withUpdates + statistics.status.withSecurityUpdates,
-            statistics.status.withSecurityUpdates,
-            statistics.status.notSupported,
-            statistics.status.unknown,
-        ]);
-        setPieChart(pieChart);
         setWebsites(WebsiteRows);
-        setSecurityIndex(statistics.securityIndex);
         setExtraHeader(extraHeaders);
-        setColumns(prepareColumns(workspaceId, openRightDrawer, extraHeaders));
         setColumnsVisibility(prepareColumnsVisibility(extraHeaders));
+        setColumns(prepareColumns(openRightDrawer, extraHeaders, []));
         setIsWebsitesLoading(false);
+        return {
+            websites: WebsiteRows,
+            extraHeaders: extraHeaders,
+            count: count
+        }
     }
     useEffect(() => {
-        if(viewId) return;
-        setFilters({ items: [] });
+        setColumns(prepareColumns(openRightDrawer, [], []))
+        if (extraHeader.length) {
+            setColumnsVisibility(prepareColumnsVisibility(extraHeader));
+        }
         getWebsites({
-            filters: { items: [] }
-        }).then(() => {});
-    }, []);
-    useEffect(() => {
-        if(isWebsitesLoading) return;
-        if(columnsVisibility) {
-            console.log('columnsVisibility1233', columnsVisibility, extraHeader);
-        }
-    }, [isWebsitesLoading, columnsVisibility]);
-    useEffect(() => {
-        if (viewId) {
-            getFiltersView(viewId).then((filter) => {
-                if (filter) {
-                    setIsFiltersLoaded(true);
-                    setFiltersView(filter);
-                    setFilters(filter.filters as GridFilterModel);
-                    if (filter.columns) {
-                        //setColumns(filter.columns as GridColumnVisibilityModel);
-                    }
-                    getWebsites({
-                        filters: filter.filters as GridFilterModel,
-                    });
-                }
-            })
-        } else {
-            setFilters({ items: [] });
-            if (extraHeader.length) {
-                //setColumnsVisibility(prepareColumnsVisibility(extraHeader));
-            }
-            setFiltersView(undefined);
-        }
-    }, [viewId]);
+            filters: filters
+        }).then((data) => {
+            setColumnsVisibility(prepareColumnsVisibility(data?.extraHeaders));
+            setColumns(prepareColumns(openRightDrawer, data?.extraHeaders, websiteListing))
+        });
+    }, [workspaceId]);
 
-    return (
+    return columns.length ? (
         <div style={{ width: '100%' }}>
-            <SaveFilterViewModal open={isSaveOpened} setOpen={setIsSaveOpened} filtersModel={filters} columnsModel={columnsVisibility}/>
-            {filtersView && (
-                <UpdateFilterViewModal open={isUpdateOpened} setOpen={setIsUpdateOpened} filtersView={filtersView} filtersModel={filters} columnsModel={columnsVisibility}/>
-            )}
-            <Grid container spacing={2} sx={{mb: 3}}>
-                <Grid size={4}>
-                    <Paper
-                        sx={{
-                            p: 2,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: 240,
-                        }}
-                    >
-                        {barChart && (
-                            <BarChart
-                                borderRadius={10}
-                                xAxis={[
-                                    {
-                                        id: 'barCategories',
-                                        data: ['Updated', 'Needs Update', 'Not Secure', 'Not Supported', 'Unknown'],
-                                        scaleType: 'band',
-                                        labelStyle: {
-                                            fontSize: 5,
-                                        },
-                                        colorMap: {
-                                            type: 'ordinal',
-                                            colors: ['green', 'orange', 'red', 'darkkhaki', 'gray'],
-                                        }
-                                    },
-                                ]}
-                                series={[
-                                    {
-                                        data: barChart,
-                                    },
-                                ]}
-                            />
-                        )}
-                    </Paper>
-                </Grid>
-                <Grid size={4}>
-                    <Paper
-                        sx={{
-                            p: 2,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: 240,
-                        }}
-                    >
-                        <PieChart
-                            series={[
-                                {
-                                    data: pieChart || [],
-                                    innerRadius: 30,
-                                    outerRadius: 100,
-                                    paddingAngle: 5,
-                                    cornerRadius: 5,
-                                    startAngle: -45,
-                                },
-                            ]}
-                        />
-                    </Paper>
-                </Grid>
-                <Grid size={4}>
-                    <Paper
-                        sx={{
-                            p: 2,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: 240,
-                        }}
-                    >
-                        <Gauge
-                            value={securityIndex}
-                            startAngle={-110}
-                            endAngle={110}
-                            cornerRadius="50%"
-                            sx={{
-                                [`& .${gaugeClasses.valueText}`]: {
-                                    fontSize: 15,
-                                    transform: 'translate(0px, 0px)',
-                                },
-                                [`& .${gaugeClasses.valueArc}`]: {
-                                    fill: 'red',
-                                },
-                                [`& .${gaugeClasses.referenceArc}`]: {
-                                    fill: theme.palette.text.disabled,
-                                },
-                            }}
-                            text={
-                                ({ value, valueMax }) => `Security Index ${value}%`
-                            }
-                        />
-                    </Paper>
-                </Grid>
-            </Grid>
+            <Paper id="header" sx={{ mb: 2 }} />
+            <Divider sx={{my: 1}}/>
+            <InputLabel id="interval-unit-select-label" sx={{my: 1}}>Results Preview ({rowCount})</InputLabel>
             <DataGridPro
                 autoHeight={true}
                 sx={{ '--DataGrid-overlayHeight': '300px' }}
                 slots={{
                     loadingOverlay: LinearProgress as GridSlots['loadingOverlay'],
-                    toolbar: CustomToolbar
+                    noRowsOverlay: CustomNoRowsOverlay,
+                    footer: undefined
                 }}
                 loading={isWebsitesLoading}
                 rows={websites}
-                columns={columns ? columns : []}
+                columns={columns}
                 rowSelection={false}
-                filterMode={'server'}
-                onPaginationModelChange={(model) => {
-                    console.log('model', model);
-                    setPaginationModel(model);
-                    getWebsites({
-                        pagination: model,
-                    });
-                }}
-                onFilterModelChange={(model) => {
-                    console.log('model', model);
-                    setFilters(model);
-                    getWebsites({
-                        filters: model,
-                    });
-                }}
                 onColumnVisibilityModelChange={(model) => {
-                    console.log('onColumnVisibilityModelChange', model, extraHeader);
-                    const preparedModel = prepareColumnsVisibility(extraHeader);
-                    setColumnsVisibility({
-                        ...preparedModel,
-                        ...model
-                    });  // save columns visibility
+                    setColumnsVisibility(model);  // save columns visibility
                 }}
                 filterModel={filters}
                 columnVisibilityModel={columnsVisibility}
-                initialState={{
-                    pagination: {
-                        paginationModel: paginationModel,
-                    },
-                    columns: {
-                        columnVisibilityModel: columnsVisibility,
-                    }
-                }}
-                sortingMode={'server'}
-                onSortModelChange={(model) => {
-                  setSortModel(model);
-                  getWebsites({
-                      sort: model,
-                  });
-                }}
                 pagination={true}
-                paginationMode={'server'}
                 rowCount={rowCount}
-                pageSizeOptions={[5, 10, 20]}
+                pageSizeOptions={[1, 2, 3]}
             />
         </div>
-    );
+    ) : <LinearProgress></LinearProgress>;
 }

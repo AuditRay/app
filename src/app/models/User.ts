@@ -35,4 +35,4 @@ const ModelSchema = new Schema<IUser>(
         },
     },
 );
-export const User = (models?.User || model('User', ModelSchema)) as Model<IUser>;
+export const User = (models?.User || model<IUser>('User', ModelSchema)) as Model<IUser>;

@@ -14,7 +14,7 @@ import {detailedDiff} from 'deep-object-diff';
 import OpenAI from 'openai';
 import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
-import {ITeamPopulated, IUser, User} from "@/app/models";
+import {ITeamPopulated, IUpdateRun, IUser, UpdateRun, User} from "@/app/models";
 import * as fs from "node:fs";
 import {GridFilterModel, GridPaginationModel, GridSortModel, GridFilterItem} from "@mui/x-data-grid-pro";
 import {filterWebsiteTable} from "@/app/lib/utils";
@@ -182,6 +182,14 @@ export async function getLatestWebsiteInfo(websiteId: string): Promise<IWebsiteI
     return websiteLatestInfo?.toJSON() ?? null;
 }
 
+export async function getGetWebsiteUpdateRuns(websiteId: string): Promise<IUpdateRun[]> {
+    await connectMongo();
+    console.log('getGetWebsiteUpdateRubs');
+    const updateRuns = await UpdateRun.find({website: websiteId});
+    return updateRuns ? updateRuns.map((updateRun) => updateRun.toJSON()) : []
+}
+
+
 
 export async function fetchUpdates(websiteId: string, sync: boolean = false): Promise<IWebsiteInfo | null> {
     await connectMongo();
@@ -259,7 +267,13 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         if (!website || !website.url || !website.token) {
             return null;
         }
-
+        const updateRun = new UpdateRun({
+            website: websiteId,
+            status: "In Progress",
+            response: "",
+        })
+        const savedUpdateRun = await updateRun.save();
+        console.log('savedUpdateRun', savedUpdateRun);
         //check if the website url ends with a slash, if not add a slash
         const websiteUrl = website.url.endsWith('/') ? website.url : `${website.url}/`;
         // Fetch updates from the website url using fetch library on the route /monit/health,
@@ -270,26 +284,39 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
                 token: website.token,
             }),
             cache: 'no-cache',
+        }).catch((error) => {
+            console.error('Failed to fetch updates', error);
+            savedUpdateRun.set('status', 'Failed');
+            savedUpdateRun.set('response', error);
         });
 
-        if (response.status === 404) {
+
+        if (response && response.status === 404) {
             response = await fetch(`${websiteUrl}web/monit/health`, {
                 method: 'POST',
                 body: new URLSearchParams({
                     token: website.token,
                 }),
                 cache: 'no-cache',
+            }).catch((error) => {
+                console.error('Failed to fetch updates', error);
+                savedUpdateRun.set('status', 'Failed');
+                savedUpdateRun.set('response', error);
             });
         }
 
-        if (response.status !== 200) {
+        if (response && response.status !== 200) {
             console.log('Failed to fetch updates', response.status);
+            const responseText = await response.text();
+            savedUpdateRun.set('status', 'Failed');
+            savedUpdateRun.set('response', responseText);
+            await savedUpdateRun.save();
             return websiteLatestInfo?.toJSON() ?? null;
         }
 
         let data;
         try {
-            data = await response.json();
+            data = await response?.json();
         } catch (error) {
             return websiteLatestInfo?.toJSON() ?? null;
         }
@@ -412,6 +439,9 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             const updated = Object.keys(compare.updated).length;
             const updatedKeys = Object.keys(compare.updated);
             const newVersion = added > 0 || deleted > 0 || updatedKeys.includes('frameworkInfo') || updatedKeys.includes('websiteComponentsInfo') || (updated > 2 && updatedKeys.includes('dataSourcesInfo'));
+            savedUpdateRun.set('status', 'Success');
+            savedUpdateRun.set('response', "");
+            await savedUpdateRun.save();
             if (newVersion) {
                 const newWebsiteInfo = new WebsiteInfo(preparedData);
                 const newWebsiteInfoFull = new WebsiteInfoFull(preparedDataFull);
@@ -424,9 +454,15 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             } else {
                 websiteLatestInfo.set('updatedAt', new Date());
                 const updatedWebsiteInfo = await websiteLatestInfo.save();
+                savedUpdateRun.set('status', 'Success');
+                savedUpdateRun.set('response', "");
+                await savedUpdateRun.save();
                 return updatedWebsiteInfo.toJSON();
             }
         } else {
+            savedUpdateRun.set('status', 'Success');
+            savedUpdateRun.set('response', "");
+            await savedUpdateRun.save();
             const newWebsiteInfo = new WebsiteInfo(preparedData);
             const newWebsiteInfoFull = new WebsiteInfoFull(preparedDataFull);
             await newWebsiteInfo.save();

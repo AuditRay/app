@@ -155,11 +155,19 @@ export async function getTicketDetails(operation: 'Update' | 'Install' | 'Uninst
             ${aiContextString}
         Notes:
             - Operation is a string that describes the operation that the ticket is related to. for example: "Create a new user", "Update plugin/module", "Fix a bug", etc.
+            - Take in consideration the website framework type and version.
+            - Update instruction should be related to the framework type & version.
+            - For drupal 8 and later updates please suggest using composer as a best practice in addition to the manual update. And add the composer command for the update ex: composer update drupal/component:^10.0.1 --with-dependencies.
+            - Also for drupal mention the need to run database updates after the update, if needed. The user need to check the update notes for the module/plugin for any database updates or additional steps.
+            - Mention the website name. If the name contains website page titles such as "About us", "Contact us", etc. please exclude them.
+            - If the website name includes some none meaning full information after a "|" character the clean up the website name and keep the name only.
+            - If the update version is major update (2.0 to 3.0, 1.0-beta to stable 1.0), please mention the need to check the module/plugin release notes for any breaking changes.
             - Please provide the title and content of the ticket.
             - The ticket should be related to the operation.
             - The ticket should be detailed and informative.
             - Don't add code snippets to the ticket content.
-            - Use HTML for the ticket content
+            - Use HTML for the ticket content.
+            - Don't add References or Citations.
             - Only use html tags h1-h6, p, ul, ol, li, em, strong, strike, u, sup, sub, a, span
             - Output should be in the following JSON format: {title: string, content: string}
     `;

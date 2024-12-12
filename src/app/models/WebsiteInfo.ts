@@ -88,4 +88,4 @@ ModelSchema.index({ website: -1});
 ModelSchema.index({ createdAt: -1 });
 ModelSchema.index({ website: -1, createdAt: -1 });
 
-export const WebsiteInfo = (models?.WebsiteInfo || model('WebsiteInfo', ModelSchema)) as Model<IWebsiteInfo>;
+export const WebsiteInfo = (models?.WebsiteInfo || model<IWebsiteInfo>('WebsiteInfo', ModelSchema)) as Model<IWebsiteInfo>;

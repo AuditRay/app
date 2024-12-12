@@ -6,6 +6,7 @@ import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import AlertAccordion from "@/app/ui/Alerts/AlertAccordion";
 
 export default async function Alerts({params}: { params: { workspaceId: string } }) {
     const alertInfos = await getAlertInfo(params.workspaceId);
@@ -19,25 +20,7 @@ export default async function Alerts({params}: { params: { workspaceId: string }
                     maxWidth: 'xl'
                 }}
             >
-                {alertInfos.length > 0 && alertInfos.map((alertInfo) => (
-                    <Accordion key={alertInfo.id}>
-                        <AccordionSummary
-                            expandIcon={<ExpandMoreIcon />}
-                            aria-controls="panel1-content"
-                            id="panel1-header"
-                            sx={{textTransform: 'capitalize'}}
-                        >
-                            {alertInfo.subject.replaceAll('Alert: ', '')}
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            <Box
-                                dangerouslySetInnerHTML={{__html: alertInfo.text}}
-                            >
-
-                            </Box>
-                        </AccordionDetails>
-                    </Accordion>
-                ))}
+                {alertInfos.length > 0 && <AlertAccordion alertInfos={alertInfos}/>}
                 {alertInfos.length == 0 && (
                     <Box sx={{textAlign: 'center'}}>
                         You don&apos;t have any new alerts

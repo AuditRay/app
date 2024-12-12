@@ -22,33 +22,36 @@ export const MainListItems = ({
   filtersViews,
   workspaces,
   workspaceId,
+  viewId,
   pathname
 } : {
     filtersViews: IFiltersView[],
     workspaces?: IWorkspace[],
     workspaceId: string,
+    viewId?: string,
     pathname?: string
 }) => {
+    console.log('viewId', viewId);
     const router = useRouter()
     const [openWebsites, setOpenWebsites] = React.useState(false);
     return (
         <>
-            <ListItemButton onClick={() => router.push(`/dashboard`)}>
-                <ListItemIcon>
-                    <DashboardIcon sx={{marginLeft: '6px'}}/>
-                </ListItemIcon>
-                <ListItemText primary="Account Dashboard"/>
-            </ListItemButton>
-            {workspaces && (
+            <List>
+                <ListItemButton  onClick={() => router.push(`/dashboard`)}>
+                    <ListItemIcon>
+                        <DashboardIcon sx={{marginLeft: '6px'}}/>
+                    </ListItemIcon>
+                    <ListItemText primary="Account Dashboard"/>
+                </ListItemButton>
                 <>
                     <WorkspaceDrawerSwitcher
                         workspaces={workspaces}
                         currentWorkspaceId={workspaceId}
                         defaultOpenWorkSpaces={false}
                     />
-                    <Divider />
                 </>
-            )}
+            </List>
+            <Divider />
             <ListItemButton
                 onClick={() => router.push(`/workspace/${workspaceId}/websites`)} selected={pathname == `/workspace/${workspaceId}/websites`}
             >
@@ -73,21 +76,19 @@ export const MainListItems = ({
                                 <ViewCozyIcon  sx={{marginLeft: '6px'}} />
                             </ListItemIcon>
                             <ListItemText primary={"Views"} />
-                            {openWebsites ? <ExpandLess /> : <ExpandMore />}
+                            {(!!viewId || openWebsites) ? <ExpandLess /> : <ExpandMore />}
                         </ListItemButton>
                     </ListItem>
-                    <Collapse in={openWebsites} timeout="auto" unmountOnExit>
-                        <List component="div" disablePadding>
+                    <Collapse in={!!viewId || openWebsites} timeout="auto" unmountOnExit>
+                        <List component="div" disablePadding sx={{ml:4, pl: 0, borderLeft: "1px solid #c0c0c0" }}>
                             {filtersViews && filtersViews.map((filterView) => (
-                                <ListItemButton sx={{ pl: 5 }} key={filterView.id} onClick={() => router.push(`/workspace/${workspaceId}/websites?filterView=${filterView.id}`)}>
-                                    <ListItemText primary={filterView.title}/>
+                                <ListItemButton sx={{ pl: 2, m: 0 }} key={filterView.id}  selected={pathname == `/workspace/${workspaceId}/websites/views/${filterView.id}`} onClick={() => router.push(`/workspace/${workspaceId}/websites/views/${filterView.id}`)}>
+                                    <ListItemText  primary={filterView.title}/>
                                 </ListItemButton>
                             ))}
-                            <List component="div" sx={{px: 2}} disablePadding>
-                                <Divider/>
-                            </List>
                         </List>
                     </Collapse>
+                    <Divider/>
                 </>
             )}
             <ListItemButton onClick={() => router.push(`/workspace/${workspaceId}/alerts`)} selected={pathname == `/workspace/${workspaceId}/alerts`}>

@@ -30,14 +30,17 @@ import AddWorkspaceModal from "@/app/ui/AddWorkspaceModal";
 import DomainAddIcon from "@mui/icons-material/DomainAdd";
 import LogoPH from "../../../../../../public/logo.png";
 import Image from "next/image";
+import { use } from 'react'
+import { useParams } from 'next/navigation'
 
 LicenseInfo.setLicenseKey('d180cacff967bbf4eb0152899dacbe68Tz05MzI0OCxFPTE3NTEwNDc4MDIwMDAsUz1wcm8sTE09c3Vic2NyaXB0aW9uLEtWPTI=');
 
-export default function DashboardLayout({children, params}: {
-    children: React.ReactNode,
-    params: { workspaceId: string }
+export default function DashboardLayout({children}: {
+    children: React.ReactNode
 }) {
-    console.log('workspaceId', params.workspaceId)
+    const params = useParams<{ workspaceId: string, viewId: string }>()
+    const { workspaceId, viewId } = params;
+    console.log('workspaceId', workspaceId, viewId);
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const [filterViews, setFilterViews] = React.useState<IFiltersView[]>([]);
     const [isAddWorkspaceModalOpen, setIsAddWorkspaceModalOpen] = React.useState(false);
@@ -76,7 +79,7 @@ export default function DashboardLayout({children, params}: {
         switchWorkspace().then();
     }
     React.useEffect(() => {
-        getFiltersViews(params.workspaceId).then((filtersViews) => {
+        getFiltersViews(workspaceId).then((filtersViews) => {
             setFilterViews(filtersViews);
         });
         if(sessionUser){
@@ -132,14 +135,14 @@ export default function DashboardLayout({children, params}: {
                     </IconButton>
                     <Breadcrumbs aria-label="breadcrumb" sx={{ color: "white", flexGrow: 1}}>
                         <Box>
-                            {params.workspaceId == 'personal' && (
+                            {workspaceId == 'personal' && (
                                 <Link underline="hover" color="inherit" href={`/workspace/personal/websites`}>
                                     <WorkspacesIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> Personal Workspace
                                 </Link>
                             )}
                             {sessionFullUser?.workspaces ? (
                                 sessionFullUser?.workspaces?.map((workspace) => {
-                                    if(params.workspaceId === workspace.id) {
+                                    if(workspaceId === workspace.id) {
                                         return (
                                             <Link underline="hover" key={workspace.id} color="inherit" href={`/workspace/${workspace.id}/websites`}>
                                                 <WorkspacesIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> {workspace.name}
@@ -155,47 +158,47 @@ export default function DashboardLayout({children, params}: {
                             </Link>
                         )}
                         {pathname.includes('/websites') && (
-                            <Link underline="hover" color="inherit" href={`/workspace/${params.workspaceId}/websites`}>
+                            <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/websites`}>
                                 <LanguageIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> Websites
                             </Link>
                         )}
-                        {pathname == `/workspace/${params.workspaceId}/alerts` && (
-                            <Link underline="hover" color="inherit" href={`/workspace/${params.workspaceId}/alerts`}>
+                        {pathname == `/workspace/${workspaceId}/alerts` && (
+                            <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/alerts`}>
                                 <NotificationsIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> Alerts
                             </Link>
                         )}
                         {pathname.includes('/settings') && (
-                            <Link underline="hover" color="inherit" href={`/workspace/${params.workspaceId}/settings`}>
+                            <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/settings`}>
                                 <SettingsIcon sx={{ mr: 0.5, verticalAlign: 'text-top' }} fontSize="inherit" /> Workspace Settings
                             </Link>
                         )}
                         {pathname === '/settings' && (
-                            <Link underline="hover" color="inherit" href={`/workspace/${params.workspaceId}/settings`}>
+                            <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/settings`}>
                                  General
                             </Link>
                         )}
                         {pathname.includes('/settings/alerts') && (
-                            <Link underline="hover" color="inherit" href={`/workspace/${params.workspaceId}/settings/alerts`}>
+                            <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/settings/alerts`}>
                                 Alerts
                             </Link>
                         )}
                         {pathname.includes('/settings/field-templates') && (
-                            <Link underline="hover" color="inherit" href={`/workspace/${params.workspaceId}/settings/field-templates`}>
+                            <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/settings/field-templates`}>
                                 Field Templates
                             </Link>
                         )}
                         {pathname.includes('/settings/users') && (
-                            <Link underline="hover" color="inherit" href={`/workspace/${params.workspaceId}/settings/users`}>
+                            <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/settings/users`}>
                                 Users
                             </Link>
                         )}
                         {pathname.includes('/settings/teams') && (
-                            <Link underline="hover" color="inherit" href={`/workspace/${params.workspaceId}/settings/teams`}>
+                            <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/settings/teams`}>
                                 Teams
                             </Link>
                         )}
                         {pathname.includes('/settings/roles') && (
-                            <Link underline="hover" color="inherit" href={`/workspace/${params.workspaceId}/settings/roles`}>
+                            <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/settings/roles`}>
                                 Roles
                             </Link>
                         )}
@@ -226,7 +229,8 @@ export default function DashboardLayout({children, params}: {
                     <MainListItems
                         filtersViews={filterViews}
                         workspaces={sessionFullUser?.workspaces}
-                        workspaceId={params.workspaceId}
+                        workspaceId={workspaceId}
+                        viewId={viewId}
                         pathname={pathname}
                     />
                 </List>

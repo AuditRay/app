@@ -16,6 +16,23 @@ const versionTypeMapping = {
     NOT_SUPPORTED: 'Not Supported',
 }
 
+export async function getAlert(alertId: string): Promise<IAlertInfo> {
+    await connectMongo();
+    const user = await getUser();
+    if (!user) {
+        throw new Error('User not found');
+    }
+    const alert = await AlertInfo.findOne({
+        _id: alertId,
+        user: user.id,
+    });
+    if(!alert) {
+        throw new Error('Alert not found');
+    }
+    return alert.toJSON();
+}
+
+
 export async function getAlertInfo(workspaceId: string): Promise<IAlertInfo[]> {
     await connectMongo();
     const user = await getUser();
@@ -308,14 +325,3 @@ export async function updateAlert(alertId: string, alertData: Partial<IAlert>) {
         data: savedAlert.toJSON()
     }
 }
-
-export async function getAlert(alertId: string): Promise<IAlert> {
-    await connectMongo();
-    const user = await getUser();
-    const alert = await Alert.findOne({_id: alertId});
-    if(!alert) {
-        throw new Error('Role not found');
-    }
-    return alert.toJSON();
-}
-

@@ -15,7 +15,7 @@ import {useRouter} from "next/navigation";
 import AddWorkspaceModal from "@/app/ui/AddWorkspaceModal";
 
 export default function WorkspaceDrawerSwitcher({workspaces, currentWorkspaceId, defaultOpenWorkSpaces = true} : {
-    workspaces: IWorkspace[],
+    workspaces?: IWorkspace[],
     currentWorkspaceId?: string,
     defaultOpenWorkSpaces?: boolean
 }) {
@@ -24,12 +24,12 @@ export default function WorkspaceDrawerSwitcher({workspaces, currentWorkspaceId,
     const [isAddWorkspaceModalOpen, setIsAddWorkspaceModalOpen] = React.useState(false);
     const [currentWorkspace, setCurrentWorkspace] = React.useState<IWorkspace | null>(null);
     React.useEffect(() => {
-        const currentWorkspace = workspaces.find(workspace => workspace.id == currentWorkspaceId);
+        const currentWorkspace = workspaces?.find(workspace => workspace.id == currentWorkspaceId);
         if(currentWorkspace) {
             setCurrentWorkspace(currentWorkspace);
         }
     }, [workspaces, currentWorkspaceId]);
-    return workspaces.length ? (
+    return (
         <>
             <ListItem component="div" disablePadding sx={{
                 '&:hover .workspace-settings': {
@@ -51,13 +51,13 @@ export default function WorkspaceDrawerSwitcher({workspaces, currentWorkspaceId,
                 </ListItemButton>
             </ListItem>
             <Collapse in={openWorkSpaces} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding>
+                <List component="div" disablePadding sx={{ml:4, pl: 0, borderLeft: "1px solid #c0c0c0" }}>
                     <ListItem key={"personal-workspace"} component="div" disablePadding sx={{
                         '&:hover .workspace-settings': {
                             display: 'flex',
                         },
                     }}>
-                        <ListItemButton sx={{ pl: 5 }} onClick={() => router.push(`/workspace/personal/websites`)} selected={currentWorkspaceId == 'personal'}>
+                        <ListItemButton sx={{ pl: 2 }} onClick={() => router.push(`/workspace/personal/websites`)} selected={currentWorkspaceId == 'personal'}>
                             <ListItemText primary={"Personal"}/>
                         </ListItemButton>
                         <Tooltip title="Workspace Settings" onClick={() => router.push(`/workspace/personal/settings`)}>
@@ -104,7 +104,7 @@ export default function WorkspaceDrawerSwitcher({workspaces, currentWorkspaceId,
                                     display: 'flex',
                                 },
                             }}>
-                                <ListItemButton sx={{ pl: 5 }} onClick={() => router.push(`/workspace/${workspace.id}/websites`)} selected={currentWorkspaceId == workspace.id}>
+                                <ListItemButton sx={{ pl: 2 }} onClick={() => router.push(`/workspace/${workspace.id}/websites`)} selected={currentWorkspaceId == workspace.id}>
                                     <ListItemText primary={workspace.name}/>
                                 </ListItemButton>
                                 <Tooltip title="Workspace Settings" onClick={() => router.push(`/workspace/${workspace.id}/settings`)}>
@@ -167,7 +167,7 @@ export default function WorkspaceDrawerSwitcher({workspaces, currentWorkspaceId,
                         }
                     }}>
                         <ListItemButton  sx={{
-                            pl: 5,
+                            pl: 2,
                             '&:hover, &:focus': {
                                 bgcolor: 'unset',
                             }
@@ -206,5 +206,5 @@ export default function WorkspaceDrawerSwitcher({workspaces, currentWorkspaceId,
             </Collapse>
             <AddWorkspaceModal open={isAddWorkspaceModalOpen} setOpen={setIsAddWorkspaceModalOpen}/>
         </>
-    ) : ('Loading...')
+    )
 }

@@ -108,4 +108,4 @@ ModelSchema.index({ workspace: 1 });
 ModelSchema.index({ user: 1 });
 ModelSchema.index({ createdAt: -1 });
 
-export const Website = (models?.Website || model('Website', ModelSchema)) as Model<IWebsite>;
+export const Website = (models?.Website || model<IWebsite>('Website', ModelSchema)) as Model<IWebsite>;

@@ -18,6 +18,7 @@ import {getWorkspaceFieldTemplate} from "@/app/actions/fieldTemplateActions";
 import Button from "@mui/material/Button";
 import UpdateWebsiteInfoModal from "@/app/ui/Websites/UpdateWebsiteInfoModal";
 import PermissionsAccessCheck from "@/app/ui/PermissionsAccessCheck";
+import RunsWebsiteModal from "@/app/ui/Websites/RunsWebsiteModal";
 
 export default async function WebsitePage({ params }: {
     params: {
@@ -158,6 +159,7 @@ export default async function WebsitePage({ params }: {
                         <div>
                             <EditWebsiteModal websiteId={website.id} website={website} workspaceId={params.workspaceId}/>
                             <WebsiteConnectionTokenModal websiteId={website.id} website={website} />
+                            <RunsWebsiteModal websiteId={website.id} />
                             <UpdateWebsiteInfoModal websiteId={website.id} />
                         </div>
                     </Paper>

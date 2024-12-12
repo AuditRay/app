@@ -34,4 +34,4 @@ const ModelSchema = new Schema<IFiltersView>(
 
 ModelSchema.index({ user: -1});
 
-export const FiltersView = (models?.FiltersView || model('FiltersView', ModelSchema)) as Model<IFiltersView>;
+export const FiltersView = (models?.FiltersView || model<IFiltersView>('FiltersView', ModelSchema)) as Model<IFiltersView>;

@@ -75,4 +75,4 @@ const ModelSchema = new Schema<IWorkspace>(
         },
     },
 );
-export const Workspace = (models?.Workspace || model('Workspace', ModelSchema)) as Model<IWorkspace>;
+export const Workspace = (models?.Workspace || model<IWorkspace>('Workspace', ModelSchema)) as Model<IWorkspace>;

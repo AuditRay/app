@@ -65,7 +65,12 @@ export default function WebsitesInfoGrid(props: { websiteInfo: WebsiteInfoRow[],
                 onRowClick={(params) => {
                     console.log('props.enableRightDrawer', props.enableRightDrawer);
                     if (props.enableRightDrawer) {
-                        openRightDrawer(params.row.title, <ComponentInfo component={params.row}/>)
+                        openRightDrawer(params.row.title, <ComponentInfo component={params.row} websiteInfo={{
+                            websiteName: params.row.siteName,
+                            websiteUrl: params.row.url,
+                            frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
+                            frameworkType: params.row.type.name,
+                        }} />)
                     }
                 }}
                 initialState={{

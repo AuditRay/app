@@ -58,4 +58,4 @@ ModelSchema.index({ website: -1});
 ModelSchema.index({ createdAt: -1 });
 ModelSchema.index({ website: -1, createdAt: -1 });
 
-export const WebsiteInfoFull = (models?.WebsiteInfoFull || model('WebsiteInfoFull', ModelSchema)) as Model<IWebsiteInfo>;
+export const WebsiteInfoFull = (models?.WebsiteInfoFull || model<IWebsiteInfoInternal>('WebsiteInfoFull', ModelSchema)) as Model<IWebsiteInfo>;

@@ -12,9 +12,9 @@ import { DateField } from '@mui/x-date-pickers/DateField';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {FormControl, FormHelperText, Grid2, InputLabel, Select} from "@mui/material";
+import {Autocomplete, FormControl, FormHelperText, Grid2, InputLabel, Select} from "@mui/material";
 import {
-    createJiraTicket, getJiraProjects, getJiraIssues, getJiraUsers, getJiraResources, jiraIssueType
+    createJiraTicket, getJiraProjects, getJiraIssues, getJiraUsers, getJiraResources, jiraIssueType, getJiraIssueFields
 } from "@/app/actions/workspaceActions";
 import * as React from "react";
 import {userSessionState} from "@/app/lib/uiStore";
@@ -37,6 +37,11 @@ import dayjs, {Dayjs} from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import Typography from "@mui/material/Typography";
+import JiraDatePicker from "@/app/ui/Integration/fields/JiraDatePicker";
+import JiraSelect from "@/app/ui/Integration/fields/JiraSelect";
+import JiraText from "@/app/ui/Integration/fields/JiraText";
+import JiraDescription from "@/app/ui/Integration/fields/JiraDescription";
+import JiraNumber from "@/app/ui/Integration/fields/JiraNumber";
 
 
 dayjs.extend(utc);
@@ -81,6 +86,9 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
     const [jiraIssueTypes, setJiraIssueTypes] = useState<jiraIssueType[]>([]);
     const [isIssueTypesLoading, setIsIssueTypesLoading] = useState<boolean>(false);
 
+    const [jiraIssueTypeFields, setJiraIssueTypesFields] = useState<any[]>([]);
+    const [isIssueTypeFieldsLoading, setIsIssueTypeFieldsLoading] = useState<boolean>(false);
+
     const [jiraUser, setJiraUser] = useState<string>('');
     const [jiraUsers, setJiraUsers] = useState<jiraUser[]>([]);
     const [isJiraUsersLoading, setIsJiraUsersLoading] = useState<boolean>(false);
@@ -109,6 +117,9 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
         project: ''
     });
 
+    const [ticketDataValues, setTicketDataValues] = useState<any>({});
+    const [ticketDataErrors, setTicketDataErrors] = useState<any>({});
+
     const [newTicketErrorData, setNewTicketErrorData] = useState<{
         title?: string;
         text?: string;
@@ -134,22 +145,27 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
     const handleOpen = () => {
         setOpen(true);
     }
-    const handleClose = () => {
+    const reset = () => {
         setNewTicketErrorData({});
-        setNewTicketData({
-            title: '',
-            text: '',
-            resource: '',
-            project: ''
-        });
-        setGeneralError('');
-        setSuccessMessage('');
-        setSuccessUrl('');
-        setNewTicketErrorData({});
-        setJiraResource('');
+        setTicketDataValues({});
+        setIsResourceLoading(true);
+        setIsProjectLoading(true);
+        setIsIssueTypesLoading(true);
+        setIsJiraUsersLoading(true);
+        setIsIssueTypeFieldsLoading(false);
+        setIsAiLoading(false);
+        setJiraProjects([]);
+        setJiraIssueTypes([]);
+        setTicketHtml('');
+        setJiraUser('');
         setJiraProject('');
         setJiraIssueType('');
-        setJiraUser('');
+        setJiraProjects([]);
+        setJiraIssueTypes([]);
+        setJiraUsers([]);
+    }
+    const handleClose = () => {
+        reset();
         setOpen(false);
     }
 
@@ -162,21 +178,7 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
 
     const sessionUser = userSessionState((state) => state.fullUser);
     const prepareJiraIntegration = async (jiraResourceId?: string) => {
-        if(isResourceLoading || isProjectLoading || isIssueTypesLoading || isJiraUsersLoading || isAiLoading) return;
-        setNewTicketErrorData({});
-        setIsResourceLoading(true);
-        setIsProjectLoading(true);
-        setIsIssueTypesLoading(true);
-        setIsJiraUsersLoading(true);
-        setIsAiLoading(true);
-        setNewTicketData({});
-        setJiraUser('');
-        setJiraProject('');
-        setJiraIssueType('');
-        setTicketHtml('');
-        setJiraProjects([]);
-        setJiraIssueTypes([]);
-        setJiraUsers([]);
+        setIsIssueTypeFieldsLoading(true);
         const resources: (jiraResource & { scope: string[] })[] = await getJiraResources(params.workspaceId);
         const resourcesPrepared: jiraResource[] = resources.map((resource) => ({
             id: resource.id,
@@ -208,33 +210,129 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                     ...newTicketErrorData,
                     project: 'No projects found',
                 })
-                return;
-            }
-            setJiraProjects(projectsPrepared);
-            setJiraProject(projects[0].id);
+            } else {
+                setJiraProjects(projectsPrepared);
+                setJiraProject(projects[0].id);
 
-            const issueTypes: jiraIssueType[] = await getJiraIssues(params.workspaceId, resourceId, projects[0].id);
-            const issueTypesPrepared: jiraIssueType[] = issueTypes.map((issueType) => ({
-                id: issueType.id,
-                iconUrl: issueType.iconUrl,
-                name: issueType.name,
-                subtask: false
-            }));
-            setJiraIssueTypes(issueTypesPrepared);
-            if(!issueTypesPrepared.length) {
-                setIsProjectLoading(false);
-                setIsResourceLoading(false);
-                setIsIssueTypesLoading(false);
-                setIsJiraUsersLoading(false);
-                setIsAiLoading(false);
-                setNewTicketErrorData({
-                    ...newTicketErrorData,
-                    issueType: 'No issue types found'
-                })
-                return;
+                const issueTypes: jiraIssueType[] = await getJiraIssues(params.workspaceId, resourceId, projects[0].id);
+                const issueTypesPrepared: jiraIssueType[] = issueTypes.map((issueType) => ({
+                    id: issueType.id,
+                    iconUrl: issueType.iconUrl,
+                    name: issueType.name,
+                    subtask: false
+                }));
+                setJiraIssueTypes(issueTypesPrepared);
+                if (!issueTypesPrepared.length) {
+                    setIsProjectLoading(false);
+                    setIsResourceLoading(false);
+                    setIsIssueTypesLoading(false);
+                    setIsJiraUsersLoading(false);
+                    setIsAiLoading(false);
+                    setNewTicketErrorData({
+                        ...newTicketErrorData,
+                        issueType: 'No issue types found'
+                    })
+                } else {
+                    setJiraIssueType(jiraIssueType || issueTypes[0].id);
+                    setIsIssueTypeFieldsLoading(true);
+                    getJiraIssueFields(params.workspaceId, resourceId, projects[0].id, jiraIssueType || issueTypes[0].id).then((jiraIssueFields) => {
+                        prepareJiraFields(jiraIssueFields).then();
+                    });
+                    const users: jiraUser[] = await getJiraUsers(params.workspaceId, resourceId, projects[0].id);
+                    const usersPrepared: jiraUser[] = users.map((user) => ({
+                        accountId: user.accountId,
+                        accountType: user.accountType,
+                        html: user.html,
+                        displayName: user.displayName
+                    }));
+                    setJiraUsers(usersPrepared);
+                    if (!usersPrepared.length) {
+
+                        setIsIssueTypeFieldsLoading(false);
+                        setIsProjectLoading(false);
+                        setIsResourceLoading(false);
+                        setIsIssueTypesLoading(false);
+                        setIsJiraUsersLoading(false);
+                        setIsAiLoading(false);
+                        setNewTicketErrorData({
+                            ...newTicketErrorData,
+                            assignee: 'No users found'
+                        })
+                    } else {
+                        setJiraUser(jiraUser || users[0].accountId);
+                    }
+                }
             }
-            setJiraIssueType(jiraIssueType || issueTypes[0].id);
-            const users: jiraUser[] = await getJiraUsers(params.workspaceId, resourceId);
+        }
+        setIsIssueTypeFieldsLoading(false);
+        setIsProjectLoading(false);
+        setIsResourceLoading(false);
+        setIsIssueTypesLoading(false);
+        setIsJiraUsersLoading(false);
+    }
+
+    const prepareJiraFields = async (fields: any[]) => {
+        const hasDescription = fields.find((field) => field.fieldType === 'description');
+        setJiraIssueTypesFields(fields);
+        console.log(hasDescription, !!context, !!ticketDataValues.summary, !!ticketHtml)
+        if (hasDescription && context && !(ticketDataValues.summary || ticketHtml)) {
+            setIsAiLoading(true);
+            const ticketInfo = await getTicketDetails("Update", context).catch(() => {
+                setIsAiLoading(false);
+                return {title: '', content: ''};
+            })
+            console.log('ticketInfo', ticketInfo);
+            setTicketDataValues({
+                summary: ticketInfo.title
+            });
+            try {
+                const content = ticketInfo.content;
+                setTicketHtml(content);
+                updateHtml(content);
+                setIsAiLoading(false);
+            } catch (e) {
+                console.log('error', e);
+                setTicketHtml('');
+                updateHtml('');
+                setIsAiLoading(false);
+            }
+        } else if (ticketHtml) {
+            updateHtml(ticketHtml);
+        }
+    }
+
+    const updateJiraProject = async (jiraResourceId: string, jiraProjectId: string) => {
+        setIsIssueTypeFieldsLoading(true);
+        setIsProjectLoading(true);
+        setIsIssueTypesLoading(true);
+        setIsJiraUsersLoading(true);
+
+        const issueTypes: jiraIssueType[] = await getJiraIssues(params.workspaceId, jiraResourceId, jiraProjectId);
+        const issueTypesPrepared: jiraIssueType[] = issueTypes.map((issueType) => ({
+            id: issueType.id,
+            iconUrl: issueType.iconUrl,
+            name: issueType.name,
+            subtask: false
+        }));
+        setJiraIssueTypes(issueTypesPrepared);
+        if (!issueTypesPrepared.length) {
+            setIsProjectLoading(false);
+            setIsResourceLoading(false);
+            setIsIssueTypesLoading(false);
+            setIsJiraUsersLoading(false);
+            setIsAiLoading(false);
+            setNewTicketErrorData({
+                ...newTicketErrorData,
+                issueType: 'No issue types found'
+            })
+        } else {
+            setJiraIssueType(issueTypes[0].id);
+
+            setIsIssueTypeFieldsLoading(true);
+            getJiraIssueFields(params.workspaceId, jiraResourceId, jiraProjectId, issueTypes[0].id).then((jiraIssueFields) => {
+                prepareJiraFields(jiraIssueFields).then();
+            })
+            const users: jiraUser[] = await getJiraUsers(params.workspaceId, jiraResourceId, jiraProjectId);
             const usersPrepared: jiraUser[] = users.map((user) => ({
                 accountId: user.accountId,
                 accountType: user.accountType,
@@ -242,7 +340,9 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                 displayName: user.displayName
             }));
             setJiraUsers(usersPrepared);
-            if(!usersPrepared.length) {
+            if (!usersPrepared.length) {
+
+                setIsIssueTypeFieldsLoading(false);
                 setIsProjectLoading(false);
                 setIsResourceLoading(false);
                 setIsIssueTypesLoading(false);
@@ -252,38 +352,34 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                     ...newTicketErrorData,
                     assignee: 'No users found'
                 })
-                return;
+            } else {
+                setJiraUser(users[0].accountId);
             }
-            setJiraUser(jiraUser || users[0].accountId);
         }
 
-        console.log('context', context, newTicketData);
-        if (context && (!newTicketData.title && !newTicketData.text)) {
-            const ticketInfo = await getTicketDetails("Update", context).catch(() => {
-                setIsAiLoading(false);
-                return {title: '', content: ''};
-            })
-            console.log('ticketInfo', ticketInfo);
-            setNewTicketData({
-                title: ticketInfo.title
-            });
-            try {
-                const content = ticketInfo.content;
-                setTicketHtml(content);
-                updateHtml(content);
-            } catch (e) {
-                console.log('error', e);
-                setTicketHtml('');
-                updateHtml('');
-                setIsAiLoading(false);
-            }
-        }
+
+        setIsIssueTypeFieldsLoading(false);
         setIsProjectLoading(false);
-        setIsResourceLoading(false);
         setIsIssueTypesLoading(false);
         setIsJiraUsersLoading(false);
-        setIsAiLoading(false);
-        setDueDate(dayjs().add(7, 'day'));
+    }
+
+    const updateJiraIssueType = async (jiraResourceId: string, jiraProjectId: string, jiraIssueTypeId: string) => {
+        setIsIssueTypeFieldsLoading(true);
+        getJiraIssueFields(params.workspaceId, jiraResourceId, jiraProjectId, jiraIssueTypeId).then((jiraIssueFields) => {
+            prepareJiraFields(jiraIssueFields).then();
+        });
+        setIsIssueTypeFieldsLoading(false);
+    }
+
+    const getProjectAutocompleteValue = (jiraProjects: any[], jiraProject: any) => {
+        const selectedProject = jiraProjects.find((project) => project.id === jiraProject)
+        return {label: selectedProject?.name || '', id: selectedProject?.id || ''}
+    }
+
+    const getUserAutocompleteValue = (jiraUsers: any[], jiraUser: any) => {
+        const selectedUser = jiraUsers.find((user) => user.accountId === jiraUser)
+        return {label: selectedUser?.displayName, id: selectedUser?.accountId}
     }
 
     React.useEffect(() => {
@@ -294,6 +390,9 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
         if (currentWorkspace){
             setCurrentWorkspaceId(currentWorkspace.id);
             setJiraIntegration(currentWorkspace.jira || {status: false, token: '', refreshToken: ''});
+            reset();
+            setTicketHtml('');
+            setNewTicketData({});
             prepareJiraIntegration().then().catch((e) => {
                 console.log('error', e);
                 setIsProjectLoading(false);
@@ -324,14 +423,13 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                 <Box sx={{textAlign: 'center', width: "100%", mb:2}}>
                     <img src={'/integrations/jira.png'} alt={'Jira'} width={'50px'} />
                 </Box>
-                {jiraResource && !isResourceLoading && !isAiLoading && !successMessage ? (
+                {jiraResource && !isResourceLoading && !successMessage ? (
                     <>
                         <Grid2 container spacing={2}>
-                            <Grid2 size={6}>
+                            <Grid2 size={12}>
                                 <FormControl margin={'dense'} fullWidth>
                                     <InputLabel id="jira-resources-label">Account</InputLabel>
                                     <Select
-                                        margin={'dense'}
                                         error={!!newTicketErrorData.resource}
                                         disabled={isResourceLoading}
                                         labelId="jira-resources-label"
@@ -339,6 +437,7 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                                         value={jiraResources.find((resource) => resource.id === jiraResource)?.id}
                                         label={isProjectLoading ? 'Loading...' : 'Account'}
                                         onChange={(e) => {
+                                            reset();
                                             setJiraResource(e.target.value as string);
                                             const selectedResource = jiraResources.find((resource) => resource.id === e.target.value);
                                             setJiraResourceUrl(selectedResource?.url || '');
@@ -355,42 +454,39 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                                     )}
                                 </FormControl>
                             </Grid2>
-                            <Grid2 size={6}>
-
+                            <Grid2 size={12}>
                                 <FormControl margin={'dense'} fullWidth>
-                                    <InputLabel id="jira-projects-label">Project</InputLabel>
-                                    <Select
-                                        margin={'dense'}
-                                        error={!!newTicketErrorData.project}
+                                    <Autocomplete
                                         disabled={isProjectLoading}
-                                        labelId="jira-projects-label"
-                                        id="jira-projects-select"
-                                        value={jiraProjects.find((project) => project.id === jiraProject)?.id}
-                                        label={isProjectLoading ? 'Loading...' : 'Project'}
-                                        onChange={(e) => {
-                                            setJiraProject(e.target.value as string);
-                                        }}
-                                    >
-                                        {jiraProjects.map((project) => (
-                                            <MenuItem key={project.id} value={project.id}>{project.name}</MenuItem>
+                                        disablePortal
+                                        options={jiraProjects.map((project) => (
+                                            {label: project.name, id: project.id}
                                         ))}
-                                    </Select>
+                                        value={getProjectAutocompleteValue(jiraProjects, jiraProject)}
+                                        onChange={(e: any, newValue: {id: string, label: string} | null) => {
+                                            if(!newValue) return;
+                                            setJiraProject(newValue.id);
+                                            updateJiraProject(jiraResource, newValue.id).then();
+                                        }}
+                                        renderInput={(params) => <TextField {...params} label={isProjectLoading ? 'Loading...' : 'Project'} />}
+                                    />
                                     {newTicketErrorData.project && (
                                         <FormHelperText error>{newTicketErrorData.project}</FormHelperText>
                                     )}
                                 </FormControl>
                             </Grid2>
-                            <Grid2 size={6}>
+                            <Grid2 size={12}>
                                 <FormControl margin={'dense'} fullWidth>
                                     <InputLabel id="jira-issues-label">Issue Type</InputLabel>
                                     <Select
-                                        margin={'dense'}
                                         disabled={isIssueTypesLoading || !jiraResource}
                                         labelId="jira-projects-label"
                                         id="jira-projects-select"
                                         value={jiraIssueTypes.find((project) => project.id === jiraIssueType)?.id}
                                         label={(isIssueTypesLoading || !jiraResource) ? 'Loading...' : 'Issue Type'}
                                         onChange={(e) => {
+                                            console.log('e.target.value', e.target.value);
+                                            updateJiraIssueType(jiraResource, jiraProject, e.target.value as string).then();
                                             setJiraIssueType(e.target.value as string);
                                         }}
                                     >
@@ -400,91 +496,110 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                                     </Select>
                                 </FormControl>
                             </Grid2>
-                            <Grid2 size={6}>
-                                <TextField
-                                    autoFocus
-                                    disabled={isSaving}
-                                    error={!!newTicketErrorData.title}
-                                    helperText={newTicketErrorData.title}
-                                    onChange={
-                                        (e) => setNewTicketData({
-                                            ...newTicketData,
-                                            title: e.target.value
-                                        })
+                            {isIssueTypeFieldsLoading && (
+                                <Box sx={{textAlign: 'center', width: "100%"}}>
+                                    <CircularProgress />
+                                </Box>
+                            )}
+                            {!isIssueTypeFieldsLoading && jiraIssueTypeFields.map((field) => {
+                                    if(field.fieldType === 'date') {
+                                        return (
+                                            <Grid2
+                                                key={field.fieldId} size={12}>
+                                                <JiraDatePicker
+                                                    label={field.name}
+                                                    error={ticketDataErrors[field.fieldId]}
+                                                    value={ticketDataValues[field.fieldId]}
+                                                    setValue={(value) => {
+                                                        setTicketDataValues({
+                                                            ...ticketDataValues,
+                                                            [field.fieldId]: value
+                                                        });
+                                                    }}
+                                                ></JiraDatePicker>
+                                            </Grid2>)
+                                    } else if (field.fieldType === 'text') {
+                                        return (
+                                            <Grid2
+                                                key={field.fieldId} size={12}>
+                                            <JiraText
+                                            fieldId={field.fieldId}
+                                            label={field.name}
+                                            error={ticketDataErrors[field.fieldId]}
+                                            value={ticketDataValues[field.fieldId]}
+                                            setValue={(value) => {
+                                                setTicketDataValues({
+                                                    ...ticketDataValues,
+                                                    [field.fieldId]: value
+                                                });
+                                            }}
+                                            ></JiraText></Grid2>)
+                                    } else if (field.fieldType === 'number') {
+                                        return (
+                                            <Grid2
+                                                key={field.fieldId} size={12}>
+                                                <JiraNumber
+                                                    fieldId={field.fieldId}
+                                                    label={field.name}
+                                                    error={ticketDataErrors[field.fieldId]}
+                                                    value={ticketDataValues[field.fieldId]}
+                                                    setValue={(value) => {
+                                                        setTicketDataValues({
+                                                            ...ticketDataValues,
+                                                            [field.fieldId]: value
+                                                        });
+                                                    }}
+                                                ></JiraNumber></Grid2>)
+                                    } else if (field.fieldType === 'summary') {
+                                        return (<Grid2
+                                            key={field.fieldId} size={12}>
+                                            <JiraText
+                                            isDisabled={isAiLoading}
+                                            fieldId={field.fieldId}
+                                            label={field.name}
+                                            error={ticketDataErrors[field.fieldId]}
+                                            value={ticketDataValues[field.fieldId]}
+                                            setValue={(value) => {
+                                                setTicketDataValues({
+                                                    ...ticketDataValues,
+                                                    [field.fieldId]: value
+                                                });
+                                            }}
+                                            ></JiraText></Grid2>)
+                                    } else if (field.fieldType === 'select') {
+                                        return (<Grid2
+                                            key={field.fieldId} size={12}><JiraSelect
+                                            fieldId={field.fieldId}
+                                            isMultiple={field.multiple}
+                                            label={field.name}
+                                            options={field.allowedValues.map((value: any) => ({
+                                                id: value.id || value.accountId,
+                                                label: value.value || value.name || value.displayName
+                                            }))}
+                                            getValue={(options, value) => {
+                                                return options.find((option) => option.id === value);
+                                            }}
+                                            error={ticketDataErrors[field.fieldId]}
+                                            value={ticketDataValues[field.fieldId]}
+                                            setValue={(value) => {
+                                                setTicketDataValues({
+                                                    ...ticketDataValues,
+                                                    [field.fieldId]: value
+                                                });
+                                            }}
+                                        ></JiraSelect></Grid2>)
+                                    } else if (field.fieldType === 'description') {
+                                        return (<Grid2
+                                            key={field.fieldId} size={12}><JiraDescription
+                                            rteRef={rteRef}
+                                            ticketHtml={ticketHtml}
+                                            isAiLoading={isAiLoading}
+                                        ></JiraDescription></Grid2>)
                                     }
-                                    value={newTicketData.title}
-                                    margin="dense"
-                                    id="title"
-                                    name="title"
-                                    label="Ticket title"
-                                    type="text"
-                                    fullWidth
-                                    variant="outlined"
-                                />
-                            </Grid2>
-                            <Grid2 size={6}>
-
-                                <FormControl margin={'dense'} fullWidth>
-                                    <InputLabel id="jira-users-label">Assignee</InputLabel>
-                                    <Select
-                                        margin={'dense'}
-                                        disabled={isJiraUsersLoading || !jiraResource}
-                                        labelId="jira-users-label"
-                                        id="jira-users-select"
-                                        value={jiraUsers.find((user) => user.accountId === jiraUser)?.accountId}
-                                        label={(isJiraUsersLoading || !jiraResource) ? 'Loading...' : 'Assignee'}
-                                        onChange={(e) => {
-                                            setJiraUser(e.target.value as string);
-                                        }}
-                                    >
-                                        {jiraUsers.map((user) => (
-                                            <MenuItem key={user.accountId} value={user.accountId}>{user.displayName}</MenuItem>
-                                        ))}
-                                    </Select>
-                                </FormControl>
-                            </Grid2>
-                            <Grid2 size={6}>
-
-                                <FormControl margin={'dense'} fullWidth error={!!newTicketErrorData.dueDate}>
-                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                        <DatePicker
-                                            label="Due Date"
-                                            format="YYYY-MM-DD"
-                                            value={dueDate}
-                                            sx={{width: '100%'}}
-                                            onChange={setDueDate}
-                                            defaultValue={dueDate}
-                                        />
-                                        {newTicketErrorData.dueDate && (
-                                            <FormHelperText error>{newTicketErrorData.dueDate}</FormHelperText>
-                                        )}
-                                    </LocalizationProvider>
-                                </FormControl>
-                            </Grid2>
-                            <Grid2 size={12}>
-
-                                <FormControl margin={'dense'} fullWidth >
-                                    <InputLabel id="jira-content-label">Description</InputLabel>
-                                    <Box sx={{mt: 2}}>
-                                        <RichTextEditor
-
-                                            ref={rteRef}
-                                            extensions={[StarterKit]} // Or any Tiptap extensions you wish!
-                                            content={ticketHtml} // Initial content for the editor
-                                            // Optionally include `renderControls` for a menu-bar atop the editor:
-                                            renderControls={() => (
-                                                <MenuControlsContainer>
-                                                    <MenuSelectHeading />
-                                                    <MenuDivider />
-                                                    <MenuButtonBold />
-                                                    <MenuButtonItalic />
-                                                    {/* Add more controls of your choosing here */}
-                                                </MenuControlsContainer>
-                                            )}
-                                        />
-                                    </Box>
-                                </FormControl>
-                            </Grid2>
+                                    return (
+                                        <Box key={field.fieldId}>{field.fieldId} {field.fieldType}</Box>
+                                    )
+                                })}
                         </Grid2>
                     </>
                 ) : (
@@ -535,14 +650,7 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                             setSuccessMessage('');
                             setSuccessUrl('');
                             setNewTicketErrorData({});
-                            if(!newTicketData.title) {
-                                setNewTicketErrorData({
-                                    ...newTicketErrorData,
-                                    title: 'Title is required'
-                                });
-                                setIsSaving(false);
-                                return;
-                            }
+                            setTicketDataErrors({});
                             if(!jiraResource) {
                                 setNewTicketErrorData({
                                     ...newTicketErrorData,
@@ -567,24 +675,44 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                                 setIsSaving(false);
                                 return;
                             }
-                            if(!jiraUser) {
-                                setNewTicketErrorData({
-                                    ...newTicketErrorData,
-                                    assignee: 'Assignee is required'
-                                });
+
+                            const html = rteRef.current?.editor?.getHTML();
+                            const fieldErrors: Record<string, string> = {};
+                            for (const field of jiraIssueTypeFields) {
+                                if(field.required && !ticketDataValues[field.fieldId]) {
+                                    if(field.fieldType === 'description') {
+                                        if(!html) {
+                                            setTicketDataErrors({
+                                                ...ticketDataErrors,
+                                                [field.fieldId]: 'This field is required'
+                                            });
+                                            fieldErrors[field.fieldId] = 'This field is required';
+                                        }
+                                    } else {
+                                        setTicketDataErrors({
+                                            ...ticketDataErrors,
+                                            [field.fieldId]: 'This field is required'
+                                        });
+                                        fieldErrors[field.fieldId] = 'This field is required';
+                                    }
+                                }
+                            }
+                            if(Object.keys(fieldErrors).length) {
                                 setIsSaving(false);
                                 return;
                             }
-                            if(!dueDate) {
-                                setNewTicketErrorData({
-                                    ...newTicketErrorData,
-                                    dueDate: 'Due date is required'
-                                });
-                                setIsSaving(false);
-                                return;
+                            const values: Record<string, any> = {};
+                            for (const field of jiraIssueTypeFields) {
+                                values[field.fieldId] = ticketDataValues[field.fieldId];
+                                if (field.fieldType === 'description') {
+                                    values[field.fieldId] = html;
+                                }
+                                if(field.fieldType === 'number') {
+                                    values[field.fieldId] = parseInt(values[field.fieldId]);
+                                }
                             }
+                            console.log('values', values);
                             async function save() {
-                                const html = rteRef.current?.editor?.getHTML();
                                 const response : {
                                     errorMessages: string[];
                                     errors: any;
@@ -592,13 +720,9 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
                                     key: string;
                                     self: string;
                                 } = await createJiraTicket(currentWorkspaceId, jiraResource, {
-                                    title: newTicketData.title,
-                                    text: html,
-                                    resource: jiraResource,
                                     project: jiraProject,
-                                    issueType: jiraIssueType,
-                                    assignee: jiraUser,
-                                    dueDate: dueDate?.format('YYYY-MM-DD') || ''
+                                    issuetype: jiraIssueType,
+                                    ...values
                                 });
                                 if (response.errorMessages?.length || !response.id) {
                                     setGeneralError('Error creating new ticket, please try again');

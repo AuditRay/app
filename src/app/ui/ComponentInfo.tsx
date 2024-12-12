@@ -51,7 +51,17 @@ const columns: GridColDef[] = [
 ];
 
 
-export default function ComponentInfo(props: { component: WebsiteInfoRow }) {
+export default function ComponentInfo(
+    props: {
+        component: WebsiteInfoRow,
+        websiteInfo: {
+            websiteName: string;
+            websiteUrl: string;
+            frameworkVersion: string;
+            frameworkType: string;
+        }
+    }
+) {
     const [open, setOpen] = React.useState(false);
     const params = useParams<{ workspaceId: string; }>()
     const [jiraIntegration, setJiraIntegration] = React.useState<{
@@ -93,7 +103,10 @@ export default function ComponentInfo(props: { component: WebsiteInfoRow }) {
                     <Button onClick={() => setOpen(true)} variant={"contained"}>
                         Create Jira Issue
                     </Button>
-                    <JiraTicketModal open={open} setOpen={setOpen} context={props.component}/>
+                    <JiraTicketModal open={open} setOpen={setOpen} context={{
+                        component: props.component,
+                        websiteInfo: props.websiteInfo
+                    }}/>
                 </Box>
             )}
             <Box>
