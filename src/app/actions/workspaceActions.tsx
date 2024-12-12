@@ -341,6 +341,7 @@ export async function getJiraIssueFields(currentWorkspaceId: string, jiraResourc
 
         if (["securitylevel", "priority"].includes(field.schema.type) && field.schema.custom == JIRA_CUSTOM_FIELD_TYPES['select']) {
             field.fieldType = "select";
+            field.allowedValues = field.allowedValues || [];
             formattedFields.push(field);
         } else if (field.autoCompleteUrl && (field.schema.items == 'user' || field.schema.type == 'user')) {
             try {
@@ -353,7 +354,12 @@ export async function getJiraIssueFields(currentWorkspaceId: string, jiraResourc
                     }
                 })
                 field.fieldType = "select";
-                field['allowedValues'] = await rawResponse.json();
+                const allowedValues = await rawResponse.json();
+                if(Array.isArray(allowedValues)) {
+                    field['allowedValues'] = allowedValues;
+                } else {
+                    field['allowedValues'] = users;
+                }
                 formattedFields.push(field);
                 console.log('response autocomplete', field.fieldId, field.autoCompleteUrl, JSON.stringify(response, null, 2));
             } catch (e) {
@@ -366,9 +372,11 @@ export async function getJiraIssueFields(currentWorkspaceId: string, jiraResourc
         } else if (field.schema.custom == JIRA_CUSTOM_FIELD_TYPES['multicheckboxes']) {
             field.fieldType = "select";
             field.multiple = true;
+            field.allowedValues = field.allowedValues || [];
             formattedFields.push(field);
         } else if (field.schema.type == 'array' && field.schema.items != 'string' && field.allowedValues) {
             field.fieldType = "select";
+            field.allowedValues = field.allowedValues || [];
             formattedFields.push(field);
         } else if (field.schema.system == 'description') {
             field.fieldType = "description";
