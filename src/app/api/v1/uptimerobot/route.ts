@@ -1,6 +1,8 @@
 import {NextRequest} from "next/server";
 import {Website} from "@/app/models";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
     const data = await request.json()
     if(data.monitorID) {

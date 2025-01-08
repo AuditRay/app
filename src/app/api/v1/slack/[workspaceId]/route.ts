@@ -9,6 +9,8 @@ const installer = new InstallProvider({
     stateSecret: process.env.SLACK_STATE_SECRET,
 });
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ workspaceId: string }> }) {
     const workspaceId = (await params).workspaceId
     const url = await installer.generateInstallUrl({

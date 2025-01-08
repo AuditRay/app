@@ -5,6 +5,8 @@ import { InstallProvider } from "@slack/oauth";
 import {IncomingMessage, OutgoingMessage} from "node:http";
 import { jwtDecode } from "jwt-decode";
 
+export const dynamic = 'force-dynamic';
+
 const SLACK_ACCESS_TOKEN_URL = "https://slack.com/api/oauth.v2.access";
 
 export async function GET(request: NextRequest) {
