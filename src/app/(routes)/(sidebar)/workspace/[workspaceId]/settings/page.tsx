@@ -11,8 +11,9 @@ import {updateFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import CircularProgress from "@mui/material/CircularProgress";
 import {green} from "@mui/material/colors";
 
-export default function Settings({params}: { params: { workspaceId: string } }) {
+export default function Settings({params}: { params: Promise<{ workspaceId: string }> }) {
     const timezones = Intl.supportedValuesOf("timeZone");
+    const { workspaceId } = React.use(params);
     const [isSaving, setIsSaving] = React.useState(false);
     const [newWorkspaceData, setNewWorkspaceData] = React.useState<IWorkspace>();
     const [isPersonal, setIsPersonal] = React.useState(false);
@@ -25,16 +26,16 @@ export default function Settings({params}: { params: { workspaceId: string } }) 
     });
 
     React.useEffect(() => {
-        if(params.workspaceId == 'personal') {
+        if(workspaceId == 'personal') {
             setIsPersonal(true);
             return;
         }
         const getCurrentWorkspace = async () => {
-            const workspace = await getWorkspace(params.workspaceId);
+            const workspace = await getWorkspace(workspaceId);
             setNewWorkspaceData({...workspace});
         }
         getCurrentWorkspace().then();
-    }, [params.workspaceId]);
+    }, [workspaceId]);
 
     return (
         <>

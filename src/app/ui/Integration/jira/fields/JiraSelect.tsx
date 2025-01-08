@@ -17,7 +17,11 @@ export default function JiraSelect({fieldId, label, error, value, setValue, isDi
                 onChange={(e: any, newValue: {id: string, label: string} | null) => {
                     if(!newValue) return;
                     console.log('newValue', newValue);
-                    setValue(newValue.id);
+                    if(Array.isArray(newValue)) {
+                        setValue(newValue);
+                    } else {
+                        setValue(newValue.id);
+                    }
                 }}
                 renderInput={(params) => <TextField {...params} label={label} />}
             />

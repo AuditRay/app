@@ -66,8 +66,9 @@ function CustomNoRowsOverlay() {
     );
 }
 
-export default function RolesSettings({params}: { params: { workspaceId: string } }) {
+export default function RolesSettings({params}: { params: Promise<{ workspaceId: string }> }) {
     const [user, setUser] = React.useState<IUser | null>(null);
+    const { workspaceId } = React.use(params);
     const [workspaceRoles, setWorkspaceRoles] = React.useState<IRole[]>([]);
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -87,28 +88,28 @@ export default function RolesSettings({params}: { params: { workspaceId: string 
     const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
         setTabValue(newValue);
     };
-    const currentWorkspaceId = params.workspaceId;
+    const currentWorkspaceId = workspaceId;
 
     const handleOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
         //reload
-        getWorkspaceAllRoles(currentWorkspaceId).then((roles) => {
+        getWorkspaceAllRoles(workspaceId).then((roles) => {
             setWorkspaceRoles(roles);
         })
         setSelectedWorkspaceRole(undefined);
         setIsOpen(isOpen);
     }
     React.useEffect(() => {
-        if(params.workspaceId == 'personal') {
+        if(workspaceId == 'personal') {
             return;
         }
         setIsLoading(true);
         setUser(sessionUser);
-        getWorkspaceAllRoles(currentWorkspaceId).then((roles) => {
+        getWorkspaceAllRoles(workspaceId).then((roles) => {
             setWorkspaceRoles(roles);
             console.log('roles', roles);
             setIsLoading(false);
         })
-        buildWorkspaceBasePermissions(params.workspaceId).then((permissions) => {
+        buildWorkspaceBasePermissions(workspaceId).then((permissions) => {
             const groups: { id: string; name: string; icon: string }[] = [];
             const groupedPermissions: Record<string, PermissionsValue[]> = {};
             for (const permission in permissions) {

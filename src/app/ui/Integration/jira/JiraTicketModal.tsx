@@ -37,11 +37,11 @@ import dayjs, {Dayjs} from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 import Typography from "@mui/material/Typography";
-import JiraDatePicker from "@/app/ui/Integration/fields/JiraDatePicker";
-import JiraSelect from "@/app/ui/Integration/fields/JiraSelect";
-import JiraText from "@/app/ui/Integration/fields/JiraText";
-import JiraDescription from "@/app/ui/Integration/fields/JiraDescription";
-import JiraNumber from "@/app/ui/Integration/fields/JiraNumber";
+import JiraDatePicker from "@/app/ui/Integration/jira/fields/JiraDatePicker";
+import JiraSelect from "@/app/ui/Integration/jira/fields/JiraSelect";
+import JiraText from "@/app/ui/Integration/jira/fields/JiraText";
+import JiraDescription from "@/app/ui/Integration/jira/fields/JiraDescription";
+import JiraNumber from "@/app/ui/Integration/jira/fields/JiraNumber";
 
 
 dayjs.extend(utc);
@@ -96,9 +96,9 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
     const [isAiLoading, setIsAiLoading ] = useState<boolean>(false);
     const [dueDate, setDueDate] = useState<Dayjs | null>(null);
     const [jiraIntegration, setJiraIntegration] = React.useState<{
-        status: boolean;
-        token: string;
-        refreshToken: string;
+        status?: boolean;
+        token?: string;
+        refreshToken?: string;
     }>({
         status: false,
         token: '',
@@ -385,8 +385,7 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
     React.useEffect(() => {
         if(!open) return;
 
-        const currentWorkspace = sessionUser?.workspaces?.find(workspace => workspace.id === sessionUser?.currentSelectedWorkspace);
-        console.log('currentWorkspace', currentWorkspace, sessionUser);
+        const currentWorkspace = sessionUser?.workspaces?.find(workspace => workspace.id === params.workspaceId);
         if (currentWorkspace){
             setCurrentWorkspaceId(currentWorkspace.id);
             setJiraIntegration(currentWorkspace.jira || {status: false, token: '', refreshToken: ''});

@@ -17,9 +17,10 @@ import {userSessionState} from "@/app/lib/uiStore";
 
 export default function SettingsLayout({children, params}: {
     children: React.ReactNode,
-    params: { workspaceId: string }
+    params: Promise<{ workspaceId: string }>
 }) {
     const pathname = usePathname()
+    const {workspaceId} = React.use(params);
     const [user, setUser] = React.useState<IUser | null>(null);
     const sessionUser = userSessionState((state) => state.user);
     React.useEffect(() => {
@@ -38,43 +39,43 @@ export default function SettingsLayout({children, params}: {
                     }}
                 >
                     <List component="nav">
-                        <ListItemButton selected={pathname === `/workspace/${params.workspaceId}/settings`} disabled={!user} onClick={() => user && router.push(`/workspace/${params.workspaceId}/settings`)}>
+                        <ListItemButton selected={pathname === `/workspace/${workspaceId}/settings`} disabled={!user} onClick={() => user && router.push(`/workspace/${workspaceId}/settings`)}>
                             <ListItemIcon>
                                 <WorkspacesIcon sx={{marginLeft: '6px'}}/>
                             </ListItemIcon>
                             <ListItemText primary="General"/>
                         </ListItemButton>
-                        <ListItemButton selected={pathname === `/workspace/${params.workspaceId}/settings/alerts`} disabled={!user} onClick={() => user && router.push(`/workspace/${params.workspaceId}/settings/alerts`)}>
+                        <ListItemButton selected={pathname === `/workspace/${workspaceId}/settings/alerts`} disabled={!user} onClick={() => user && router.push(`/workspace/${workspaceId}/settings/alerts`)}>
                             <ListItemIcon>
                                 <EditNotificationsIcon sx={{marginLeft: '6px'}}/>
                             </ListItemIcon>
                             <ListItemText primary="Alerts"/>
                         </ListItemButton>
-                        <ListItemButton selected={pathname === `/workspace/${params.workspaceId}/settings/field-templates`} disabled={!user} onClick={() => user && router.push(`/workspace/${params.workspaceId}/settings/field-templates`)}>
+                        <ListItemButton selected={pathname === `/workspace/${workspaceId}/settings/field-templates`} disabled={!user} onClick={() => user && router.push(`/workspace/${workspaceId}/settings/field-templates`)}>
                             <ListItemIcon>
                                 <InputIcon sx={{marginLeft: '6px'}}/>
                             </ListItemIcon>
                             <ListItemText primary="Field Templates"/>
                         </ListItemButton>
-                        <ListItemButton selected={pathname === `/workspace/${params.workspaceId}/settings/integrations`} disabled={!user} onClick={() => user && router.push(`/workspace/${params.workspaceId}/settings/integrations`)}>
+                        <ListItemButton selected={pathname === `/workspace/${workspaceId}/settings/integrations`} disabled={!user} onClick={() => user && router.push(`/workspace/${workspaceId}/settings/integrations`)}>
                             <ListItemIcon>
                                 <ExtensionIcon sx={{marginLeft: '6px'}}/>
                             </ListItemIcon>
                             <ListItemText primary="Integrations"/>
                         </ListItemButton>
-                        <ListItemButton selected={pathname === `/workspace/${params.workspaceId}/settings/users`} disabled={!user} onClick={() => user && router.push(`/workspace/${params.workspaceId}/settings/users`)}>
+                        <ListItemButton selected={pathname === `/workspace/${workspaceId}/settings/users`} disabled={!user} onClick={() => user && router.push(`/workspace/${workspaceId}/settings/users`)}>
                             <ListItemIcon>
                                 <GroupIcon sx={{marginLeft: '6px'}}/>
                             </ListItemIcon>
                             <ListItemText primary="Users"/>
                         </ListItemButton>
-                        <ListItemButton selected={pathname === `/workspace/${params.workspaceId}/settings/teams`} disabled={!user} onClick={() => user && router.push(`/workspace/${params.workspaceId}/settings/teams`)}>
+                        <ListItemButton selected={pathname === `/workspace/${workspaceId}/settings/teams`} disabled={!user} onClick={() => user && router.push(`/workspace/${workspaceId}/settings/teams`)}>
                             <ListItemIcon>
                                 <GroupsIcon sx={{marginLeft: '6px'}}/>
                             </ListItemIcon>
                             <ListItemText primary="Teams"/>
                         </ListItemButton>
-                        <ListItemButton selected={pathname === `/workspace/${params.workspaceId}/settings/roles`} disabled={!user} onClick={() => user && router.push(`/workspace/${params.workspaceId}/settings/roles`)}>
+                        <ListItemButton selected={pathname === `/workspace/${workspaceId}/settings/roles`} disabled={!user} onClick={() => user && router.push(`/workspace/${workspaceId}/settings/roles`)}>
                             <ListItemIcon>
                                 <KeyIcon sx={{marginLeft: '6px'}}/>
                             </ListItemIcon>

@@ -4,6 +4,7 @@ import {IFiltersView} from "@/app/models/FiltersView";
 
 export const CreateWebsiteSchema = z.object({
     url: z.string().url({ message: 'Please enter a valid url.'}).trim(),
+    workspaceId: z.string().optional(),
     tags: z.preprocess((input) => {
         const {data} = z.string().safeParse(input);
         if (data) {

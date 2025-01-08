@@ -14,7 +14,17 @@ import {CreateWebsiteState} from "@/app/lib/definitions";
 import {useEffect} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {Autocomplete, Checkbox, Chip, FormControl, FormControlLabel, InputLabel, Select} from "@mui/material";
+import {
+    Autocomplete,
+    Checkbox,
+    Chip,
+    FormControl,
+    FormControlLabel,
+    FormGroup,
+    InputLabel,
+    Select,
+    Switch
+} from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import * as React from "react";
 import {getFieldsTemplates, updateFieldsTemplate} from "@/app/actions/fieldTemplateActions";
@@ -42,6 +52,7 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
     const [fieldsTemplateError, setFieldsTemplateError] = useState<string | null>(null);
     const [tags, setTags] = useState<string[] | undefined>([]);
     const [enableSync, setEnableSync] = useState<boolean>(true);
+    const [enableUptime, setEnableUptime] = useState<boolean>(false);
     const [syncInterval, setSyncInterval] = useState<number>(1);
     const [syncTime, setSyncTime] = useState<Dayjs | null>(
         dayjs().startOf('day')
@@ -79,6 +90,7 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
             if(!loadedWebsite) return '';
             setTags(loadedWebsite.tags);
             setEnableSync(loadedWebsite.syncConfig?.enabled);
+            setEnableUptime(loadedWebsite.enableUptimeMonitor || false);
             setSyncInterval(loadedWebsite.syncConfig?.syncInterval || 1);
             setIntervalUnit(loadedWebsite.syncConfig?.intervalUnit || 'Day');
             if(loadedWebsite.syncConfig?.intervalUnit === 'Hour') {
@@ -145,6 +157,16 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
                             />
                         )}
                     />
+                    <Box>
+                        <Typography variant={'subtitle2'} sx={{mt:2}}>Uptime Monitor</Typography>
+                    </Box>
+                    <Grid container spacing={2}>
+                        <Grid size={12}>
+                            <FormGroup>
+                                <FormControlLabel control={<Switch checked={enableUptime} onChange={(e) => setEnableUptime(e.target.checked)} />} label="Enable uptime monitor" />
+                            </FormGroup>
+                        </Grid>
+                    </Grid>
                     <Box>
                         <Typography variant={'subtitle2'} sx={{mt:2}}>Sync configuration</Typography>
                     </Box>
@@ -267,6 +289,7 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
                                 async function save() {
                                     await updateWebsite(websiteId, {
                                         tags,
+                                        enableUptimeMonitor: enableUptime,
                                         syncConfig: {
                                             enabled: enableSync,
                                             syncInterval,

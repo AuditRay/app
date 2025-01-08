@@ -266,6 +266,7 @@ export async function createAlert(alertData: Partial<IAlert>) {
         interval: alertData.interval,
         intervalUnit: alertData.intervalUnit,
         filters: alertData.filters,
+        events: alertData.events || [],
         notifyUsers: alertData.notifyUsers,
     });
 

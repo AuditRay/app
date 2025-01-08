@@ -3,7 +3,7 @@
 import {getUser} from "@/app/actions/getUser";
 import {revalidatePath} from "next/cache";
 import {v4 as uuid4} from "uuid";
-import {IMemberPopulated, IRole, IUser, IWorkspace, IWorkspacePopulated, User, Workspace} from "@/app/models";
+import {IMemberPopulated, IRole, IUser, IWorkspace, IWorkspacePopulated, jiraType, User, Workspace} from "@/app/models";
 import {sendEmail} from "@/app/lib/email";
 import {getWorkspaceRoles} from "@/app/actions/rolesActions";
 import {connectMongo} from "@/app/lib/database";
@@ -79,6 +79,36 @@ export async function getWorkspace(workspaceId?: string): Promise<IWorkspace> {
     return workspace.toJSON();
 }
 
+export async function updateJiraConfig(workspaceId: string, config: jiraType['config']): Promise<IWorkspace['jira']> {
+    await connectMongo();
+    console.log('updateJiraConfig');
+    const workspace = await Workspace.findOne({_id: workspaceId});
+    if (!workspace) {
+        throw new Error('Workspace not found');
+    }
+    if(!workspace.jira) {
+        workspace.jira = {
+            config: {
+                hiddenFields: ''
+            }
+        }
+    }
+    if(!workspace.jira?.config) {
+        workspace.jira.config =  {
+            hiddenFields: config?.hiddenFields || ''
+        };
+    } else {
+        workspace.jira.config.hiddenFields = config?.hiddenFields || '';
+    }
+    if(!workspace.jira?.config.hiddenFields) {
+        workspace.jira.config.hiddenFields = '';
+    }
+
+    workspace.markModified('jira');
+    await workspace.save();
+    return workspace.jira;
+}
+
 export async function disconnectJiraToken(workspaceId: string): Promise<IWorkspace['jira']> {
     await connectMongo();
     console.log('disconnectJiraToken');
@@ -86,17 +116,13 @@ export async function disconnectJiraToken(workspaceId: string): Promise<IWorkspa
     if (!workspace) {
         throw new Error('Workspace not found');
     }
-    workspace.jira = {
-        status: false,
-        token: '',
-        refreshToken: ''
-    }
+    workspace.jira = undefined;
     workspace.markModified('jira');
     await workspace.save();
     return workspace.jira;
 }
 
-export async function updateJiraToken(workspaceId: string): Promise<IWorkspace['jira']> {
+export async function updateJiraToken(workspaceId: string): Promise<IWorkspace['jira'] | null> {
     await connectMongo();
     console.log('updateJiraToken');
     const workspace = await Workspace.findOne({_id: workspaceId});
@@ -128,13 +154,15 @@ export async function updateJiraToken(workspaceId: string): Promise<IWorkspace['
         workspace.markModified('jira');
         await workspace.save();
     }
-    return workspace.jira;
+    return workspace.jira?.token ? workspace.jira : null;
 }
 
 export async function getJiraResources(currentWorkspaceId: string): Promise<any> {
     await connectMongo();
-    console.log('getJiraResources');
     const updateToken = await updateJiraToken(currentWorkspaceId);
+    if(!updateToken){
+        return {};
+    }
     const rawResponse = await fetch('https://api.atlassian.com/oauth/token/accessible-resources', {
         method: 'GET',
         headers: {
@@ -152,6 +180,9 @@ export async function getJiraProjects(currentWorkspaceId: string, jiraResourceId
     console.log('getJiraProjects');
     const projects = [];
     const updateToken = await updateJiraToken(currentWorkspaceId);
+    if(!updateToken){
+        throw new Error('Jira not connected');
+    }
     const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/project/search`, {
         method: 'GET',
         headers: {
@@ -190,8 +221,9 @@ export async function getJiraUsers(currentWorkspaceId: string, jiraResourceId: s
     await connectMongo();
     console.log('getJiraUsers');
     const updateToken = await updateJiraToken(currentWorkspaceId);
-
-
+    if(!updateToken){
+        throw new Error('Jira not connected');
+    }
     const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/groupuserpicker?query=*&projectId=${jiraProjectId}`, {
         method: 'GET',
         headers: {
@@ -226,8 +258,9 @@ export async function getJiraIssues(currentWorkspaceId: string, jiraResourceId: 
     await connectMongo();
     console.log('getJiraIssues');
     const updateToken = await updateJiraToken(currentWorkspaceId);
-
-
+    if(!updateToken){
+        throw new Error('Jira not connected');
+    }
     const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/issuetype/project?projectId=${projectId}`, {
         method: 'GET',
         headers: {
@@ -253,8 +286,15 @@ export async function getJiraIssueFields(currentWorkspaceId: string, jiraResourc
     const fields = [];
     console.log('getJiraIssues');
     const updateToken = await updateJiraToken(currentWorkspaceId);
-
-
+    if(!updateToken){
+        throw new Error('Jira not connected');
+    }
+    const workspace = await Workspace.findOne({_id: currentWorkspaceId});
+    if (!workspace?.jira) return [];
+    const jiraConfig = workspace.jira.config || {
+        hiddenFields: ''
+    };
+    const hiddenFields = jiraConfig.hiddenFields?.split('\n').map(field => field.trim()) || [];
     const rawResponse = await fetch(`https://api.atlassian.com/ex/jira/${jiraResourceId}/rest/api/3/issue/createmeta/${jiraProjectId}/issuetypes/${jiraIssueId}`, {
         method: 'GET',
         headers: {
@@ -333,9 +373,10 @@ export async function getJiraIssueFields(currentWorkspaceId: string, jiraResourc
     }
 
     const formattedFields = [];
-
+    console.log('fields', JSON.stringify(fields, null, 2));
     for (const field of fields) {
         if (skipField.includes(field.schema.system)) continue;
+        if (!field.required && hiddenFields.includes(field.fieldId)) continue;
         if (['worklog', 'attachment'].includes(field.schema.system)) continue;
         if (['timetracking'].includes(field.schema.type)) continue;
 
@@ -411,6 +452,9 @@ export async function createJiraTicket(currentWorkspaceId: string, jiraResourceI
     await connectMongo();
     console.log('createJiraTicket');
     const updateToken = await updateJiraToken(currentWorkspaceId);
+    if(!updateToken){
+        throw new Error('Jira not connected');
+    }
     delete newTicketData.resource;
     const bodyData: any = {
       "fields": {

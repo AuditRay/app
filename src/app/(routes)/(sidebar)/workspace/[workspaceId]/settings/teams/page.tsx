@@ -65,10 +65,11 @@ function CustomNoRowsOverlay() {
     );
 }
 
-export default function TeamsSettings({params}: { params: { workspaceId: string } }) {
+export default function TeamsSettings({params}: { params: Promise<{ workspaceId: string }> }) {
     const [user, setUser] = React.useState<IUser | null>(null);
+    const { workspaceId } = React.use(params);
     const [workspaceTeams, setWorkspaceTeams] = React.useState<ITeamPopulated[]>([]);
-    const [isPersonal, setIsPersonal] = React.useState(params.workspaceId == 'personal');
+    const [isPersonal, setIsPersonal] = React.useState(workspaceId == 'personal');
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(true);
     const [selectedWorkspaceTeam, setSelectedWorkspaceTeam] = React.useState<ITeamPopulated>();
@@ -80,20 +81,20 @@ export default function TeamsSettings({params}: { params: { workspaceId: string 
     }
     const handleOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
         //reload
-        getTeams(params.workspaceId).then((teams) => {
+        getTeams(workspaceId).then((teams) => {
             setWorkspaceTeams(teams);
         })
         setSelectedWorkspaceTeam(undefined);
         setIsOpen(isOpen);
     }
     React.useEffect(() => {
-        if(params.workspaceId == 'personal') {
+        if(workspaceId == 'personal') {
             setIsPersonal(true);
             return;
         }
         setIsLoading(true);
         setUser(sessionUser);
-        getTeams(params.workspaceId).then((teams) => {
+        getTeams(workspaceId).then((teams) => {
             setWorkspaceTeams(teams);
             console.log('teams', teams);
             setIsLoading(false);
@@ -201,12 +202,12 @@ export default function TeamsSettings({params}: { params: { workspaceId: string 
                         }}
                     />
 
-                    <AddTeamModal open={isOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsOpen)} workspaceId={params.workspaceId}></AddTeamModal>
+                    <AddTeamModal open={isOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsOpen)} workspaceId={workspaceId}></AddTeamModal>
                     {selectedWorkspaceTeam && isEditOpen && (
-                        <EditTeamModal open={isEditOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsEditOpen)} team={selectedWorkspaceTeam}  workspaceId={params.workspaceId}></EditTeamModal>
+                        <EditTeamModal open={isEditOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsEditOpen)} team={selectedWorkspaceTeam}  workspaceId={workspaceId}></EditTeamModal>
                     )}
                     {selectedWorkspaceTeam && isDeleteOpen && (
-                        <DeleteTeamFromWorkspaceModal open={isDeleteOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsDeleteOpen)} team={selectedWorkspaceTeam}  workspaceId={params.workspaceId}></DeleteTeamFromWorkspaceModal>
+                        <DeleteTeamFromWorkspaceModal open={isDeleteOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsDeleteOpen)} team={selectedWorkspaceTeam}  workspaceId={workspaceId}></DeleteTeamFromWorkspaceModal>
                     )}
                 </>
             )}

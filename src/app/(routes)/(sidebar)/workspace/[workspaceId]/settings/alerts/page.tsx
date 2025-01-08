@@ -69,7 +69,8 @@ function CustomNoRowsOverlay() {
     );
 }
 
-export default function AlertsSettings({params}: { params: { workspaceId: string } }) {
+export default function AlertsSettings({params}: { params: Promise<{ workspaceId: string }> }) {
+    const { workspaceId } = React.use(params);
     const [user, setUser] = React.useState<IUser | null>(null);
     const [workspaceAlerts, setWorkspaceAlerts] = React.useState<IAlert[]>([]);
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
@@ -81,7 +82,7 @@ export default function AlertsSettings({params}: { params: { workspaceId: string
 
     const handleOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
         //reload
-        getWorkspaceAllAlerts(params.workspaceId).then((alerts) => {
+        getWorkspaceAllAlerts(workspaceId).then((alerts) => {
             setWorkspaceAlerts(alerts);
         });
         setSelectedAlert(undefined);
@@ -90,11 +91,11 @@ export default function AlertsSettings({params}: { params: { workspaceId: string
     React.useEffect(() => {
         setIsLoading(true);
         setUser(sessionUser);
-        getWorkspaceAllAlerts(params.workspaceId).then((alerts) => {
+        getWorkspaceAllAlerts(workspaceId).then((alerts) => {
             setWorkspaceAlerts(alerts);
             setIsLoading(false);
         });
-    }, [sessionUser, params.workspaceId]);
+    }, [sessionUser, workspaceId]);
 
     return (
         <>
@@ -169,12 +170,12 @@ export default function AlertsSettings({params}: { params: { workspaceId: string
                 }}
             />
 
-            <AddAlertModal open={isOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsOpen)} workspaceId={params.workspaceId}></AddAlertModal>
+            <AddAlertModal open={isOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsOpen)} workspaceId={workspaceId}></AddAlertModal>
             {selectedAlert && isEditOpen && (
-                <EditAlertModal open={isEditOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsEditOpen)} alert={selectedAlert} workspaceId={params.workspaceId}></EditAlertModal>
+                <EditAlertModal open={isEditOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsEditOpen)} alert={selectedAlert} workspaceId={workspaceId}></EditAlertModal>
             )}
             {selectedAlert && isDeleteOpen && (
-                <DeleteAlertFromWorkspaceModal open={isDeleteOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsDeleteOpen)} alert={selectedAlert} workspaceId={params.workspaceId}></DeleteAlertFromWorkspaceModal>
+                <DeleteAlertFromWorkspaceModal open={isDeleteOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsDeleteOpen)} alert={selectedAlert} workspaceId={workspaceId}></DeleteAlertFromWorkspaceModal>
             )}
         </>
     );

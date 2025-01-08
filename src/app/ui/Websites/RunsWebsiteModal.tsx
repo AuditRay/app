@@ -8,7 +8,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import CircularProgress from '@mui/material/CircularProgress';
-import { green } from '@mui/material/colors';
+import {green, red} from '@mui/material/colors';
 import {IFieldsTemplate, IUpdateRun, IWebsite} from "@/app/models";
 import * as React from "react";
 import Typography from "@mui/material/Typography";
@@ -17,6 +17,12 @@ import {deleteWebsite, getGetWebsiteUpdateRuns} from "@/app/actions/websiteActio
 import { useRouter } from 'next/navigation'
 import dayjs from "dayjs";
 import {Card, CardContent} from "@mui/material";
+import Accordion from "@mui/material/Accordion";
+import {getAlert} from "@/app/actions/alertsActions";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import AccordionDetails from "@mui/material/AccordionDetails";
+import AlertWebsitePreviewGrid from "@/app/ui/Alerts/AlertWebsitePreviewGrid";
 
 export default function RunsWebsiteModal({websiteId}: {websiteId: string}) {
     const [isLoading, setIsLoading] = useState(false);
@@ -58,13 +64,24 @@ export default function RunsWebsiteModal({websiteId}: {websiteId: string}) {
                     <Box>
                         {isLoading && <CircularProgress />}
                         {!isLoading && runs.length > 0 && runs.map((run) => (
-                            <Card key={run.id} variant="outlined" sx={{mb: 3}}>
-                                <CardContent>
+                            <Accordion key={run.id}>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon />}
+                                    aria-controls="panel1-content"
+                                    id="panel1-header"
+                                    sx={{textTransform: 'capitalize'}}
+                                >
+
                                     <Typography variant={'body1'} sx={{mb: 1}}>{dayjs(run.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</Typography>
-                                    <Typography variant={'body2'}>{run.status}</Typography>
+                                    <Typography variant={'body1'} sx={{mx: 1}}>|</Typography>
+                                    {run.status === 'Success' && <Typography variant={'body1'} sx={{color: green[500]}}>{run.status}</Typography>}
+                                    {run.status === 'Failed' && <Typography variant={'body1'} sx={{color: red[500]}}>{run.status}</Typography>}
+                                </AccordionSummary>
+                                <AccordionDetails>
                                     {run.response && <Typography variant={'body2'}>{run.response}</Typography>}
-                                </CardContent>
-                            </Card>
+                                    {!run.response && run.status === 'Success' && <Typography variant={'body2'}>Success</Typography>}
+                                </AccordionDetails>
+                            </Accordion>
                         ))}
                         {!isLoading && runs.length === 0 && (
                             <Card variant="outlined" sx={{mb: 3}}>

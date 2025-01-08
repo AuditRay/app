@@ -9,8 +9,17 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {Autocomplete, Divider, FormControl, FormHelperText, IconButton, InputLabel, Select} from "@mui/material";
-import {IUser} from "@/app/models";
+import {
+    Autocomplete,
+    Divider,
+    FormControl,
+    FormHelperText,
+    IconButton,
+    InputLabel,
+    LinearProgress,
+    Select
+} from "@mui/material";
+import {IAlert, IUser, IWorkspace} from "@/app/models";
 import {userSessionState} from "@/app/lib/uiStore";
 import {createAlert} from "@/app/actions/alertsActions";
 import Grid from "@mui/material/Grid2";
@@ -23,18 +32,41 @@ import {getTeams} from "@/app/actions/teamActions";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
+import {getSlackChannels} from "@/app/actions/integrations/slackActions";
+import {Channel} from "@slack/web-api/dist/types/response/ConversationsListResponse";
+import {channel} from "node:diagnostics_channel";
+import JiraTicketConfig from "@/app/ui/Alerts/JiraTicketConfig";
 export type notificationUserOptionsType = { id: string, label: string, type: 'user' | 'team', members: IUser[] };
 export default function AddAlertModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
 
     const [notificationUserOptions, setNotificationUserOptions] = useState<notificationUserOptionsType[]>([]);
+    const [currentWorkspace, setCurrentWorkspace] = useState<IWorkspace>();
+    const [jiraEvent, setJiraEvent] = useState<IAlert['events'][0]>();
+    const [slackEvent, setSlackEvent] = useState<IAlert['events'][0]>();
+    const [slackChannels, setSlackChannels] = useState<Channel[]>();
+    const [openJiraTicket, setOpenJiraTicket] = useState<boolean>(false);
     const [filters, setFilters] = React.useState<GridFilterModel>({items: []});
-    const sessionUser = userSessionState((state) => state.user);
+    const [isSlackChannelsLoading, setIsSlackChannelsLoading] = React.useState<Boolean>(false);
+    const sessionUser = userSessionState((state) => state.fullUser);
     useEffect(() => {
+        if(!open) return;
+        setSlackEvent(undefined);
+        setSlackChannels(undefined);
+        setIsSlackChannelsLoading(true);
         async function loadWorkspaceUsers() {
             const currentUser = sessionUser;
+            const workspace = sessionUser?.workspaces?.find((w) => w.id == workspaceId);
+            setCurrentWorkspace(workspace);
             const users = await getWorkspaceUsers(workspaceId).catch(() => []);
             const teams = await getTeams(workspaceId).catch(() => []);
+            if(workspace?.slack?.status) {
+                const channels = await getSlackChannels(workspaceId).catch(() => []);
+                setSlackChannels(channels);
+                setIsSlackChannelsLoading(false);
+            } else {
+                setIsSlackChannelsLoading(false);
+            }
             console.log('teams', teams);
             const options: notificationUserOptionsType[] = [];
             for(const user of users) {
@@ -64,7 +96,7 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
             setNotificationUserOptions(options);
         }
         loadWorkspaceUsers().then(() => {}).catch(() => {});
-    }, [sessionUser, workspaceId]);
+    }, [sessionUser, workspaceId, open]);
 
     const [newAlertData, setNewAlertData] = useState<{
         title?: string;
@@ -105,6 +137,8 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
         setNewAlertErrorData({});
         setNewAlertData({});
         setFilters({items: []});
+        setSlackChannels(undefined);
+        setSlackEvent(undefined);
         setOpen(false);
     }
     
@@ -185,7 +219,7 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
                     </FormControl>
                 </Grid>
                 <Divider sx={{my: 1}}/>
-                <Typography variant={'caption'}>Team Members</Typography>
+                <Typography variant={'caption'}>Email Team Members</Typography>
                 <Box>
                     {newAlertErrorData.notifyUsers && <Typography color={'error'}>{newAlertErrorData.notifyUsers}</Typography>}
                     {newAlertData.notifyUsers?.map((member, index) => (
@@ -264,6 +298,89 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
                     </Box>
                 </Box>
                 <Divider sx={{my: 1}}/>
+                {currentWorkspace?.jira?.status && (
+                    <>
+                        <Typography variant={'caption'}>Open Jira Ticket</Typography>
+                        <Box>
+                            {!jiraEvent ? (
+                                <Grid container columnSpacing={3} >
+                                    <Grid size={12}>
+                                        <Button variant={'outlined'} onClick={() => setOpenJiraTicket(true)}>
+                                            Configure Jira
+                                        </Button>
+                                    </Grid>
+                                    <Grid size={12}>
+                                        <Typography variant={'subtitle2'}>
+                                            No Jira ticket configuration found. Please configure Jira ticket to enable this feature.
+                                        </Typography>
+                                    </Grid>
+                                </Grid>
+                            ) : (
+                                <Grid container columnSpacing={3} >
+                                    <Grid size={12}>
+                                        <Button variant={'outlined'} onClick={() => setOpenJiraTicket(true)}>
+                                            Re-configure Jira
+                                        </Button>
+                                        <IconButton color={'error'} onClick={() => {
+                                            setJiraEvent(undefined);
+                                        }}><Tooltip title={"Remove Jira Notification"}><DeleteForeverIcon></DeleteForeverIcon></Tooltip></IconButton>
+                                    </Grid>
+                                    <Grid size={12}>
+                                        <Typography variant={'subtitle2'}>
+                                            Jira ticket configuration found. You can re-configure Jira ticket to change settings.
+                                        </Typography>
+                                    </Grid>
+                                </Grid>
+                            )}
+                        </Box>
+                        <JiraTicketConfig open={openJiraTicket} setOpen={setOpenJiraTicket} config={jiraEvent?.config || {}} setConfig={(config) => {
+                            console.log("config", config);
+                            setJiraEvent({
+                                type: 'jira',
+                                config: config
+                            });
+                        }} ></JiraTicketConfig>
+                    </>
+                )}
+                <Divider sx={{my: 1}}/>
+                {currentWorkspace?.slack?.status && (
+                    <>
+                        <Typography variant={'caption'}>Send Slack Message</Typography>
+                        {slackChannels ? (
+                            <Grid container columnSpacing={3} >
+                                <Grid size={6}>
+                                    <Autocomplete
+                                        disablePortal
+                                        fullWidth
+                                        disableClearable={true}
+                                        value={slackEvent?.config ? slackEvent?.config : ''}
+                                        onChange={(e, value) => {
+                                            setSlackEvent({
+                                                type: 'slack',
+                                                config: value
+                                            })
+                                        }}
+                                        options={slackChannels.map((channel) => ({
+                                            label: channel.name,
+                                            id: channel.id
+                                        }))}
+                                        getOptionKey={(option) => option.id || ''}
+                                        getOptionLabel={(option) => option.label || ''}
+                                        renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="Channel Name" />}
+                                    />
+                                </Grid>
+                                <Grid size={1}>
+                                    <IconButton sx={{
+                                        mt: 2,
+                                    }} color={'error'} onClick={() => {
+                                        setSlackEvent(undefined);
+                                    }}><Tooltip title={"Remove Slack Notification"}><DeleteForeverIcon></DeleteForeverIcon></Tooltip></IconButton>
+                                </Grid>
+                            </Grid>
+                        ) : (<LinearProgress></LinearProgress>)}
+                    </>
+                )}
+                <Divider sx={{my: 1}}/>
                 <InputLabel id="interval-unit-select-label" sx={{my: 1}}>Alert Criteria</InputLabel>
                 <FormHelperText error={!!newAlertErrorData.filters}>{newAlertErrorData.filters}</FormHelperText>
                 <AlertsWebsitesPreviewGrid filters={filters} setFilters={setFilters} workspaceId={workspaceId}></AlertsWebsitesPreviewGrid>
@@ -294,6 +411,13 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
                                 return;
                             }
                             console.log('newAlertData', newAlertData);
+                            const events: IAlert['events'] = [];
+                            if(slackEvent) {
+                                events.push(slackEvent);
+                            }
+                            if(jiraEvent) {
+                                events.push(jiraEvent);
+                            }
                             async function save() {
                                 if(newAlertData.title) {
                                     await createAlert({
@@ -303,7 +427,7 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
                                         filters: filters,
                                         interval: newAlertData.interval,
                                         intervalUnit: newAlertData.intervalUnit,
-                                        events: newAlertData.events,
+                                        events: events,
                                         notifyUsers: newAlertData.notifyUsers
                                     });
                                 } else {

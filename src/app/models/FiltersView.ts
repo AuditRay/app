@@ -26,6 +26,7 @@ const ModelSchema = new Schema<IFiltersView>(
             virtuals: true,
             transform: (_, ret) => {
                 ret.user = ret.user.toString();
+                ret.workspace = ret.workspace?.toString();
                 delete ret._id;
             },
         },

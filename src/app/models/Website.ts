@@ -45,7 +45,25 @@ export interface IWebsite {
     metadata: any;
     technologies: WebsiteTechnology[];
     fieldValues: FieldValue[];
-    isDeleted: boolean
+    isDeleted: boolean;
+    enableUptimeMonitor: boolean;
+    uptimeMonitorInfo?: {
+        monitorId?: number;
+        status: number;
+        lastChecked: Date;
+        alerts: {
+            monitorID?: number,
+            monitorURL: string,
+            monitorFriendlyName: string,
+            alertType: number,
+            alertTypeFriendlyName: string,
+            alertDetails: string,
+            alertDuration: string,
+            monitorAlertContacts: string,
+            sslExpiryDate: string,
+            sslExpiryDaysLeft: string
+        }[]
+    }
     defaultViewsConfiguration: {
         id: string;
         weight: number;
@@ -79,6 +97,10 @@ const ModelSchema = new Schema<IWebsite>(
         attributes: {},
         defaultViewsConfiguration: {},
         isDeleted: Boolean,
+        enableUptimeMonitor: Boolean,
+        uptimeMonitorInfo: {
+
+        },
         syncConfig: {
             enabled: Boolean,
             lastSync: Date,

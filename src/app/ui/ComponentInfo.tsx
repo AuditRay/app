@@ -7,9 +7,10 @@ import LaunchIcon from '@mui/icons-material/Launch';
 import {IWebsiteInfo, UpdateInfo} from "@/app/models/WebsiteInfo";
 import Typography from "@mui/material/Typography";
 import {userSessionState} from "@/app/lib/uiStore";
-import JiraTicketModal from "@/app/ui/Integration/JiraTicketModal";
+import JiraTicketModal from "@/app/ui/Integration/jira/JiraTicketModal";
 import Button from "@mui/material/Button";
 import { useParams } from 'next/navigation'
+import {jiraType} from "@/app/models";
 
 export type WebsiteInfoRow = Partial<UpdateInfo>
 const columns: GridColDef[] = [
@@ -64,10 +65,7 @@ export default function ComponentInfo(
 ) {
     const [open, setOpen] = React.useState(false);
     const params = useParams<{ workspaceId: string; }>()
-    const [jiraIntegration, setJiraIntegration] = React.useState<{
-        status: boolean;
-        token: string;
-    }>({
+    const [jiraIntegration, setJiraIntegration] = React.useState<jiraType>({
         status: false,
         token: ''
     });

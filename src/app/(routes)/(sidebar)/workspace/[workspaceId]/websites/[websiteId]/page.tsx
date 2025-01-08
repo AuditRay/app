@@ -19,14 +19,15 @@ import Button from "@mui/material/Button";
 import UpdateWebsiteInfoModal from "@/app/ui/Websites/UpdateWebsiteInfoModal";
 import PermissionsAccessCheck from "@/app/ui/PermissionsAccessCheck";
 import RunsWebsiteModal from "@/app/ui/Websites/RunsWebsiteModal";
+import {getMonitor} from "@/app/actions/uptimeActions";
 
 export default async function WebsitePage({ params }: {
-    params: {
+    params: Promise<{
         workspaceId: string,
         websiteId: string,
-    }
+    }>
 }) {
-    const { websiteId, workspaceId } = params;
+    const { websiteId, workspaceId } =  await params;
     const website = await getWebsite(websiteId);
     const websiteViews = await getWebsiteViews(websiteId);
     const websiteInfo = await getLatestWebsiteInfo(websiteId);
@@ -121,7 +122,7 @@ export default async function WebsitePage({ params }: {
                                                      alt={website.type.name}
                                                      sx={{width: '20px', verticalAlign: 'text-bottom', mr:'10px'}}/>)} {website.type.name}</Typography>
                                         </Box>
-                                        <WebsitesInfoGrid websiteInfo={[websiteInfo.frameworkInfo]} enableRightDrawer={true}/>
+                                        <WebsitesInfoGrid websiteInfo={[websiteInfo.frameworkInfo]} enableRightDrawer={true} website={website} frameworkInfo={websiteInfo.frameworkInfo}/>
                                     </div>
                                 </Box>
                             )}
@@ -130,7 +131,7 @@ export default async function WebsitePage({ params }: {
                                     <Typography variant={'h2'} sx={{mb: '20px'}}>
                                         Website Components
                                     </Typography>
-                                    <WebsitesInfoGrid websiteInfo={websiteInfo.websiteComponentsInfo} enableRightDrawer={true}/>
+                                    <WebsitesInfoGrid websiteInfo={websiteInfo.websiteComponentsInfo} enableRightDrawer={true} website={website} frameworkInfo={websiteInfo.frameworkInfo}/>
                                 </>
                             )}
                         </div>
@@ -157,7 +158,7 @@ export default async function WebsitePage({ params }: {
                     >
 
                         <div>
-                            <EditWebsiteModal websiteId={website.id} website={website} workspaceId={params.workspaceId}/>
+                            <EditWebsiteModal websiteId={website.id} website={website} workspaceId={workspaceId}/>
                             <WebsiteConnectionTokenModal websiteId={website.id} website={website} />
                             <RunsWebsiteModal websiteId={website.id} />
                             <UpdateWebsiteInfoModal websiteId={website.id} />

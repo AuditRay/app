@@ -7,6 +7,7 @@ import LaunchIcon from '@mui/icons-material/Launch';
 import {IWebsiteInfo, UpdateInfo} from "@/app/models/WebsiteInfo";
 import useRightDrawerStore from "@/app/lib/uiStore";
 import ComponentInfo from "@/app/ui/ComponentInfo";
+import {IWebsite} from "@/app/models";
 
 export type WebsiteInfoRow = Partial<UpdateInfo>
 const columns: GridColDef[] = [
@@ -49,7 +50,7 @@ const columns: GridColDef[] = [
 ];
 
 
-export default function WebsitesInfoGrid(props: { websiteInfo: WebsiteInfoRow[], enableRightDrawer?: boolean }) {
+export default function WebsitesInfoGrid(props: { websiteInfo: WebsiteInfoRow[], enableRightDrawer?: boolean, website?: IWebsite, frameworkInfo?: WebsiteInfoRow }) {
     const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
     return (
         <div style={{ width: '100%' }}>
@@ -63,13 +64,12 @@ export default function WebsitesInfoGrid(props: { websiteInfo: WebsiteInfoRow[],
                 columns={columns}
                 rowSelection={false}
                 onRowClick={(params) => {
-                    console.log('props.enableRightDrawer', props.enableRightDrawer);
                     if (props.enableRightDrawer) {
                         openRightDrawer(params.row.title, <ComponentInfo component={params.row} websiteInfo={{
-                            websiteName: params.row.siteName,
-                            websiteUrl: params.row.url,
-                            frameworkVersion: params.row.frameworkVersion?.value || 'Unknown',
-                            frameworkType: params.row.type.name,
+                            websiteName: props.website?.title || '',
+                            websiteUrl: props.website?.url || '',
+                            frameworkVersion: props.frameworkInfo?.current_version || 'Unknown',
+                            frameworkType: props.frameworkInfo?.title || 'Unknown',
                         }} />)
                     }
                 }}

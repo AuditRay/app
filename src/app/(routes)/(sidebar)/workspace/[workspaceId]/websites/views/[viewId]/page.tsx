@@ -9,11 +9,12 @@ import {getFiltersView} from "@/app/actions/filterViewsActions";
 import RightDrawer from "@/app/ui/RightDrawer";
 export default async function Websites(
     {params}: {
-        params: { workspaceId: string, viewId: string }
+        params: Promise<{ workspaceId: string, viewId: string }>
     }
 ) {
-    const filterView = await getFiltersView(params.viewId);
-    const websitesCount = await countWebsites(params.workspaceId);
+    const { viewId, workspaceId } = await params;
+    const filterView = await getFiltersView(viewId);
+    const websitesCount = await countWebsites(workspaceId);
     return (
         <Grid item xs={12}>
             <Paper
@@ -32,15 +33,15 @@ export default async function Websites(
                                 : (<h1>Websites List</h1>)
                             }
                             <Box sx={{ml: 'auto'}}>
-                                <AddWebsiteModal workspaceId={params.workspaceId}></AddWebsiteModal>
+                                <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>
                             </Box>
                         </Box>
-                        <WebsitesGrid workspaceId={params.workspaceId} viewId={params.viewId}/>
+                        <WebsitesGrid workspaceId={workspaceId} viewId={viewId}/>
                     </div>
                 )}
                 {websitesCount == 0 && (
                     <Box sx={{textAlign: 'center'}}>
-                        You have no websites yet <AddWebsiteModal workspaceId={params.workspaceId}></AddWebsiteModal>
+                        You have no websites yet <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>
                     </Box>
                 )}
                 <RightDrawer></RightDrawer>

@@ -10,6 +10,8 @@ import timezone from 'dayjs/plugin/timezone';
 import {fetchUpdates, getWebsitesTable, IWebsiteTable} from "@/app/actions/websiteActions";
 import {getAlertWebsites} from "@/app/actions/alertsActions";
 import {sendEmail} from "@/app/lib/email";
+import {sendSlackMessageChannels} from "@/app/actions/integrations/slackActions";
+import {createJiraTicket} from "@/app/actions/workspaceActions";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -99,6 +101,8 @@ export async function GET(request: NextRequest) {
                 filters,
             );
             if(alertWebsites.count > 0) {
+                const jiraEvent = alert.events.find(event => event.type === 'jira');
+                const slackEvent = alert.events.find(event => event.type === 'slack');
                 const userIds = alert.notifyUsers.filter(user => user.includes('user:')).map(user => user.replace('user:', ''));
                 const teamIds = alert.notifyUsers.filter(user => user.includes('team:')).map(user => user.replace('team:', ''));
                 const teams = await Team.find({_id: {$in: teamIds}});
@@ -108,6 +112,154 @@ export async function GET(request: NextRequest) {
                             if (!userIds.includes(member.user.toString())) userIds.push(member.user.toString());
                         }
                     }
+                }
+
+                if(jiraEvent) {
+                    const lastAlertInfo = await AlertInfo.findOne({workspace: workspaceId, alert: alert._id, type: 'jira'}).sort({createdAt: -1});
+                    if (lastAlertInfo) {
+                        const lastAlertInfoDate = lastAlertInfo?.createdAt;
+                        const lastAlertInfoDateTime = lastAlertInfoDate ? dayjs(lastAlertInfoDate) : dayjs().subtract(1, 'hour');
+                        const nextAlert = lastAlertInfoDateTime.add(alert.interval, alert.intervalUnit.toLowerCase() as ManipulateType);
+                        const now = dayjs();
+                        if (!now.isAfter(nextAlert)) {
+                            continue;
+                        }
+                    }
+
+                    let emailText = '';
+                    let emailSubject = '';
+                    if (lastAlertInfo && alertWebsites.data) {
+                        const lastAlertData : {
+                            data: IWebsiteTable[];
+                            count: number;
+                            extraHeaders: { id: string, label: string }[];
+                        } = JSON.parse(lastAlertInfo.data);
+                        const newWebsites = alertWebsites.data.filter(website => {
+                            return !lastAlertData.data.find(oldWebsite => oldWebsite.id.toString() === website.id.toString());
+                        });
+                        const otherWebsites = lastAlertData.data.filter(website => {
+                            return alertWebsites.data.find(oldWebsite => oldWebsite.id.toString() === website.id.toString());
+                        });
+                        let newEmailText = '';
+                        let otherEmailText = '';
+                        if (newWebsites.length) {
+                            newEmailText = `<div>The following new website(s) matches your criteria for "${alert.title}" alert: </div><ul>${newWebsites.map(website => "<li>" + website.title + "</li>").join('')}</ul>`
+                        }
+                        if (otherWebsites.length) {
+                            otherEmailText = `<div>The following website(s) matched your criteria again for "${alert.title}" alert: </div><ul>${otherWebsites.map(website => "<li>" + website.title + "</li>").join('')}</ul>`
+                        }
+                        if(newEmailText || otherEmailText) {
+                            if (newEmailText && otherEmailText) {
+                                emailSubject = `Alert: you have (${newWebsites.length}) new websites and (${otherWebsites.length}) old matching your "${alert.title}" alert criteria`;
+                            } else if (newEmailText) {
+                                emailSubject = `Alert: you have (${newWebsites.length}) new websites matching your "${alert.title}" alert criteria`;
+                            } else {
+                                emailSubject = `Alert: you have (${otherWebsites.length}) websites matched your "${alert.title}" alert criteria`;
+                            }
+                            emailText = newEmailText + otherEmailText;
+                        } else {
+                            emailSubject = `Alert: you have (${alertWebsites.count}) websites matched your "${alert.title}" alert criteria`;
+                            emailText = `<div>The following website(s) matched your criteria for "${alert.title}" alert: </div><ul>${alertWebsites.data.map(website => "<li>" + website.title + "</li>").join('')}</ul>`
+                        }
+                    } else {
+                        emailSubject = `Alert: you have (${alertWebsites.count}) new websites matching your "${alert.title}" alert criteria`;
+                        emailText = `<div>The following website(s) matches your criteria for "${alert.title}" alert: </div><ul>${alertWebsites.data.map(website => "<li>" + website.title + "</li>").join('')}</ul>`
+                    }
+
+                    const response : {
+                        errorMessages: string[];
+                        errors: any;
+                        id: string;
+                        key: string;
+                        self: string;
+                    } = await createJiraTicket(workspaceId, jiraEvent.config.jiraResource, {
+                        ...jiraEvent.config,
+                        project: jiraEvent.config.project,
+                        issuetype: jiraEvent.config.issuetype,
+                        jiraResource: undefined,
+                        currentWorkspaceId: undefined,
+                        summary: emailSubject,
+                        description: emailText,
+                    });
+
+                    console.log('response', response);
+
+                    const alertInfo = new AlertInfo({
+                        workspace: workspaceId,
+                        alert: alert._id,
+                        type: 'jira',
+                        subject: emailSubject.replaceAll('Alert: ', ''),
+                        text: emailText,
+                        data: JSON.stringify(alertWebsites),
+                        isSeen: false,
+                        isOpened: false,
+                    });
+                    await alertInfo.save();
+                }
+
+                if(slackEvent) {
+                    const lastAlertInfo = await AlertInfo.findOne({workspace: workspaceId, alert: alert._id, type: 'slack'}).sort({createdAt: -1});
+                    if (lastAlertInfo) {
+                        const lastAlertInfoDate = lastAlertInfo?.createdAt;
+                        const lastAlertInfoDateTime = lastAlertInfoDate ? dayjs(lastAlertInfoDate) : dayjs().subtract(1, 'hour');
+                        const nextAlert = lastAlertInfoDateTime.add(alert.interval, alert.intervalUnit.toLowerCase() as ManipulateType);
+                        const now = dayjs();
+                        if (!now.isAfter(nextAlert)) {
+                            continue;
+                        }
+                    }
+
+                    let emailText = '';
+                    let emailSubject = '';
+                    if (lastAlertInfo && alertWebsites.data) {
+                        const lastAlertData : {
+                            data: IWebsiteTable[];
+                            count: number;
+                            extraHeaders: { id: string, label: string }[];
+                        } = JSON.parse(lastAlertInfo.data);
+                        const newWebsites = alertWebsites.data.filter(website => {
+                            return !lastAlertData.data.find(oldWebsite => oldWebsite.id.toString() === website.id.toString());
+                        });
+                        const otherWebsites = lastAlertData.data.filter(website => {
+                            return alertWebsites.data.find(oldWebsite => oldWebsite.id.toString() === website.id.toString());
+                        });
+                        let newEmailText = '';
+                        let otherEmailText = '';
+                        if (newWebsites.length) {
+                            newEmailText = `The following new website(s) matches your criteria for "${alert.title}" alert:\n${newWebsites.map(website => " • " + website.title).join('\n')}`
+                        }
+                        if (otherWebsites.length) {
+                            otherEmailText = `The following website(s) matched your criteria again for "${alert.title}" alert:\n${otherWebsites.map(website => " • " + website.title).join('\n')}`
+                        }
+                        if(newEmailText || otherEmailText) {
+                            if (newEmailText && otherEmailText) {
+                                emailSubject = `Alert: you have (${newWebsites.length}) new websites and (${otherWebsites.length}) old matching your "${alert.title}" alert criteria`;
+                            } else if (newEmailText) {
+                                emailSubject = `Alert: you have (${newWebsites.length}) new websites matching your "${alert.title}" alert criteria`;
+                            } else {
+                                emailSubject = `Alert: you have (${otherWebsites.length}) websites matched your "${alert.title}" alert criteria`;
+                            }
+                            emailText = newEmailText + otherEmailText;
+                        } else {
+                            emailSubject = `Alert: you have (${alertWebsites.count}) websites matched your "${alert.title}" alert criteria`;
+                            emailText = `The following website(s) matched your criteria for "${alert.title}" alert:\n${alertWebsites.data.map(website => " • " + website.title).join('\n')}`
+                        }
+                    } else {
+                        emailSubject = `Alert: you have (${alertWebsites.count}) new websites matching your "${alert.title}" alert criteria`;
+                        emailText = `The following website(s) matches your criteria for "${alert.title}" alert:\n${alertWebsites.data.map(website => " • " + website.title).join('\n')}`
+                    }
+                    await sendSlackMessageChannels(workspaceId, slackEvent.config.id, `*${emailSubject}*\n${emailText}\n`);
+                    const alertInfo = new AlertInfo({
+                        workspace: workspaceId,
+                        alert: alert._id,
+                        type: 'slack',
+                        subject: emailSubject.replaceAll('Alert: ', ''),
+                        text: emailText,
+                        data: JSON.stringify(alertWebsites),
+                        isSeen: false,
+                        isOpened: false,
+                    });
+                    await alertInfo.save();
                 }
                 console.log('userIds', userIds);
                 //unique userIds

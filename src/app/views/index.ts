@@ -1,7 +1,11 @@
 import {SecurityReview} from './SecurityReview';
 import {SiteAudit} from "./SiteAudit";
-const defaultViews = [
+import {WfDiagnostic} from "@/app/views/WfDiagnostic";
+export const defaultViewsDrupal = [
     SecurityReview,
     SiteAudit
 ];
-export default defaultViews;
+export const defaultViewsWP = [
+    WfDiagnostic
+];
+export default defaultViewsDrupal;

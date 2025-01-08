@@ -10,7 +10,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import {useFormState, useFormStatus} from "react-dom";
 import {createWebsite} from "@/app/actions/websiteActions";
 import {CreateWebsiteState} from "@/app/lib/definitions";
-import {useEffect} from "react";
+import {useEffect, useActionState} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
 import {Autocomplete, Chip} from "@mui/material";
@@ -18,7 +18,7 @@ import {createFiltersViews} from "@/app/actions/filterViewsActions";
 import {createWorkspace} from "@/app/actions/workspaceActions";
 
 export default function AddWorkspaceModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {
-    const [state, action, isPending] = useFormState(createWebsite, undefined)
+    const [state, action, isPending] = useActionState(createWebsite, undefined)
     const [isSaving, setIsSaving] = useState(false);
     const [name, setName] = useState<string>('');
     const [nameError, setNameError] = useState<string>('');

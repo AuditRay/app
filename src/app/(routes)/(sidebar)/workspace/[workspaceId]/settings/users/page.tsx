@@ -61,9 +61,10 @@ function CustomNoRowsOverlay() {
     );
 }
 
-export default function UsersSettings({params}: {params: {workspaceId: string}}) {
+export default function UsersSettings({params}: {params: Promise<{workspaceId: string}>}) {
     const [user, setUser] = React.useState<IUser | null>(null);
-    const [isPersonal, setIsPersonal] = React.useState(params.workspaceId == 'personal');
+    const { workspaceId } = React.use(params);
+    const [isPersonal, setIsPersonal] = React.useState(workspaceId == 'personal');
     const [workspaceMembers, setWorkspaceMembers] = React.useState<IMemberPopulated[]>([]);
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -73,24 +74,24 @@ export default function UsersSettings({params}: {params: {workspaceId: string}})
 
     const handleOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
         //reload
-        getWorkspaceMembers(params.workspaceId).then((members) => {
+        getWorkspaceMembers(workspaceId).then((members) => {
             setWorkspaceMembers(members);
         });
         setSelectedWorkspaceMember(undefined);
         setIsOpen(isOpen);
     }
     React.useEffect(() => {
-        if(params.workspaceId == 'personal') {
+        if(workspaceId == 'personal') {
             setIsPersonal(true);
             return;
         }
         setIsLoading(true);
         setUser(sessionUser);
-        getWorkspaceMembers(params.workspaceId).then((members) => {
+        getWorkspaceMembers(workspaceId).then((members) => {
             setWorkspaceMembers(members);
             setIsLoading(false);
         });
-    }, [params.workspaceId, sessionUser]);
+    }, [workspaceId, sessionUser]);
 
     return (
         <>
@@ -190,9 +191,9 @@ export default function UsersSettings({params}: {params: {workspaceId: string}})
                         }}
                     />
 
-                    <InviteUserModal open={isOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsOpen)} workspaceId={params.workspaceId}></InviteUserModal>
-                    {selectedWorkspaceMember && isDeleteOpen && params.workspaceId != 'personal' && user && user.id !== selectedWorkspaceMember.user.id && (
-                        <DeleteUserFromWorkspaceModal open={isDeleteOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsDeleteOpen)} member={selectedWorkspaceMember} workspaceId={params.workspaceId}></DeleteUserFromWorkspaceModal>
+                    <InviteUserModal open={isOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsOpen)} workspaceId={workspaceId}></InviteUserModal>
+                    {selectedWorkspaceMember && isDeleteOpen && workspaceId != 'personal' && user && user.id !== selectedWorkspaceMember.user.id && (
+                        <DeleteUserFromWorkspaceModal open={isDeleteOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsDeleteOpen)} member={selectedWorkspaceMember} workspaceId={workspaceId}></DeleteUserFromWorkspaceModal>
                     )}
                 </>
             )}

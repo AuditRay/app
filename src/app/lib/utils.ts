@@ -36,9 +36,12 @@ export function convertHtmlToSchema(html: string): { version: number; type: stri
     function traverseDom(node: any): SchemaNode | SchemaNode[] | null {
         if (node.type === 'text') {
             return {
-                type: 'text',
-                text: node.data,
-            };
+                type: 'paragraph',
+                content: [{
+                    type: 'text',
+                    text: node.data,
+                }],
+            }
         }
 
         if (node.type === 'tag') {

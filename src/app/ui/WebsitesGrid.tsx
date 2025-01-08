@@ -10,7 +10,12 @@ import {
     GridToolbarContainer,
     GridToolbarColumnsButton,
     GridToolbarFilterButton,
-    GridToolbarExport, GridFilterModel, GridColumnVisibilityModel, GridPaginationModel, GridSortModel
+    GridToolbarExport,
+    GridFilterModel,
+    GridColumnVisibilityModel,
+    GridPaginationModel,
+    GridSortModel,
+    GridColumnHeaderTitle
 } from '@mui/x-data-grid-pro';
 import {diff} from 'deep-object-diff';
 import {IWebsite} from "@/app/models/Website";
@@ -34,6 +39,10 @@ import Link from "@/app/ui/Link";
 import Grid from '@mui/material/Grid2';
 import {BarChart, Gauge, gaugeClasses, PieChart} from "@mui/x-charts";
 import theme from "@/theme";
+import {CustomGridFilterForm} from "@/app/ui/DataGrid/CustomGridFilterForm";
+import {CustomGridFilterPanel} from "@/app/ui/DataGrid/CustomGridFilterPanel";
+import {GridFilterForm} from "@mui/x-data-grid";
+import Tooltip from "@mui/material/Tooltip";
 
 export type GridRow = {
     id: number|string;
@@ -42,6 +51,8 @@ export type GridRow = {
     siteName: string;
     type: IWebsite['type'];
     tags: string[];
+    updatedAt: string,
+    updateType: 'Auto' | 'Manual',
     components: UpdateInfo[];
     componentsNumber: number;
     componentsUpdated: UpdateInfo[];
@@ -52,23 +63,29 @@ export type GridRow = {
     componentsWithSecurityUpdatesNumber: number;
     frameWorkUpdateStatus: 'Up to Date' | 'Needs Update' | 'Security Update' | 'Revoked' | 'Unknown' | 'Not Supported';
     frameworkVersion?: tableSourceField;
-    [key: string]: string | number | string[] | IWebsite['type'] | boolean | tableSourceField | UpdateInfo[] | undefined
+    [key: string]: string | number | string[] | IWebsite['type'] | boolean | tableSourceField | UpdateInfo[] | undefined | Partial<IWebsite['uptimeMonitorInfo']>
 };
 const prepareColumnsVisibility = (headers?: { id: string, label: string}[]) => {
     const cols: { [key: string]: boolean } = {
         frameworkVersion: true,
         componentsNumber: true,
+        uptimeMonitor: true,
         componentsUpdatedNumber: true,
         componentsWithUpdatesNumber: true,
         componentsWithSecurityUpdatesNumber: true,
+        updatedAt: true,
+        updateType: true,
     }
     for (const [key, value] of Object.entries(headers || {})) {
         if(value.id === 'frameworkVersion') continue;
+        if(value.id === 'updatedAt') continue;
+        if(value.id === 'updateType') continue;
+        if(value.id === 'uptimeMonitor') continue;
         cols[value.id] = false;
     }
-    console.log('cols', cols);
     return cols;
 }
+
 
 const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string}[]): GridColDef[] => {
 
@@ -90,6 +107,59 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                     </>
                 )
             ),
+        },
+        { field: 'updateType', headerName: 'Update Type', flex: 1, minWidth: 120,
+            align: 'left',
+            headerAlign: 'left',
+            sortable: false,
+            renderCell: (params: GridRenderCellParams<GridRow, GridRow['updateType']>) => (
+                params.value && (
+                    <Tooltip title={params.row.updatedAt ? params.row.updatedAt : ''} arrow>
+                        <Chip
+                            sx={{bgcolor: params.value === 'Auto' ? 'green' : 'gray', color: 'white'}}
+                            label={params.value}
+                        />
+                    </Tooltip>
+                )
+            ),
+        },
+        {
+            field: 'uptimeMonitor',
+            headerName: 'Up Monitor',
+            flex: 1,
+            minWidth: 120,
+            sortable: false,
+            align: 'left',
+            headerAlign: 'left',
+            filterOperators: getGridStringOperators().filter((operator) => operator.value === 'contains').map((operator) => {
+                return operator;
+            }),
+            renderCell: (params: GridRenderCellParams<GridRow, GridRow['uptimeMonitor']>) => {
+                const rawData = params.row.uptimeMonitor_raw as tableSourceField;
+                console.log('rawData', rawData, params);
+                if(!rawData) {
+                    return <Chip label={'Not Enabled'} />
+                }
+                if(rawData.status === 'warning') {
+                    return <Chip label={'Not Enabled'} />
+                }
+                return (<Chip
+                    sx={{bgcolor: rawData.status === 'success' ? 'green' : rawData.status === 'warning' ? 'orange' : 'red', color: 'white'}}
+                    label={rawData.value}
+                    title={rawData.info}
+                    onClick={() => rawData.raw && viewMore(
+                        <Typography variant={'subtitle1'}>
+                            Website Up Monitor
+                        </Typography>,
+                        <Typography variant={'h3'}>
+                            <Chip
+                                sx={{bgcolor: rawData.status === 'success' ? 'green' : rawData.status === 'warning' ? 'orange' : 'red', color: 'white', mr: 2}}
+                                label={rawData.value}
+                            /> {rawData.info}
+                        </Typography>
+                    )}
+                />)
+            },
         },
         {
             field: 'tags',
@@ -257,9 +327,19 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
     const containsOperator = getGridStringOperators().find((operator) => operator.value === 'contains');
     for (const [key, value] of Object.entries(headers || {})) {
         if(value.id === 'frameworkVersion') continue;
+        if(value.id === 'uptimeMonitor') continue;
         cols.push({
             field: value.id,
             headerName: value.label,
+            renderHeader: (params) => {
+                const title = params.colDef.headerName?.includes('-') ? params.colDef.headerName?.split('-')[1].trim() : params.colDef.headerName;
+                //return <Typography variant={'subtitle1'}>{title}</Typography>
+                return <GridColumnHeaderTitle
+                    label={title || ''}
+                    description={params.colDef.description}
+                    columnWidth={params.colDef.width || 0}
+                />
+            },
             flex: 1,
             minWidth: 160,
             align: 'left',
@@ -461,7 +541,17 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
             type: 'string',
         })
     }
-    return cols;
+
+    const customOrder = ['Website Info', 'Components'];
+    return cols.sort(
+        (a, b) => {
+            const aGroup = a.headerName?.includes("-") ? a.headerName.split("-")[0].trim() : 'Website Info';
+            const bGroup = b.headerName?.includes("-") ? b.headerName.split("-")[0].trim() : 'Website Info';
+            const indexA = customOrder.indexOf(aGroup) !== -1 ? customOrder.indexOf(aGroup) : Infinity;
+            const indexB = customOrder.indexOf(bGroup) !== -1 ? customOrder.indexOf(bGroup) : Infinity;
+            return indexA - indexB;
+        },
+    );
 };
 
 function CustomNoRowsOverlay() {
@@ -547,6 +637,8 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
                 type: website.type,
                 types:  website.type ? [website.type.name, ...(website.type.subTypes.map((subType) => subType.name))] : [],
                 tags: website.tags || [],
+                updatedAt: website?.updatedAt,
+                updateType: website.updateType,
                 components: website.components,
                 componentsNumber: website.components.length,
                 componentsUpdated: website.componentsUpdated,
@@ -616,6 +708,7 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
         }
     }, [isWebsitesLoading, columnsVisibility]);
     useEffect(() => {
+        console.log('acbd123', viewId);
         if (viewId) {
             getFiltersView(viewId).then((filter) => {
                 if (filter) {
@@ -625,6 +718,7 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
                     if (filter.columns) {
                         //setColumns(filter.columns as GridColumnVisibilityModel);
                     }
+                    console.log('filtering', filter);
                     getWebsites({
                         filters: filter.filters as GridFilterModel,
                     });
@@ -742,7 +836,8 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
                 sx={{ '--DataGrid-overlayHeight': '300px' }}
                 slots={{
                     loadingOverlay: LinearProgress as GridSlots['loadingOverlay'],
-                    toolbar: CustomToolbar
+                    toolbar: CustomToolbar,
+                    filterPanel: CustomGridFilterPanel
                 }}
                 loading={isWebsitesLoading}
                 rows={websites}
@@ -757,7 +852,7 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
                     });
                 }}
                 onFilterModelChange={(model) => {
-                    console.log('model', model);
+                    if(isWebsitesLoading) return
                     setFilters(model);
                     getWebsites({
                         filters: model,
@@ -784,9 +879,9 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
                 sortingMode={'server'}
                 onSortModelChange={(model) => {
                   setSortModel(model);
-                  getWebsites({
-                      sort: model,
-                  });
+                  // getWebsites({
+                  //     sort: model,
+                  // });
                 }}
                 pagination={true}
                 paginationMode={'server'}

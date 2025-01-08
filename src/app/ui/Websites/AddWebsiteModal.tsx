@@ -17,6 +17,7 @@ import { green } from '@mui/material/colors';
 import {Autocomplete, Checkbox, Chip, FormControl, FormControlLabel, InputLabel, Select} from "@mui/material";
 import MenuItem from "@mui/material/MenuItem";
 import * as React from "react";
+import {useActionState} from "react";
 import {getFieldsTemplates} from "@/app/actions/fieldTemplateActions";
 import {IFieldsTemplate} from "@/app/models";
 import PermissionsAccessCheck from "@/app/ui/PermissionsAccessCheck";
@@ -25,9 +26,11 @@ import Grid from "@mui/material/Grid2";
 import Link from "@/app/ui/Link";
 import {userSessionState} from "@/app/lib/uiStore";
 import {getWorkspace} from "@/app/actions/workspaceActions";
+import {useParams} from "next/navigation";
 
 export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) {
-    const [state, action, isPending] = useFormState(createWebsite, undefined)
+    const [state, action, isPending] = useActionState(createWebsite, undefined)
+    const params = useParams<{ workspaceId: string; }>()
     const [open, setOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [tags, setTags] = useState<string[]>([]);
@@ -89,6 +92,9 @@ export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) 
                         setIsSaving(true);
                         e.append('tags', JSON.stringify(tags));
                         e.append('syncConfig', JSON.stringify(syncConfig));
+                        if(params.workspaceId) {
+                            e.append('workspaceId', params.workspaceId);
+                        }
                         setTimeout(() => action(e));
                     }
                 }}

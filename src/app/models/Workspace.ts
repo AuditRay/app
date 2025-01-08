@@ -1,19 +1,48 @@
-import {Model, model, models, Schema} from 'mongoose';
+import {MergeType, Model, model, models, Schema} from 'mongoose';
 import {IWebsite} from "@/app/models/Website";
 import {IUser} from "@/app/models/User";
 import {IRole} from "@/app/models/Role";
 
+export type jiraType = {
+    token?: string;
+    status?: boolean;
+    error?: string;
+    refreshToken?: string;
+    config?: {
+        hiddenFields?: string;
+    }
+}
+
+export type slackType = {
+    access_token?: string;
+    status?: boolean;
+    error?: string;
+    app_id?: string,
+    authed_user?: {
+        id?: string,
+        scope?: string,
+        access_token?: string,
+        token_type?: string
+    },
+    scope?: string;
+    token_type?: string;
+    bot_user_id?: string;
+    team?: {
+        id?: string,
+        name?: string,
+    }
+    config?: {
+        hiddenFields?: string;
+    }
+}
 export interface IWorkspace {
     id: string;
     name: string;
     owner: string | typeof Schema.Types.ObjectId;
     users: (string | typeof Schema.Types.ObjectId)[];
     timezone: string;
-    jira: {
-        status: boolean;
-        token: string;
-        refreshToken: string;
-    }
+    jira?: jiraType,
+    slack?: slackType,
     members?: {
         user: typeof Schema.Types.ObjectId | string,
         roles: (string | typeof Schema.Types.ObjectId)[];
@@ -40,6 +69,7 @@ const ModelSchema = new Schema<IWorkspace>(
         users: [{type: Schema.Types.ObjectId, ref: 'User'}],
         timezone: String,
         jira: {},
+        slack: {},
         members: [
             {
                 user: {type: Schema.Types.ObjectId, ref: 'User'},

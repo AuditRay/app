@@ -4,8 +4,8 @@ import {
     Box,
     Divider,
     FormControl,
-    Grid,
-    InputLabel,
+    Grid, IconButton,
+    InputLabel, List, ListItem,
     Select
 } from "@mui/material";
 import Typography from "@mui/material/Typography";
@@ -20,6 +20,9 @@ import MenuItem from "@mui/material/MenuItem";
 import {useState} from "react";
 import CircularProgress from "@mui/material/CircularProgress";
 import {green} from "@mui/material/colors";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import EditIcon from '@mui/icons-material/Edit';
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -69,7 +72,8 @@ function CustomNoRowsOverlay() {
     );
 }
 
-export default function Settings({params}: {params: {workspaceId: string}}) {
+export default function Settings({params}: {params: Promise<{workspaceId: string}>}) {
+    const { workspaceId } = React.use(params);
     //const [user, setUser] = React.useState<IUser | null>(null);
     //const [nameError, setNameError] = useState<string>('');
     //const [fieldsTemplates, setFieldsTemplates] = React.useState<IFieldsTemplate[]>([]);
@@ -98,7 +102,7 @@ export default function Settings({params}: {params: {workspaceId: string}}) {
         // getUser().then((user) => {
         //     setUser(user);
         // });
-        getWorkspaceFieldTemplate(params.workspaceId).then((fieldTemplate) => {
+        getWorkspaceFieldTemplate(workspaceId).then((fieldTemplate) => {
             setFieldsTemplate(fieldTemplate);
             setFields([...fieldTemplate.fields]);
         })
@@ -114,7 +118,7 @@ export default function Settings({params}: {params: {workspaceId: string}}) {
                 mb: 2,
                 display: 'flex'
             }}>
-                <Typography variant={'h1'} >Field Templates</Typography>
+                <Typography variant={'h1'} >Custom Fields</Typography>
                 {/*<Box sx={{ml: 'auto'}}>*/}
                 {/*    <Button onClick={() => setIsOpen(true)} variant={'contained'}>Add New Template</Button>*/}
                 {/*</Box>*/}
@@ -161,52 +165,26 @@ export default function Settings({params}: {params: {workspaceId: string}}) {
                                     }}
                                 >
                                     <Typography variant={'h1'} sx={{mb: 2}}>Fields List</Typography>
-                                    {fields.sort((a, b) => a.position - b.position).map((field) => (
-                                        <Box key={field.id}>
-                                            {["text", "email", "number", "date", "multiline"].includes(field.type) && (
-                                                <Box>
-                                                    <TextField
-                                                        autoFocus
-                                                        margin="dense"
-                                                        id={field.id}
-                                                        name={field.id}
-                                                        label={field.title}
-                                                        type={field.type !== 'multiline' ? field.type : 'text'}
-                                                        value={field.defaultValue || ''}
-                                                        multiline={field.type === 'multiline'}
-                                                        fullWidth
-                                                        variant="outlined"
-                                                        onClick={() => {
-                                                            console.log('idx', field.id);
-                                                            setSelectedField(field)
-                                                        }}
-                                                    />
-                                                </Box>
-                                            )}
-                                            {["select"].includes(field.type) && (
-                                                <Box sx={{ minWidth: 120 }}>
-                                                    <FormControl margin="dense" fullWidth>
-                                                        <InputLabel id="field-type-label">{field.title}</InputLabel>
-                                                        <Select
-                                                            id={field.id}
-                                                            name={field.id}
-                                                            label={field.title}
-                                                            value={field.defaultValue || ''}
-                                                            variant={'outlined'}
+                                    {fields.length > 1 && (
+                                        <List sx={{ width: '100%'}}>
+                                            {fields.sort((a, b) => a.position - b.position).map((field) => (
+                                                <ListItem
+                                                    key={field.id}
+                                                    disableGutters
+                                                    secondaryAction={
+                                                        <IconButton aria-label="Edit"
                                                             onClick={() => {
-                                                                console.log('idx', field.id);
-                                                                setSelectedField(field)
-                                                            }}
-                                                        >
-                                                            {field.options.map((option) => (
-                                                                <MenuItem key={option} value={option}>{option}</MenuItem>
-                                                            ))}
-                                                        </Select>
-                                                    </FormControl>
-                                                </Box>
-                                            )}
-                                        </Box>
-                                    ))}
+                                                                setSelectedField(field);
+                                                            }}>
+                                                            <EditIcon />
+                                                        </IconButton>
+                                                    }
+                                                >
+                                                    <ListItemText primary={field.title} />
+                                                </ListItem>
+                                            ))}
+                                        </List>
+                                    )}
                                 </Box>
                             </Grid>
                         ) : (
@@ -411,7 +389,7 @@ export default function Settings({params}: {params: {workspaceId: string}}) {
                                     }
                                     await updateFieldsTemplate(fieldsTemplate.id, {
                                         fields: fields
-                                    }, params.workspaceId);
+                                    }, workspaceId);
                                 }
                                 save().then(() => {
                                     setIsSaving(false);

@@ -1,7 +1,7 @@
 'use client'
 import { useFormStatus, useFormState } from 'react-dom'
 import { login } from '@/app/actions/auth'
-import {useEffect, useState} from "react";
+import {useEffect, useState, useActionState} from "react";
 import {Alert, Box, Card, TextField} from '@mui/material';
 import Avatar from "@mui/material/Avatar";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
@@ -24,7 +24,7 @@ export function SignupButton() {
 }
 
 export function LoginForm() {
-    const [state, action] = useFormState(login, undefined)
+    const [state, action] = useActionState(login, undefined)
     const [isReady, setIsReady] = useState(false)
 
     useEffect(() => {

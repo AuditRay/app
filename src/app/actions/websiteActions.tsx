@@ -18,6 +18,11 @@ import {ITeamPopulated, IUpdateRun, IUser, UpdateRun, User} from "@/app/models";
 import * as fs from "node:fs";
 import {GridFilterModel, GridPaginationModel, GridSortModel, GridFilterItem} from "@mui/x-data-grid-pro";
 import {filterWebsiteTable} from "@/app/lib/utils";
+import {getMonitor, getWebsiteMonitor, newMonitor, removeMonitor} from "@/app/actions/uptimeActions";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import {defaultViewsDrupal, defaultViewsWP} from "@/app/views";
+dayjs.extend(relativeTime);
 
 function setupOpenAI() {
     if (!process.env.OPENAI_API_KEY) {
@@ -276,9 +281,13 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         console.log('savedUpdateRun', savedUpdateRun);
         //check if the website url ends with a slash, if not add a slash
         const websiteUrl = website.url.endsWith('/') ? website.url : `${website.url}/`;
+        let healthUrl = `${websiteUrl}monit/health`;
+        if(website.type.name === 'WordPress') {
+            healthUrl = `${websiteUrl}wp-json/monit/v1/health`;
+        }
         // Fetch updates from the website url using fetch library on the route /monit/health,
         // try to use the website.url if it's not working then website.url/web, use post method with body as form data
-        let response = await fetch(`${websiteUrl}monit/health`, {
+        let response = await fetch(healthUrl, {
             method: 'POST',
             body: new URLSearchParams({
                 token: website.token,
@@ -291,7 +300,7 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         });
 
 
-        if (response && response.status === 404) {
+        if (response && response.status === 404 && website.type.name === "Drupal") {
             response = await fetch(`${websiteUrl}web/monit/health`, {
                 method: 'POST',
                 body: new URLSearchParams({
@@ -321,6 +330,7 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             return websiteLatestInfo?.toJSON() ?? null;
         }
 
+        console.log('data', data)
 
         const dataSources: Record<string, any> = {
             ...data
@@ -383,6 +393,7 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
                 data.available_updates.data.framework_info.available_releases
             ),
         }
+
 
         const formattedWebsiteComponentsInfo: UpdateInfo[] = data.available_updates.data.website_components.map((component: UpdateInfo) => {
             return {
@@ -489,6 +500,55 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
     if (!website) {
         return null;
     }
+    if (updateData.enableUptimeMonitor && !website.enableUptimeMonitor) {
+        const monitor = await getWebsiteMonitor(website.id);
+        if (monitor && monitor.monitors.length) {
+            website.set('enableUptimeMonitor', true);
+            const monitorData = monitor.monitors[0];
+            if(!website.uptimeMonitorInfo) {
+                website.set('uptimeMonitorInfo', {
+                    monitorId: monitorData.id,
+                    status: monitorData.status,
+                    lastChecked: new Date(),
+                })
+            } else {
+                website.uptimeMonitorInfo.monitorId = monitorData.id;
+                website.uptimeMonitorInfo.status = monitorData.status;
+                website.uptimeMonitorInfo.lastChecked = new Date();
+                website.markModified('uptimeMonitorInfo');
+            }
+        } else {
+            const monitorData = await newMonitor(website.id);
+            if (monitorData) {
+                website.set('enableUptimeMonitor', true);
+                if (!website.uptimeMonitorInfo) {
+                    website.set('uptimeMonitorInfo', {
+                        monitorId: monitorData.monitor.id,
+                        status: monitorData.monitor.status,
+                        lastChecked: new Date(),
+                    })
+                } else {
+                    website.uptimeMonitorInfo.monitorId = monitorData.monitor.id;
+                    website.uptimeMonitorInfo.status = monitorData.monitor.status;
+                    website.uptimeMonitorInfo.lastChecked = new Date();
+                    website.markModified('uptimeMonitorInfo');
+                }
+            }
+        }
+        website.markModified('uptimeMonitorInfo');
+    }
+
+    if (!updateData.enableUptimeMonitor && website.enableUptimeMonitor) {
+        await removeMonitor(website.id);
+        website.set('enableUptimeMonitor', false);
+        website.set('uptimeMonitorInfo', {
+            monitorId: '',
+            status: '',
+            lastChecked: new Date(),
+            alerts: [],
+        });
+        website.markModified('uptimeMonitorInfo');
+    }
     website.set(updateData);
     website.markModified('syncConfig');
     const updatedWebsite = await website.save();
@@ -586,16 +646,21 @@ export async function getWebsitesTable(
     if (workspaceId == "personal") {
         let user = await getUser();
         let userId = user.id;
-        websites = await Website.find({user: userId, isDeleted: {$ne: true}});
+        websites = await Website.find({
+            user: userId,
+            workspace: null,
+            isDeleted: { $ne: true }
+        });
     } else {
         websites = await Website.find({
-            workspace:workspaceId,
+            workspace: workspaceId,
             isDeleted: {$ne: true}
         });
     }
     const websitesData: IWebsiteTable[] = [];
     const extraHeaders: { id: string, label: string, type?: string }[] = [
         {id: 'frameworkVersion', label: 'Framework'},
+        {id: 'uptimeMonitor', label: 'Up Monitor'},
     ];
     const websiteInfos: Record<string, IWebsiteInfo> = {};
     for (const website of websites) {
@@ -606,8 +671,8 @@ export async function getWebsitesTable(
         }
         if (websiteInfo[0]?.websiteComponentsInfo) {
             for (const component of websiteInfo[0].websiteComponentsInfo) {
-                if (!extraHeaders.find((header) => header.id === component.name)) {
-                    extraHeaders.push({id: component.name, label: component.title, type: 'component'});
+                if (!extraHeaders.find((header) => header.id === component.name) && component.title) {
+                    extraHeaders.push({id: component.name, label: `Components - ${component.title}`, type: 'component'});
                 }
             }
         }
@@ -662,11 +727,15 @@ export async function getWebsitesTable(
             ...{
                 ...websiteObj,
                 metadata: undefined,
+                uptimeMonitorInfo: undefined,
             },
+
             siteName: websiteObj.title ? websiteObj.title : websiteObj.url,
             siteUrl: websiteObj.url,
             types: websiteObj.type ? [websiteObj.type.name, ...(websiteObj.type.subTypes.map((subType) => subType.name))] : [],
             tags: websiteObj.tags,
+            updatedAt: dayjs(websiteInfo?.updatedAt).format('MMM D, YYYY'),
+            updateType: websiteObj.syncConfig?.enabled ? 'Auto' : 'Manual',
             components,
             componentsNumber: components.length,
             componentsUpdated,
@@ -676,6 +745,35 @@ export async function getWebsitesTable(
             componentsWithSecurityUpdates,
             componentsWithSecurityUpdatesNumber: componentsWithSecurityUpdates.length,
             frameWorkUpdateStatus: status
+        }
+        if(websiteObj.enableUptimeMonitor &&  websiteObj.uptimeMonitorInfo) {
+            console.log('websiteObj.uptimeMonitorInfo', websiteObj.uptimeMonitorInfo);
+            siteData['uptimeMonitor'] = {
+                type: "status",
+                status: websiteObj.uptimeMonitorInfo.status === 2 ? 'success' : websiteObj.uptimeMonitorInfo.status === 1 ? 'error' : 'warning',
+                value: websiteObj.uptimeMonitorInfo.status === 2 ? "Up" : "Down",
+                raw: {
+                    ...websiteObj.uptimeMonitorInfo,
+                    monitorId: undefined,
+                    alerts: websiteObj.uptimeMonitorInfo.alerts?.map((alert) => {
+                        return ({
+                            ...alert,
+                            monitorID: undefined,
+                            alertType: alert.alertType === 2 ? 'Up' : 'Down',
+                        })
+                    }) || []
+                },
+                info: `last checked ${dayjs().subtract(5, 'minutes').fromNow()}`,
+                url: websiteObj.url,
+            }
+
+            console.log('siteData', siteData);
+        } else {
+            siteData["uptimeMonitor"] = {
+                type: "text",
+                status: "warning",
+                value: 'Not Enabled',
+            }
         }
         if (websiteInfo?.frameworkInfo) {
             siteData.frameworkVersion = {
@@ -751,6 +849,16 @@ export async function getWebsitesTable(
         websitesData.push(siteData);
     }
 
+    if (filters.items.length) {
+        console.log('filters.items', filters, filters.items);
+        const filteredData = websitesData.filter((website) => {
+            return filterWebsiteTable(website, filters);
+        });
+        console.log('filteredData', filteredData.length);
+        websitesData.length = 0;
+        websitesData.push(...filteredData);
+    }
+
     const statistics: WebsiteStatistics = {
         status: {
             updated: 0,
@@ -783,15 +891,7 @@ export async function getWebsitesTable(
 
     statistics.securityIndex = Math.ceil((statistics.status.withSecurityUpdates / (websitesData.length - statistics.status.updated)) * 100);
 
-    if (filters.items.length) {
-        console.log('filters.items', filters, filters.items);
-        const filteredData = websitesData.filter((website) => {
-            return filterWebsiteTable(website, filters);
-        });
-        console.log('filteredData', filteredData.length);
-        websitesData.length = 0;
-        websitesData.push(...filteredData);
-    }
+
     if(sort.length) {
         websitesData.sort((a, b) => {
             for(const sortItem of sort) {
@@ -886,6 +986,7 @@ export async function getWebsiteViews(websiteId: string): Promise<DefaultView[]>
     if (!website) return [];
     const websiteViews = await WebsiteView.find({website: websiteId});
     const websiteViewsData = websiteViews.map(websiteView => websiteView.toJSON());
+    let defaultViews = website.type.name === 'Drupal' ? defaultViewsDrupal : defaultViewsWP;
     const defaultViewsData = defaultViews.map(view => {
         const config = website.defaultViewsConfiguration?.find((defaultView) => defaultView.id === view.id);
         if (!config) return view;
@@ -921,7 +1022,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         }
     }
 
-    const {url, tags, syncConfig} = validatedFields.data
+    const {url, tags, syncConfig, workspaceId} = validatedFields.data
 
     await connectMongo();
 
@@ -948,9 +1049,22 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         tags: tags || [],
         user: user.id,
         syncConfig,
-        workspace: user.currentSelectedWorkspace
+        workspace: workspaceId ? workspaceId : null
     });
 
+    const checkWebsite = await Website.findOne({
+        url: website.url,
+        user: workspaceId ? null : user.id,
+        workspace: workspaceId ? workspaceId : null,
+        isDeleted: { $ne: true }
+    })
+    if (checkWebsite) {
+        return {
+            errors: {
+                url: ['Website already exists'],
+            },
+        }
+    }
     try {
         website = await website.save();
         const token = await createKey(website.id);

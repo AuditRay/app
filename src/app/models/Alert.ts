@@ -10,7 +10,10 @@ export type IAlert = {
     enabled: boolean;
     title: string;
     filters: any;
-    events: any;
+    events: {
+        type: string;
+        config: any;
+    }[];
 }
 
 const ModelSchema = new Schema<IAlert>(

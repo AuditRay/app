@@ -21,8 +21,8 @@ import EditWebsiteModal from "@/app/ui/Websites/EditWebsiteModal";
 import UpdateWebsiteInfoModal from "@/app/ui/Websites/UpdateWebsiteInfoModal";
 import {getWorkspaceFieldTemplate} from "@/app/actions/fieldTemplateActions";
 
-export default async function WebsitePage({ params }: { params: {  workspaceId: string, websiteId: string, viewId: string } }) {
-    const { websiteId, viewId, workspaceId } = params;
+export default async function WebsitePage({ params }: { params: Promise<{  workspaceId: string, websiteId: string, viewId: string }> }) {
+    const { websiteId, viewId, workspaceId } = await params;
     const website = await getWebsite(websiteId);
     const websiteViews = await getWebsiteViews(websiteId);
     const websiteView = websiteViews.find((view) => view.id === viewId);
@@ -143,7 +143,7 @@ export default async function WebsitePage({ params }: { params: {  workspaceId: 
                     >
                         {website && (
                             <div>
-                                <EditWebsiteModal websiteId={website.id} website={website} workspaceId={params.workspaceId}/>
+                                <EditWebsiteModal websiteId={website.id} website={website} workspaceId={workspaceId}/>
                                 <WebsiteConnectionTokenModal websiteId={website.id} website={website} />
                                 <UpdateWebsiteInfoModal websiteId={website.id}/>
                             </div>

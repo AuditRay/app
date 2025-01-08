@@ -8,8 +8,9 @@ import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AlertAccordion from "@/app/ui/Alerts/AlertAccordion";
 
-export default async function Alerts({params}: { params: { workspaceId: string } }) {
-    const alertInfos = await getAlertInfo(params.workspaceId);
+export default async function Alerts({params}: { params: Promise<{ workspaceId: string }> }) {
+    const { workspaceId } = await params;
+    const alertInfos = await getAlertInfo(workspaceId);
     return (
         <Grid item xs={12}>
             <Paper
