@@ -4,9 +4,9 @@ import {NextRequest, NextResponse} from "next/server";
 
 // initialize the installProvider
 const installer = new InstallProvider({
-    clientId: process.env.SLACK_CLIENT_ID!,
-    clientSecret: process.env.SLACK_CLIENT_SECRET!,
-    stateSecret: process.env.SLACK_STATE_SECRET,
+    clientId: process.env.SLACK_CLIENT_ID! || '',
+    clientSecret: process.env.SLACK_CLIENT_SECRET! || '',
+    stateSecret: process.env.SLACK_STATE_SECRET || '',
 });
 
 export const dynamic = 'force-dynamic';
