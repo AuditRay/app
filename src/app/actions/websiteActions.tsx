@@ -287,13 +287,15 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         }
         // Fetch updates from the website url using fetch library on the route /monit/health,
         // try to use the website.url if it's not working then website.url/web, use post method with body as form data
-        //TODO:
+        //TODO: remove body from the request
         const requestHeaders = new Headers();
         requestHeaders.append("Authorization", website.token);
         let response = await fetch(healthUrl, {
             method: 'POST',
             headers: requestHeaders,
-            body: new URLSearchParams(),
+            body: new URLSearchParams({
+                token: website.token,
+            }),
             cache: 'no-cache',
         }).catch((error) => {
             console.error('Failed to fetch updates', error);
@@ -306,7 +308,9 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             response = await fetch(`${websiteUrl}web/monit/health`, {
                 method: 'POST',
                 headers: requestHeaders,
-                body: new URLSearchParams(),
+                body: new URLSearchParams({
+                    token: website.token,
+                }),
                 cache: 'no-cache',
             }).catch((error) => {
                 console.error('Failed to fetch updates', error);
