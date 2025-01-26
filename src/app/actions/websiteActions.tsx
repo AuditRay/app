@@ -287,11 +287,13 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         }
         // Fetch updates from the website url using fetch library on the route /monit/health,
         // try to use the website.url if it's not working then website.url/web, use post method with body as form data
+        //TODO:
+        const requestHeaders = new Headers();
+        requestHeaders.append("Authorization", website.token);
         let response = await fetch(healthUrl, {
             method: 'POST',
-            body: new URLSearchParams({
-                token: website.token,
-            }),
+            headers: requestHeaders,
+            body: new URLSearchParams(),
             cache: 'no-cache',
         }).catch((error) => {
             console.error('Failed to fetch updates', error);
@@ -303,9 +305,8 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         if (response && response.status === 404 && website.type.name === "Drupal") {
             response = await fetch(`${websiteUrl}web/monit/health`, {
                 method: 'POST',
-                body: new URLSearchParams({
-                    token: website.token,
-                }),
+                headers: requestHeaders,
+                body: new URLSearchParams(),
                 cache: 'no-cache',
             }).catch((error) => {
                 console.error('Failed to fetch updates', error);
@@ -986,7 +987,7 @@ export async function getWebsiteViews(websiteId: string): Promise<DefaultView[]>
     if (!website) return [];
     const websiteViews = await WebsiteView.find({website: websiteId});
     const websiteViewsData = websiteViews.map(websiteView => websiteView.toJSON());
-    let defaultViews = website.type.name === 'Drupal' ? defaultViewsDrupal : defaultViewsWP;
+    let defaultViews = website.type?.name === 'Drupal' ? defaultViewsDrupal : website.type?.name === 'WordPress' ? defaultViewsWP : [];
     const defaultViewsData = defaultViews.map(view => {
         const config = website.defaultViewsConfiguration?.find((defaultView) => defaultView.id === view.id);
         if (!config) return view;
