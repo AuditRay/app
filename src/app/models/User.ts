@@ -13,6 +13,16 @@ export interface IUser {
     workspaces?: IWorkspace[];
     roles?: IRole[];
 }
+
+export interface IUserInternal {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    currentSelectedWorkspace?: string | typeof Schema.Types.ObjectId;
+    workspaces?: IWorkspace[];
+    roles?: IRole[];
+}
 const ModelSchema = new Schema<IUser>(
     {
         firstName: String,

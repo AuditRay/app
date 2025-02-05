@@ -11,21 +11,22 @@ import {getWebsitesListing} from "@/app/actions/websiteActions";
 import {useEffect} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {Autocomplete, Divider, IconButton} from "@mui/material";
+import {Autocomplete, Divider, FormControl, IconButton, InputLabel, Select} from "@mui/material";
 import {getWorkspaceUsers} from "@/app/actions/workspaceActions";
 import {createTeam} from "@/app/actions/teamActions";
-import {IRole, IUser, IWebsite} from "@/app/models";
+import {IRole, IUser, IUserInternal, IWebsite} from "@/app/models";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid2";
 import {getWorkspaceTeamRoles} from "@/app/actions/rolesActions";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import {userSessionState} from "@/app/lib/uiStore";
+import MenuItem from "@mui/material/MenuItem";
 
 export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
     const [ownerUser, setOwnerUser] = useState<IUser>();
-    const [workspaceUsers, setWorkspaceUsers] = useState<IUser[]>([]);
+    const [workspaceUsers, setWorkspaceUsers] = useState<IUserInternal[]>([]);
     const [workspaceRoles, setWorkspaceRoles] = useState<IRole[]>([]);
     const [workspaceWebsites, setWorkspaceWebsites] = useState<IWebsite[]>([]);
     const sessionUser = userSessionState((state) => state.user);
@@ -53,8 +54,16 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
     });
     const [generalError, setGeneralError] = useState<string>('');
     const handleClose = () => {
-        setNewTeamErrorData({});
-        setNewTeamData({});
+        setNewTeamErrorData({
+            name: '',
+            members: '',
+            websites: ''
+        });
+        setNewTeamData({
+            name: '',
+            members: [],
+            websites: []
+        });
         setOpen(false);
     }
 
@@ -63,7 +72,6 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
             if(!sessionUser) return;
             const users = await getWorkspaceUsers(workspaceId);
             const websites = await getWebsitesListing(workspaceId);
-            const roles = await getWorkspaceTeamRoles(workspaceId);
             setOwnerUser(sessionUser);
             setWorkspaceRoles([
                 {
@@ -72,7 +80,18 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                     workspace: '',
                     isWorkspace: false
                 },
-                ...roles
+                {
+                    id: 'team_admin', name: 'Team Admin', permissions: {},
+                    overrideId: '',
+                    workspace: workspaceId,
+                    isWorkspace: false
+                },
+                {
+                    id: 'team_member', name: 'Team Member', permissions: {},
+                    overrideId: '',
+                    workspace: workspaceId,
+                    isWorkspace: false
+                },
             ]);
             setWorkspaceUsers(users);
             setWorkspaceWebsites(websites);
@@ -160,7 +179,6 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                                         if(!value) {
                                             const newMembers = [...newTeamData.members || []];
                                             newMembers.splice(index, 1);
-                                            console.log('newMembers', newMembers);
                                             setNewTeamData({
                                                 ...newTeamData,
                                                 members: newMembers
@@ -173,7 +191,7 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                                                 members: ''
                                             })
                                         }
-                                        const newMembers = [...newTeamData.members || []];
+                                        const newMembers = [...(newTeamData.members || [])];
                                         newMembers[index] = {
                                             ...newMembers[index],
                                             user: value.id
@@ -183,9 +201,9 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                                             members: newMembers
                                         });
                                     }}
-                                    isOptionEqualToValue={(option, value) => !!workspaceUsers.find((user) => user.id == option.id)}
-                                    value={workspaceUsers.find((user) => user.id == member.user)}
-                                    getOptionLabel={(option) => `${option.firstName} ${option.lastName} <${option.email}>`}
+                                    isOptionEqualToValue={(option, value) => value.id === option.id}
+                                    value={workspaceUsers.find((user) => user.id == member.user) || {id: '', firstName: '', lastName: '', email: ''}}
+                                    getOptionLabel={(option) => option.id ? `${option.firstName} ${option.lastName} <${option.email}>` : ''}
                                     renderOption={(props, option, { selected }) => (
                                         <li  {...props} key={`user-${option.email}`} >
                                             <Box>
@@ -198,30 +216,34 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                                 />
                             </Grid>
                             <Grid size={5}>
-                                <Autocomplete
-                                    disablePortal
-                                    fullWidth
-                                    options={workspaceRoles}
-                                    onChange={(e, value) => {
-                                        if(!value) {
-                                            //set default role
-                                            value = workspaceRoles[1];
-                                        }
-                                        const newMembers = [...newTeamData.members || []];
-                                        newMembers[index] = {
-                                            ...newMembers[index],
-                                            role: value.id
-                                        }
-                                        setNewTeamData({
-                                            ...newTeamData,
-                                            members: newMembers
-                                        });
-                                    }}
-                                    value={workspaceRoles.find((role) => role.id == member.role)}
-                                    getOptionLabel={(option) => option.name}
-                                    defaultValue={workspaceRoles[1]}
-                                    renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="Role" />}
-                                />
+                                <FormControl fullWidth margin={"dense"}>
+                                    <InputLabel>
+                                        Role
+                                    </InputLabel>
+                                    <Select
+                                        value={workspaceRoles.find((role) => role.id == member.role)?.id}
+                                        label="Role"
+                                        onChange={(e) => {
+                                            let value = e.target.value;
+                                            if(!value) {
+                                                //set default role
+                                                value = 'team_admin';
+                                            }
+                                            const newMembers = [...newTeamData.members || []];
+                                            newMembers[index] = {
+                                                ...newMembers[index],
+                                                role: value
+                                            }
+                                            setNewTeamData({
+                                                ...newTeamData,
+                                                members: newMembers
+                                            });
+                                        }}
+                                    >
+                                        <MenuItem value={'team_admin'}>Team Admin</MenuItem>
+                                        <MenuItem value={'team_member'}>Team Member</MenuItem>
+                                    </Select>
+                                </FormControl>
                             </Grid>
                             <Grid size={1}>
                                 <IconButton sx={{

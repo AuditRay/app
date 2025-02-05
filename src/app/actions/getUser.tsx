@@ -25,12 +25,9 @@ export async function getUser(fullUser = false) {
                     if (memberRole == "default_admin"){
                         const roleData = await AdminRole(workspace.id);
                         roles.push(roleData);
-                    } else if (memberRole == "default_member"){
+                    } else {
                         const roleData = await MemberRole(workspace.id);
                         roles.push(roleData);
-                    } else {
-                        const roleData = await Role.findOne({_id: memberRole});
-                        roleData && roles.push(roleData);
                     }
                 }
             }

@@ -506,6 +506,8 @@ export async function getWorkspaceMembers(workspaceId: string): Promise<IMemberP
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
     }
     const workspace = await Workspace.findOne({_id: workspaceId});
+    const roleData = await getWorkspaceRoles(workspaceId);
+    const defaultMemberRole = roleData.find(role => role.id === 'default_member');
     if (workspace && workspace.members) {
         const workspaceOwner = (await User.findOne({_id: workspace.owner}))?.toJSON() || user;
         const members: IWorkspacePopulated['members'] = [{
@@ -524,10 +526,11 @@ export async function getWorkspaceMembers(workspaceId: string): Promise<IMemberP
             let roles: IRole[] = [];
             if(member.roles) {
                 for (const role of member.roles) {
-                    const roleData = await getWorkspaceRoles(workspaceId);
                     const roleObj = roleData.find(r => r.id === role);
                     if(roleObj) {
                         roles.push(roleObj);
+                    } else if (defaultMemberRole) {
+                        roles.push(defaultMemberRole)
                     }
                 }
             }

@@ -158,16 +158,6 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
                         )}
                     />
                     <Box>
-                        <Typography variant={'subtitle2'} sx={{mt:2}}>Uptime Monitor</Typography>
-                    </Box>
-                    <Grid container spacing={2}>
-                        <Grid size={12}>
-                            <FormGroup>
-                                <FormControlLabel control={<Switch checked={enableUptime} onChange={(e) => setEnableUptime(e.target.checked)} />} label="Enable uptime monitor" />
-                            </FormGroup>
-                        </Grid>
-                    </Grid>
-                    <Box>
                         <Typography variant={'subtitle2'} sx={{mt:2}}>Sync configuration</Typography>
                     </Box>
                     <Grid container spacing={2}>
@@ -179,24 +169,7 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
                         </Grid>
                         {enableSync && (
                             <>
-                                <Grid size={6}>
-                                    <TextField
-                                        margin="dense"
-                                        fullWidth={true}
-                                        disabled={isSaving}
-                                        error={!!tagsError}
-                                        helperText={tagsError}
-                                        value={syncInterval}
-                                        onChange={(e) => {
-                                            setSyncInterval(parseInt(e.target.value) > 0 ? parseInt(e.target.value) : 1);
-                                        }}
-                                        variant="outlined"
-                                        label="Sync Interval"
-                                        placeholder="Sync Interval"
-                                        type={'number'}
-                                    />
-                                </Grid>
-                                <Grid size={6}>
+                                <Grid size={12}>
                                     <FormControl margin="dense" fullWidth>
                                         <InputLabel id="interval-unit-select-label">Interval Unit</InputLabel>
                                         <Select
@@ -214,9 +187,9 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
                                                 }
                                             }}
                                         >
-                                            <MenuItem value={'Hour'}>Hour</MenuItem>
-                                            <MenuItem value={'Day'}>Day</MenuItem>
-                                            <MenuItem value={'Week'}>Week</MenuItem>
+                                            {/*<MenuItem value={'Hour'}>Hour</MenuItem>*/}
+                                            <MenuItem value={'Day'}>Daily</MenuItem>
+                                            <MenuItem value={'Week'}>Weekly</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
@@ -289,7 +262,7 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
                                 async function save() {
                                     await updateWebsite(websiteId, {
                                         tags,
-                                        enableUptimeMonitor: enableUptime,
+                                        enableUptimeMonitor: false,
                                         syncConfig: {
                                             enabled: enableSync,
                                             syncInterval,

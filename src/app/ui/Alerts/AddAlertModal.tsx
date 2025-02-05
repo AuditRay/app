@@ -19,7 +19,7 @@ import {
     LinearProgress,
     Select
 } from "@mui/material";
-import {IAlert, IUser, IWorkspace} from "@/app/models";
+import {IAlert, IUser, IUserInternal, IWorkspace} from "@/app/models";
 import {userSessionState} from "@/app/lib/uiStore";
 import {createAlert} from "@/app/actions/alertsActions";
 import Grid from "@mui/material/Grid2";
@@ -36,7 +36,7 @@ import {getSlackChannels} from "@/app/actions/integrations/slackActions";
 import {Channel} from "@slack/web-api/dist/types/response/ConversationsListResponse";
 import {channel} from "node:diagnostics_channel";
 import JiraTicketConfig from "@/app/ui/Alerts/JiraTicketConfig";
-export type notificationUserOptionsType = { id: string, label: string, type: 'user' | 'team', members: IUser[] };
+export type notificationUserOptionsType = { id: string, label: string, type: 'user' | 'team', members: IUserInternal[] };
 export default function AddAlertModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
 
@@ -67,7 +67,6 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
             } else {
                 setIsSlackChannelsLoading(false);
             }
-            console.log('teams', teams);
             const options: notificationUserOptionsType[] = [];
             for(const user of users) {
                 options.push({
@@ -181,24 +180,24 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
                     fullWidth
                     variant="outlined"
                 />
-                <Grid size={6}>
-                    <TextField
-                        margin="dense"
-                        fullWidth={true}
-                        disabled={isSaving}
-                        value={newAlertData.interval}
-                        onChange={(e) => {
-                            setNewAlertData({...newAlertData, interval: parseInt(e.target.value)});
-                        }}
-                        variant="outlined"
-                        label="Alert Interval"
-                        id="alert-interval"
-                        name="alert-interval"
-                        placeholder="Alert Interval"
-                        type={'number'}
-                    />
-                </Grid>
-                <Grid size={6}>
+                {/*<Grid size={6}>*/}
+                {/*    <TextField*/}
+                {/*        margin="dense"*/}
+                {/*        fullWidth={true}*/}
+                {/*        disabled={isSaving}*/}
+                {/*        value={newAlertData.interval}*/}
+                {/*        onChange={(e) => {*/}
+                {/*            setNewAlertData({...newAlertData, interval: parseInt(e.target.value)});*/}
+                {/*        }}*/}
+                {/*        variant="outlined"*/}
+                {/*        label="Alert Interval"*/}
+                {/*        id="alert-interval"*/}
+                {/*        name="alert-interval"*/}
+                {/*        placeholder="Alert Interval"*/}
+                {/*        type={'number'}*/}
+                {/*    />*/}
+                {/*</Grid>*/}
+                <Grid size={12}>
                     <FormControl margin="dense" fullWidth>
                         <InputLabel id="interval-unit-select-label">Interval Unit</InputLabel>
                         <Select
@@ -212,9 +211,9 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
                                 setNewAlertData({...newAlertData, intervalUnit: e.target.value});
                             }}
                         >
-                            <MenuItem value={'Hour'}>Hour</MenuItem>
-                            <MenuItem value={'Day'}>Day</MenuItem>
-                            <MenuItem value={'Week'}>Week</MenuItem>
+                            {/*<MenuItem value={'Hour'}>Hour</MenuItem>*/}
+                            <MenuItem value={'Day'}>Daily</MenuItem>
+                            <MenuItem value={'Week'}>Weekly</MenuItem>
                         </Select>
                     </FormControl>
                 </Grid>

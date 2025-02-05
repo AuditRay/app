@@ -29,7 +29,7 @@ export default function Dashboard() {
           barChart: [],
           securityIndex: 0,
         };
-        workspaceData.securityIndex = workspaceData.statistics.securityIndex;
+        workspaceData.securityIndex = isNaN(workspaceData.statistics.securityIndex) ? 0 : workspaceData.statistics.securityIndex;
         const pieChart: {id: number, value: number, label: string}[] = [];
         for (const pieChartKey in workspaceData.statistics.frameworkVersions) {
           pieChart.push({

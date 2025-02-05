@@ -75,12 +75,6 @@ export default function SettingsLayout({children, params}: {
                             </ListItemIcon>
                             <ListItemText primary="Teams"/>
                         </ListItemButton>
-                        <ListItemButton selected={pathname === `/workspace/${workspaceId}/settings/roles`} disabled={!user} onClick={() => user && router.push(`/workspace/${workspaceId}/settings/roles`)}>
-                            <ListItemIcon>
-                                <KeyIcon sx={{marginLeft: '6px'}}/>
-                            </ListItemIcon>
-                            <ListItemText primary="Roles"/>
-                        </ListItemButton>
                     </List>
                 </Paper>
             </Grid>

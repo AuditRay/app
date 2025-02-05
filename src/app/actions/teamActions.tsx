@@ -61,11 +61,7 @@ export async function getTeams(workspaceId: string): Promise<ITeamPopulated[]> {
             {
                 path:  'user',
                 model: 'User'
-            },
-            {
-                path:  'role',
-                model: 'Role'
-            },
+            }
         ]
     }).populate<{
         members: {

@@ -505,55 +505,55 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
     if (!website) {
         return null;
     }
-    if (updateData.enableUptimeMonitor && !website.enableUptimeMonitor) {
-        const monitor = await getWebsiteMonitor(website.id);
-        if (monitor && monitor.monitors.length) {
-            website.set('enableUptimeMonitor', true);
-            const monitorData = monitor.monitors[0];
-            if(!website.uptimeMonitorInfo) {
-                website.set('uptimeMonitorInfo', {
-                    monitorId: monitorData.id,
-                    status: monitorData.status,
-                    lastChecked: new Date(),
-                })
-            } else {
-                website.uptimeMonitorInfo.monitorId = monitorData.id;
-                website.uptimeMonitorInfo.status = monitorData.status;
-                website.uptimeMonitorInfo.lastChecked = new Date();
-                website.markModified('uptimeMonitorInfo');
-            }
-        } else {
-            const monitorData = await newMonitor(website.id);
-            if (monitorData) {
-                website.set('enableUptimeMonitor', true);
-                if (!website.uptimeMonitorInfo) {
-                    website.set('uptimeMonitorInfo', {
-                        monitorId: monitorData.monitor.id,
-                        status: monitorData.monitor.status,
-                        lastChecked: new Date(),
-                    })
-                } else {
-                    website.uptimeMonitorInfo.monitorId = monitorData.monitor.id;
-                    website.uptimeMonitorInfo.status = monitorData.monitor.status;
-                    website.uptimeMonitorInfo.lastChecked = new Date();
-                    website.markModified('uptimeMonitorInfo');
-                }
-            }
-        }
-        website.markModified('uptimeMonitorInfo');
-    }
+    // if (updateData.enableUptimeMonitor && !website.enableUptimeMonitor) {
+    //     const monitor = await getWebsiteMonitor(website.id);
+    //     if (monitor && monitor.monitors.length) {
+    //         website.set('enableUptimeMonitor', true);
+    //         const monitorData = monitor.monitors[0];
+    //         if(!website.uptimeMonitorInfo) {
+    //             website.set('uptimeMonitorInfo', {
+    //                 monitorId: monitorData.id,
+    //                 status: monitorData.status,
+    //                 lastChecked: new Date(),
+    //             })
+    //         } else {
+    //             website.uptimeMonitorInfo.monitorId = monitorData.id;
+    //             website.uptimeMonitorInfo.status = monitorData.status;
+    //             website.uptimeMonitorInfo.lastChecked = new Date();
+    //             website.markModified('uptimeMonitorInfo');
+    //         }
+    //     } else {
+    //         const monitorData = await newMonitor(website.id);
+    //         if (monitorData) {
+    //             website.set('enableUptimeMonitor', true);
+    //             if (!website.uptimeMonitorInfo) {
+    //                 website.set('uptimeMonitorInfo', {
+    //                     monitorId: monitorData.monitor.id,
+    //                     status: monitorData.monitor.status,
+    //                     lastChecked: new Date(),
+    //                 })
+    //             } else {
+    //                 website.uptimeMonitorInfo.monitorId = monitorData.monitor.id;
+    //                 website.uptimeMonitorInfo.status = monitorData.monitor.status;
+    //                 website.uptimeMonitorInfo.lastChecked = new Date();
+    //                 website.markModified('uptimeMonitorInfo');
+    //             }
+    //         }
+    //     }
+    //     website.markModified('uptimeMonitorInfo');
+    // }
 
-    if (!updateData.enableUptimeMonitor && website.enableUptimeMonitor) {
-        await removeMonitor(website.id);
-        website.set('enableUptimeMonitor', false);
-        website.set('uptimeMonitorInfo', {
-            monitorId: '',
-            status: '',
-            lastChecked: new Date(),
-            alerts: [],
-        });
-        website.markModified('uptimeMonitorInfo');
-    }
+    // if (!updateData.enableUptimeMonitor && website.enableUptimeMonitor) {
+    //     await removeMonitor(website.id);
+    //     website.set('enableUptimeMonitor', false);
+    //     website.set('uptimeMonitorInfo', {
+    //         monitorId: '',
+    //         status: '',
+    //         lastChecked: new Date(),
+    //         alerts: [],
+    //     });
+    //     website.markModified('uptimeMonitorInfo');
+    // }
     website.set(updateData);
     website.markModified('syncConfig');
     const updatedWebsite = await website.save();
@@ -751,35 +751,33 @@ export async function getWebsitesTable(
             componentsWithSecurityUpdatesNumber: componentsWithSecurityUpdates.length,
             frameWorkUpdateStatus: status
         }
-        if(websiteObj.enableUptimeMonitor &&  websiteObj.uptimeMonitorInfo) {
-            console.log('websiteObj.uptimeMonitorInfo', websiteObj.uptimeMonitorInfo);
-            siteData['uptimeMonitor'] = {
-                type: "status",
-                status: websiteObj.uptimeMonitorInfo.status === 2 ? 'success' : websiteObj.uptimeMonitorInfo.status === 1 ? 'error' : 'warning',
-                value: websiteObj.uptimeMonitorInfo.status === 2 ? "Up" : "Down",
-                raw: {
-                    ...websiteObj.uptimeMonitorInfo,
-                    monitorId: undefined,
-                    alerts: websiteObj.uptimeMonitorInfo.alerts?.map((alert) => {
-                        return ({
-                            ...alert,
-                            monitorID: undefined,
-                            alertType: alert.alertType === 2 ? 'Up' : 'Down',
-                        })
-                    }) || []
-                },
-                info: `last checked ${dayjs().subtract(5, 'minutes').fromNow()}`,
-                url: websiteObj.url,
-            }
-
-            console.log('siteData', siteData);
-        } else {
-            siteData["uptimeMonitor"] = {
-                type: "text",
-                status: "warning",
-                value: 'Not Enabled',
-            }
-        }
+        // Not using uptime monitor for now
+        // if(websiteObj.enableUptimeMonitor &&  websiteObj.uptimeMonitorInfo) {
+        //     siteData['uptimeMonitor'] = {
+        //         type: "status",
+        //         status: websiteObj.uptimeMonitorInfo.status === 2 ? 'success' : websiteObj.uptimeMonitorInfo.status === 1 ? 'error' : 'warning',
+        //         value: websiteObj.uptimeMonitorInfo.status === 2 ? "Up" : "Down",
+        //         raw: {
+        //             ...websiteObj.uptimeMonitorInfo,
+        //             monitorId: undefined,
+        //             alerts: websiteObj.uptimeMonitorInfo.alerts?.map((alert) => {
+        //                 return ({
+        //                     ...alert,
+        //                     monitorID: undefined,
+        //                     alertType: alert.alertType === 2 ? 'Up' : 'Down',
+        //                 })
+        //             }) || []
+        //         },
+        //         info: `last checked ${dayjs().subtract(5, 'minutes').fromNow()}`,
+        //         url: websiteObj.url,
+        //     }
+        // } else {
+        //     siteData["uptimeMonitor"] = {
+        //         type: "text",
+        //         status: "warning",
+        //         value: 'Not Enabled',
+        //     }
+        // }
         if (websiteInfo?.frameworkInfo) {
             siteData.frameworkVersion = {
                 type: "version",
@@ -855,11 +853,9 @@ export async function getWebsitesTable(
     }
 
     if (filters.items.length) {
-        console.log('filters.items', filters, filters.items);
         const filteredData = websitesData.filter((website) => {
             return filterWebsiteTable(website, filters);
         });
-        console.log('filteredData', filteredData.length);
         websitesData.length = 0;
         websitesData.push(...filteredData);
     }

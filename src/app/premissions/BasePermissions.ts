@@ -236,57 +236,58 @@ export type Permissions = Record<PermissionsKeys, PermissionsValue>;
 export const buildWorkspaceBasePermissions = async (workspaceId: string): Promise<Permissions> => {
     //load website view & filter names
     const permissions: Permissions = JSON.parse(JSON.stringify(BasePermissions));
-    const websites = await getWebsitesListing(workspaceId);
-    const viewsFilter = await getFiltersViews(workspaceId);
-    for (const filter of viewsFilter) {
-        permissions[`View Filters View ${filter.title}`] = {
-            id: `View Filters View ${filter.title}`,
-            default: false,
-            description: 'View filters view',
-            icon: 'view_list',
-            group: 'Filters'
-        };
-        permissions[`Edit Filters View ${filter.title}`] = {
-            id: `Edit Filters View ${filter.title}`,
-            default: false,
-            description: 'Edit filters view',
-            icon: 'edit',
-            group: 'Filters'
-        };
-        permissions[`Delete Filters View ${filter.title}`] = {
-            id: `Delete Filters View ${filter.title}`,
-            default: false,
-            description: 'Delete filters view',
-            icon: 'delete',
-            group: 'Filters'
-        };
-    }
-    for (const website of websites) {
-        const views = await getWebsiteViewsListing(website.id);
-        for (const view of views) {
-            permissions[`View Website View ${website.url} ${view.title}`] = {
-                id: `View Website View ${website.url} ${view.title}`,
-                default: false,
-                description: 'View website view',
-                icon: 'view_list',
-                group: 'Website Views'
-            };
-            permissions[`Edit Website View ${website.url} ${view.title}`] = {
-                id: `Edit Website View ${website.url} ${view.title}`,
-                default: false,
-                description: 'Edit website view',
-                icon: 'edit',
-                group: 'Website Views'
-            };
-            permissions[`Delete Website View ${website.url} ${view.title}`] = {
-                id: `Delete Website View ${website.url} ${view.title}`,
-                default: false,
-                description: 'Delete website view',
-                icon: 'delete',
-                group: 'Website Views'
-            };
-        }
-    }
+    // Commented out as we don't need this for now
+    // const websites = await getWebsitesListing(workspaceId);
+    // const viewsFilter = await getFiltersViews(workspaceId);
+    // for (const filter of viewsFilter) {
+    //     permissions[`View Filters View ${filter.title}`] = {
+    //         id: `View Filters View ${filter.title}`,
+    //         default: false,
+    //         description: 'View filters view',
+    //         icon: 'view_list',
+    //         group: 'Filters'
+    //     };
+    //     permissions[`Edit Filters View ${filter.title}`] = {
+    //         id: `Edit Filters View ${filter.title}`,
+    //         default: false,
+    //         description: 'Edit filters view',
+    //         icon: 'edit',
+    //         group: 'Filters'
+    //     };
+    //     permissions[`Delete Filters View ${filter.title}`] = {
+    //         id: `Delete Filters View ${filter.title}`,
+    //         default: false,
+    //         description: 'Delete filters view',
+    //         icon: 'delete',
+    //         group: 'Filters'
+    //     };
+    // }
+    // for (const website of websites) {
+    //     const views = await getWebsiteViewsListing(website.id);
+    //     for (const view of views) {
+    //         permissions[`View Website View ${website.url} ${view.title}`] = {
+    //             id: `View Website View ${website.url} ${view.title}`,
+    //             default: false,
+    //             description: 'View website view',
+    //             icon: 'view_list',
+    //             group: 'Website Views'
+    //         };
+    //         permissions[`Edit Website View ${website.url} ${view.title}`] = {
+    //             id: `Edit Website View ${website.url} ${view.title}`,
+    //             default: false,
+    //             description: 'Edit website view',
+    //             icon: 'edit',
+    //             group: 'Website Views'
+    //         };
+    //         permissions[`Delete Website View ${website.url} ${view.title}`] = {
+    //             id: `Delete Website View ${website.url} ${view.title}`,
+    //             default: false,
+    //             description: 'Delete website view',
+    //             icon: 'delete',
+    //             group: 'Website Views'
+    //         };
+    //     }
+    // }
 
     return {
         ...permissions,

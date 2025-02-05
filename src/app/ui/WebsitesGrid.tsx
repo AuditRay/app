@@ -69,7 +69,6 @@ const prepareColumnsVisibility = (headers?: { id: string, label: string}[]) => {
     const cols: { [key: string]: boolean } = {
         frameworkVersion: true,
         componentsNumber: true,
-        uptimeMonitor: true,
         componentsUpdatedNumber: true,
         componentsWithUpdatesNumber: true,
         componentsWithSecurityUpdatesNumber: true,
@@ -80,7 +79,6 @@ const prepareColumnsVisibility = (headers?: { id: string, label: string}[]) => {
         if(value.id === 'frameworkVersion') continue;
         if(value.id === 'updatedAt') continue;
         if(value.id === 'updateType') continue;
-        if(value.id === 'uptimeMonitor') continue;
         cols[value.id] = false;
     }
     return cols;
@@ -123,44 +121,44 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                 )
             ),
         },
-        {
-            field: 'uptimeMonitor',
-            headerName: 'Up Monitor',
-            flex: 1,
-            minWidth: 120,
-            sortable: false,
-            align: 'left',
-            headerAlign: 'left',
-            filterOperators: getGridStringOperators().filter((operator) => operator.value === 'contains').map((operator) => {
-                return operator;
-            }),
-            renderCell: (params: GridRenderCellParams<GridRow, GridRow['uptimeMonitor']>) => {
-                const rawData = params.row.uptimeMonitor_raw as tableSourceField;
-                console.log('rawData', rawData, params);
-                if(!rawData) {
-                    return <Chip label={'Not Enabled'} />
-                }
-                if(rawData.status === 'warning') {
-                    return <Chip label={'Not Enabled'} />
-                }
-                return (<Chip
-                    sx={{bgcolor: rawData.status === 'success' ? 'green' : rawData.status === 'warning' ? 'orange' : 'red', color: 'white'}}
-                    label={rawData.value}
-                    title={rawData.info}
-                    onClick={() => rawData.raw && viewMore(
-                        <Typography variant={'subtitle1'}>
-                            Website Up Monitor
-                        </Typography>,
-                        <Typography variant={'h3'}>
-                            <Chip
-                                sx={{bgcolor: rawData.status === 'success' ? 'green' : rawData.status === 'warning' ? 'orange' : 'red', color: 'white', mr: 2}}
-                                label={rawData.value}
-                            /> {rawData.info}
-                        </Typography>
-                    )}
-                />)
-            },
-        },
+        // {
+        //     field: 'uptimeMonitor',
+        //     headerName: 'Up Monitor',
+        //     flex: 1,
+        //     minWidth: 120,
+        //     sortable: false,
+        //     align: 'left',
+        //     headerAlign: 'left',
+        //     filterOperators: getGridStringOperators().filter((operator) => operator.value === 'contains').map((operator) => {
+        //         return operator;
+        //     }),
+        //     renderCell: (params: GridRenderCellParams<GridRow, GridRow['uptimeMonitor']>) => {
+        //         const rawData = params.row.uptimeMonitor_raw as tableSourceField;
+        //         console.log('rawData', rawData, params);
+        //         if(!rawData) {
+        //             return <Chip label={'Not Enabled'} />
+        //         }
+        //         if(rawData.status === 'warning') {
+        //             return <Chip label={'Not Enabled'} />
+        //         }
+        //         return (<Chip
+        //             sx={{bgcolor: rawData.status === 'success' ? 'green' : rawData.status === 'warning' ? 'orange' : 'red', color: 'white'}}
+        //             label={rawData.value}
+        //             title={rawData.info}
+        //             onClick={() => rawData.raw && viewMore(
+        //                 <Typography variant={'subtitle1'}>
+        //                     Website Up Monitor
+        //                 </Typography>,
+        //                 <Typography variant={'h3'}>
+        //                     <Chip
+        //                         sx={{bgcolor: rawData.status === 'success' ? 'green' : rawData.status === 'warning' ? 'orange' : 'red', color: 'white', mr: 2}}
+        //                         label={rawData.value}
+        //                     /> {rawData.info}
+        //                 </Typography>
+        //             )}
+        //         />)
+        //     },
+        // },
         {
             field: 'tags',
             headerName: 'Tags',
@@ -808,7 +806,7 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
                         }}
                     >
                         <Gauge
-                            value={securityIndex}
+                            value={securityIndex && isNaN(securityIndex) ? 0 : securityIndex}
                             startAngle={-110}
                             endAngle={110}
                             cornerRadius="50%"

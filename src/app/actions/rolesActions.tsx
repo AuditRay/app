@@ -77,16 +77,15 @@ export async function getWorkspaceRoles(workspaceId: string): Promise<IRole[]> {
     if(!workspace) {
         throw new Error('Workspace not found');
     }
-    let roles = await Role.find({workspace: workspace._id, isWorkspace: true});
+    //let roles = await Role.find({workspace: workspace._id, isWorkspace: true});
     const adminRole = await AdminRole(workspace._id.toString());
     const memberRole = await MemberRole(workspace._id.toString());
-    const memberOverride = roles.find((role) => role.overrideId == 'default_member');
-    memberRole.permissions = memberOverride?.permissions || memberRole.permissions;
-    roles = roles.filter((role) => role.overrideId != 'default_member');
+    // const memberOverride = roles.find((role) => role.overrideId == 'default_member');
+    // memberRole.permissions = memberOverride?.permissions || memberRole.permissions;
+    // roles = roles.filter((role) => role.overrideId != 'default_member');
     return [
         adminRole,
-        memberRole,
-        ...roles.map(role => role.toJSON())
+        memberRole
     ];
 }
 

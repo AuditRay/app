@@ -13,15 +13,35 @@ import {CreateWebsiteState} from "@/app/lib/definitions";
 import {useEffect} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {Autocomplete, Chip} from "@mui/material";
+import {Autocomplete, Chip, FormControl, InputLabel, NativeSelect, Select} from "@mui/material";
 import {createFiltersViews} from "@/app/actions/filterViewsActions";
 import {createWorkspace, inviteWorkspaceUser} from "@/app/actions/workspaceActions";
 import {IRole} from "@/app/models";
 import {getWorkspaceAllRoles, getWorkspaceRoles} from "@/app/actions/rolesActions";
+import MenuItem from "@mui/material/MenuItem";
 
 export default function InviteUserModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
-    const [workspaceRoles, setWorkspaceRoles] = useState<IRole[]>([]);
+    const [workspaceRoles, setWorkspaceRoles] = useState<IRole[]>([
+        {
+            overrideId: 'default_admin',
+            id: 'default_admin',
+            name: 'Admin',
+            workspace: '',
+            isWorkspace: true,
+            permissions: {},
+            isDefault: true
+        },
+        {
+            id: 'default_member',
+            name: 'Member',
+            permissions: {},
+            isDefault: true,
+            isWorkspace: true,
+            overrideId: 'default_member',
+            workspace: ''
+        }
+    ]);
     const [newUserData, setNewUserData] = useState<{
         firstName?: string;
         lastName?: string;
@@ -55,13 +75,13 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
         setOpen(false);
     }
 
-    useEffect(() => {
-        const fetchRoles = async () => {
-            const roles = await getWorkspaceRoles(workspaceId);
-            setWorkspaceRoles(roles);
-        }
-        fetchRoles().then(() => {}).catch((e) => {});
-    }, [workspaceId]);
+    // useEffect(() => {
+    //     const fetchRoles = async () => {
+    //         const roles = await getWorkspaceRoles(workspaceId);
+    //         setWorkspaceRoles(roles);
+    //     }
+    //     fetchRoles().then(() => {}).catch((e) => {});
+    // }, [workspaceId]);
     return (
         <Dialog
             open={open}
@@ -136,26 +156,26 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                     fullWidth
                     variant="outlined"
                 />
-                <Autocomplete
-                    disablePortal
-                    fullWidth
-                    options={workspaceRoles}
-                    onChange={(e, value) => {
-                        if(!value) {
-                            console.log("workspaceRoles", workspaceRoles);
-                            //set default role
-                            value = workspaceRoles[1];
-                        }
-                        setNewUserData({
-                            ...newUserData,
-                            role: value.id
-                        })
-                    }}
-                    value={workspaceRoles.find((role) => role.id == newUserData.role)}
-                    getOptionLabel={(option) => option.name}
-                    defaultValue={workspaceRoles[1]}
-                    renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="Role" />}
-                />
+                <FormControl fullWidth margin={"dense"}>
+                    <InputLabel>
+                        Role
+                    </InputLabel>
+                    <Select
+                        labelId="role-select-label"
+                        id="role-select"
+                        value={workspaceRoles.find((role) => role.id == newUserData.role)?.id}
+                        label="Role"
+                        onChange={(e) => {
+                            setNewUserData({
+                                ...newUserData,
+                                role: e.target.value
+                            })
+                        }}
+                    >
+                        <MenuItem value={'default_admin'}>Admin</MenuItem>
+                        <MenuItem value={'default_member'}>Member</MenuItem>
+                    </Select>
+                </FormControl>
             </DialogContent>
             <DialogActions>
                 <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>
