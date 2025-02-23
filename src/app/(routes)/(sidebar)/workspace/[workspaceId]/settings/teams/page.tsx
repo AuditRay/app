@@ -16,6 +16,11 @@ import Tooltip from "@mui/material/Tooltip";
 import EditTeamModal from "@/app/ui/Teams/EditTeamModal";
 import {deepOrange} from "@mui/material/colors";
 import {userSessionState} from "@/app/lib/uiStore";
+import {GridRenderCellParams} from "@mui/x-data-grid-pro";
+import Link from "@/app/ui/Link";
+import LaunchIcon from "@mui/icons-material/Launch";
+import {GridRow} from "@/app/ui/WebsitesGrid";
+import {useRouter} from "next/navigation";
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -76,6 +81,8 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
     const [isEditOpen, setIsEditOpen] = React.useState<boolean>(false);
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
     const sessionUser = userSessionState((state) => state.user);
+
+    const router = useRouter();
     const getInitials = (firstName: string, lastName: string) => {
         return firstName?.charAt(0) + lastName?.charAt(0);
     }
@@ -106,7 +113,7 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
             { isPersonal ? (
                 <>
                     <Box sx={{mb: 3}}>
-                        <Typography variant={'h1'}>Teams</Typography>
+                        <Typography variant={'h2'}>Teams</Typography>
                     </Box>
                     <Box sx={{mb: 3}}>
                         <Typography variant={'subtitle1'}>You can&apos;t add teams to personal workspace, please switch workspace from user menu in header</Typography>
@@ -116,9 +123,10 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
                 <>
                     <Box sx={{
                         mb: 3,
-                        display: 'flex'
+                        display: 'flex',
+                        alignItems: 'center'
                     }}>
-                        <Typography variant={'h1'} >Teams</Typography>
+                        <Typography variant={'h2'} >Teams</Typography>
                         <Box sx={{ml: 'auto'}}>
                             <Button onClick={() => setIsOpen(true)} variant={'contained'}>Add New Team</Button>
                         </Box>
@@ -133,7 +141,20 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
                         rows={workspaceTeams}
                         getRowId={(row) => row.id}
                         columns={[
-                            { field: 'name', headerName: 'Name', flex: 1 },
+                            {
+                                field: 'name', headerName: 'Name', flex: 1,
+                                renderCell: (params) => (
+                                    params.value && (
+                                        <>
+                                            <Box>
+                                                <Link href={`/workspace/${workspaceId}/settings/teams/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
+                                                    {params.value}
+                                                </Link>
+                                            </Box>
+                                        </>
+                                    )
+                                ),
+                            },
                             {
                                 field: 'members', headerName: 'Members', flex: 1,
                                 renderCell: (params) => (
@@ -160,11 +181,7 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
                                         {params.row.id != user?.id && (
                                             <Box>
                                                 <IconButton onClick={() => {
-                                                    const workspaceTeam = workspaceTeams.find((team) => team.id == params.row.id )
-                                                    if (workspaceTeam) {
-                                                        setSelectedWorkspaceTeam({...workspaceTeam})
-                                                        setIsEditOpen(true);
-                                                    }
+                                                    router.push(`/workspace/${workspaceId}/settings/teams/${params.row.id}`);
                                                 }}>
                                                     <Tooltip title={"Edit"}><EditIcon></EditIcon></Tooltip>
                                                 </IconButton>

@@ -39,7 +39,7 @@ export default function Settings({params}: { params: Promise<{ workspaceId: stri
 
     return (
         <>
-            <Typography variant={'h1'}>General</Typography>
+            <Typography variant={'h2'}>General</Typography>
             <Divider sx={{my:2}}/>
             {!newWorkspaceData && isPersonal && (
                 <Typography variant={'h3'}>Personal Workspace (No settings are available, please switch workspace)</Typography>

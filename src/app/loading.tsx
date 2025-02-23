@@ -1,8 +1,7 @@
-import {Box} from "@mui/material";
-import * as React from "react";
+import { LoadingScreen } from '@/components/loading-screen';
+
+// ----------------------------------------------------------------------
 
 export default function Loading() {
-    return (
-        <Box sx={{textAlign:"center", width:"100%", mt: 20}}>Please wait loading data...</Box>
-    )
+    return <LoadingScreen />;
 }

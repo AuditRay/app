@@ -81,7 +81,7 @@ export async function getTeams(workspaceId: string): Promise<ITeamPopulated[]> {
     return teams.map(team => team.toJSON()) as any as ITeamPopulated[];
 }
 
-export async function getTeam(teamId: string): Promise<ITeam> {
+export async function getTeam(teamId: string): Promise<ITeamPopulated> {
     await connectMongo();
     console.log('getTeam');
     const user = await getUser();
@@ -95,11 +95,41 @@ export async function getTeam(teamId: string): Promise<ITeam> {
     if(!workspace) {
         throw new Error('Workspace not found');
     }
-    const team = await Team.findOne({workspace: workspace._id, _id: teamId});
+    const team = await Team
+        .findOne({workspace: workspace._id, _id: teamId}).populate<{
+            members: {
+                user: IUser;
+                role: string;
+                websites?: string[];
+            }
+        }>({
+            path: 'members',
+            populate: [
+                {
+                    path:  'user',
+                    model: 'User'
+                }
+            ]
+        }).populate<{
+            members: {
+                user: IUser;
+                role: string;
+                websites?: IWebsite[];
+            }
+        }>('websites').populate<{
+            owner: IUser;
+            members: {
+                user: IUser;
+                role: string;
+                websites?: IWebsite[];
+            }
+        }>('owner');
     if(!team) {
         throw new Error('Team not found');
     }
-    return team.toJSON();
+
+    console.log('finish getTeam');
+    return team.toJSON() as any as ITeamPopulated;
 }
 
 export async function updateTeam(teamId: string, teamData: Partial<ITeam>) {

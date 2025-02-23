@@ -8,6 +8,8 @@ import AddWebsiteModal from "@/app/ui/Websites/AddWebsiteModal";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
 import RightDrawer from "@/app/ui/RightDrawer";
 import AddNewFolderModal from "@/app/ui/Folders/AddNewFolderModal";
+import Typography from "@mui/material/Typography";
+
 export default async function Websites(
     {searchParams, params}: {
         searchParams: Promise<Record<string, string>>,
@@ -33,15 +35,15 @@ export default async function Websites(
                     <div>
                         <Box sx={{display: 'flex', alignItems: 'center'}}>
                             {filterView?.title ?
-                                (<h1>Websites - {filterView.title}</h1>)
-                                : (<h1>Websites List</h1>)
+                                (<Typography variant={'h2'} >Websites - {filterView.title}</Typography>)
+                                : (<Typography variant={'h2'}>Websites List</Typography>)
                             }
                             <Box sx={{ml: 'auto'}}>
                                 <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>
                             </Box>
-                            <Box>
-                                <AddNewFolderModal workspaceId={workspaceId}></AddNewFolderModal>
-                            </Box>
+                            {/*<Box>*/}
+                            {/*    <AddNewFolderModal workspaceId={workspaceId}></AddNewFolderModal>*/}
+                            {/*</Box>*/}
                         </Box>
                         <WebsitesGrid workspaceId={workspaceId}/>
                     </div>

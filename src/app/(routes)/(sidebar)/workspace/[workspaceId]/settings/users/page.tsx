@@ -98,7 +98,7 @@ export default function UsersSettings({params}: {params: Promise<{workspaceId: s
             {isPersonal ? (
                 <>
                     <Box sx={{mb: 3}}>
-                        <Typography variant={'h1'}>Users</Typography>
+                        <Typography variant={'h2'}>Users</Typography>
                     </Box>
                     <Box sx={{mb: 3}}>
                         <Typography variant={'subtitle1'}>You can&apos;t add users to personal workspace, please switch workspace from user menu in header</Typography>
@@ -108,9 +108,10 @@ export default function UsersSettings({params}: {params: Promise<{workspaceId: s
                 <>
                     <Box sx={{
                         mb: 3,
+                        alignItems: 'center',
                         display: 'flex'
                     }}>
-                        <Typography variant={'h1'} >Users</Typography>
+                        <Typography variant={'h2'} >Users</Typography>
                         <Box sx={{ml: 'auto'}}>
                             <Button onClick={() => setIsOpen(true)} variant={'contained'}>Invite New User</Button>
                         </Box>

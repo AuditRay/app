@@ -1,6 +1,6 @@
 'use client'
 import * as React from "react";
-import {Box, Card, CardActions, CardContent, CardMedia, Grid2, IconButton} from "@mui/material";
+import {Box, Card, CardActions, CardContent, CardMedia, Grid2 as Grid, IconButton} from "@mui/material";
 import Typography from "@mui/material/Typography";
 import {IUser, IWorkspace} from "@/app/models";
 import Button from "@mui/material/Button";
@@ -60,14 +60,14 @@ export default function IntegrationsSettings({params}: { params: Promise<{ works
                 mb: 3,
                 display: 'flex'
             }}>
-                <Typography variant={'h1'} >Integrations</Typography>
+                <Typography variant={'h2'} >Integrations</Typography>
             </Box>
             <Box>
-                <Grid2 container={true} spacing={2} sx={{mt: 2}}>
-                    <Grid2 size={6}>
+                <Grid container={true} spacing={2} sx={{mt: 2}}>
+                    <Grid size={6}>
                         <Card sx={{ display: 'flex', flexDirection: 'column', height: "100%" }}>
                             <Box sx={{ display: 'flex', flexGrow: 1 }}>
-                                <Box>
+                                <Box sx={{width: "80%"}}>
                                     <CardContent sx={{ flex: '1 0 auto' }}>
                                         <Typography component="div" variant="h5">
                                             <Tooltip title={jiraIntegration.status ? 'Connected' : 'Not Connected'}>
@@ -108,18 +108,12 @@ export default function IntegrationsSettings({params}: { params: Promise<{ works
                                     alt="Jira"
                                 />
                             </Box>
-                            <CardActions>
+                            <CardActions sx={{p: 3}}>
                                 {jiraIntegration.status ? (
                                     <>
                                         <Button variant={'contained'} color={'secondary'} onClick={() => setIsConfigOpen(true)}>
                                             Configure
                                         </Button>
-                                        <Button variant={'contained'}>
-                                            <Box component={"a"} href={setupUrl} target={"_blank"} sx={{color: "#ffffff", textDecoration: "none"}}>
-                                                Reconnect
-                                            </Box>
-                                        </Button>
-
                                         <Button variant={'contained'}  color={'error'} onClick={() => setIsDisconnectOpen(true)}>
                                             Disconnect
                                         </Button>
@@ -157,11 +151,11 @@ export default function IntegrationsSettings({params}: { params: Promise<{ works
                                 )}
                             </CardActions>
                         </Card>
-                    </Grid2>
-                    <Grid2 size={6}>
+                    </Grid>
+                    <Grid size={6}>
                         <Card sx={{ display: 'flex', flexDirection: 'column', height: "100%"}}>
                             <Box sx={{ display: 'flex', flexGrow: 1 }}>
-                                <Box>
+                                <Box sx={{width: "80%"}}>
                                     <CardContent sx={{ flex: '1 0 auto' }}>
                                         <Typography component="div" variant="h5">
                                             <Tooltip title={slackIntegration?.status ? 'Connected' : 'Not Connected'}>
@@ -202,15 +196,9 @@ export default function IntegrationsSettings({params}: { params: Promise<{ works
                                     alt="Jira"
                                 />
                             </Box>
-                            <CardActions>
+                            <CardActions sx={{p: 3}}>
                                 {slackIntegration?.status ? (
                                     <>
-                                        <Button variant={'contained'}>
-                                            <Box component={"a"} href={`/api/v1/slack/${workspaceId}`} target={"_blank"} sx={{color: "#ffffff", textDecoration: "none"}}>
-                                                Reconnect
-                                            </Box>
-                                        </Button>
-
                                         <Button variant={'contained'}  color={'error'} onClick={() => setIsSlackDisconnectOpen(true)}>
                                             Disconnect
                                         </Button>
@@ -248,8 +236,8 @@ export default function IntegrationsSettings({params}: { params: Promise<{ works
                                 )}
                             </CardActions>
                         </Card>
-                    </Grid2>
-                </Grid2>
+                    </Grid>
+                </Grid>
             </Box>
         </>
     );

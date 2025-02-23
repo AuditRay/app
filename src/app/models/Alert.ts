@@ -4,6 +4,7 @@ export type IAlert = {
     id: string;
     workspace: string | Schema.Types.ObjectId;
     user: string | Schema.Types.ObjectId;
+    team?: string | Schema.Types.ObjectId;
     notifyUsers: string[];
     interval: number;
     intervalUnit: string;
@@ -20,6 +21,7 @@ const ModelSchema = new Schema<IAlert>(
     {
         workspace: {type: Schema.Types.ObjectId, ref: 'Workspace'},
         user: {type: Schema.Types.ObjectId, ref: 'User'},
+        team: {type: Schema.Types.ObjectId, ref: 'Team'},
         notifyUsers: [{type: String}],
         interval: Number,
         intervalUnit: String,

@@ -268,6 +268,7 @@ export async function createAlert(alertData: Partial<IAlert>) {
         filters: alertData.filters,
         events: alertData.events || [],
         notifyUsers: alertData.notifyUsers,
+        team: alertData.team || null
     });
 
     const savedAlert = await alert.save();
@@ -286,6 +287,15 @@ export async function getWorkspaceAllAlerts(workspaceId: string): Promise<IAlert
     } else {
         alerts = await Alert.find({workspace: workspaceId});
     }
+    return alerts.map((a) => a.toJSON());
+}
+
+export async function getTeamAllAlerts(workspaceId: string, teamId: string): Promise<IAlert[]> {
+    await connectMongo();
+    const alerts = await Alert.find({
+        workspace: workspaceId,
+        team: teamId
+    });
     return alerts.map((a) => a.toJSON());
 }
 

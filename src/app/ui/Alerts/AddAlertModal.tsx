@@ -34,18 +34,14 @@ import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import {getSlackChannels} from "@/app/actions/integrations/slackActions";
 import {Channel} from "@slack/web-api/dist/types/response/ConversationsListResponse";
-import {channel} from "node:diagnostics_channel";
-import JiraTicketConfig from "@/app/ui/Alerts/JiraTicketConfig";
 export type notificationUserOptionsType = { id: string, label: string, type: 'user' | 'team', members: IUserInternal[] };
 export default function AddAlertModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
 
     const [notificationUserOptions, setNotificationUserOptions] = useState<notificationUserOptionsType[]>([]);
     const [currentWorkspace, setCurrentWorkspace] = useState<IWorkspace>();
-    const [jiraEvent, setJiraEvent] = useState<IAlert['events'][0]>();
     const [slackEvent, setSlackEvent] = useState<IAlert['events'][0]>();
     const [slackChannels, setSlackChannels] = useState<Channel[]>();
-    const [openJiraTicket, setOpenJiraTicket] = useState<boolean>(false);
     const [filters, setFilters] = React.useState<GridFilterModel>({items: []});
     const [isSlackChannelsLoading, setIsSlackChannelsLoading] = React.useState<Boolean>(false);
     const sessionUser = userSessionState((state) => state.fullUser);
@@ -297,51 +293,6 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
                     </Box>
                 </Box>
                 <Divider sx={{my: 1}}/>
-                {currentWorkspace?.jira?.status && (
-                    <>
-                        <Typography variant={'caption'}>Open Jira Ticket</Typography>
-                        <Box>
-                            {!jiraEvent ? (
-                                <Grid container columnSpacing={3} >
-                                    <Grid size={12}>
-                                        <Button variant={'outlined'} onClick={() => setOpenJiraTicket(true)}>
-                                            Configure Jira
-                                        </Button>
-                                    </Grid>
-                                    <Grid size={12}>
-                                        <Typography variant={'subtitle2'}>
-                                            No Jira ticket configuration found. Please configure Jira ticket to enable this feature.
-                                        </Typography>
-                                    </Grid>
-                                </Grid>
-                            ) : (
-                                <Grid container columnSpacing={3} >
-                                    <Grid size={12}>
-                                        <Button variant={'outlined'} onClick={() => setOpenJiraTicket(true)}>
-                                            Re-configure Jira
-                                        </Button>
-                                        <IconButton color={'error'} onClick={() => {
-                                            setJiraEvent(undefined);
-                                        }}><Tooltip title={"Remove Jira Notification"}><DeleteForeverIcon></DeleteForeverIcon></Tooltip></IconButton>
-                                    </Grid>
-                                    <Grid size={12}>
-                                        <Typography variant={'subtitle2'}>
-                                            Jira ticket configuration found. You can re-configure Jira ticket to change settings.
-                                        </Typography>
-                                    </Grid>
-                                </Grid>
-                            )}
-                        </Box>
-                        <JiraTicketConfig open={openJiraTicket} setOpen={setOpenJiraTicket} config={jiraEvent?.config || {}} setConfig={(config) => {
-                            console.log("config", config);
-                            setJiraEvent({
-                                type: 'jira',
-                                config: config
-                            });
-                        }} ></JiraTicketConfig>
-                    </>
-                )}
-                <Divider sx={{my: 1}}/>
                 {currentWorkspace?.slack?.status && (
                     <>
                         <Typography variant={'caption'}>Send Slack Message</Typography>
@@ -413,9 +364,6 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
                             const events: IAlert['events'] = [];
                             if(slackEvent) {
                                 events.push(slackEvent);
-                            }
-                            if(jiraEvent) {
-                                events.push(jiraEvent);
                             }
                             async function save() {
                                 if(newAlertData.title) {

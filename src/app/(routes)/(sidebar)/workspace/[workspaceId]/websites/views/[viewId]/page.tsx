@@ -7,6 +7,7 @@ import WebsitesGrid from "@/app/ui/WebsitesGrid";
 import AddWebsiteModal from "@/app/ui/Websites/AddWebsiteModal";
 import {getFiltersView} from "@/app/actions/filterViewsActions";
 import RightDrawer from "@/app/ui/RightDrawer";
+import Typography from "@mui/material/Typography";
 export default async function Websites(
     {params}: {
         params: Promise<{ workspaceId: string, viewId: string }>
@@ -29,8 +30,8 @@ export default async function Websites(
                     <div>
                         <Box sx={{display: 'flex', alignItems: 'center'}}>
                             {filterView?.title ?
-                                (<h1>Websites - {filterView.title}</h1>)
-                                : (<h1>Websites List</h1>)
+                                (<Typography variant={'h2'} >Websites - {filterView.title}</Typography>)
+                                : (<Typography variant={'h2'}>Websites List</Typography>)
                             }
                             <Box sx={{ml: 'auto'}}>
                                 <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>

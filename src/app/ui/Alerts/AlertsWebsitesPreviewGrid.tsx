@@ -504,7 +504,7 @@ function CustomNoRowsOverlay() {
                     d="M0 10C0 4.477 4.477 0 10 0h380c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 20 0 15.523 0 10ZM0 59c0-5.523 4.477-10 10-10h231c5.523 0 10 4.477 10 10s-4.477 10-10 10H10C4.477 69 0 64.523 0 59ZM0 106c0-5.523 4.477-10 10-10h203c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 153c0-5.523 4.477-10 10-10h195.5c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 200c0-5.523 4.477-10 10-10h203c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10ZM0 247c0-5.523 4.477-10 10-10h231c5.523 0 10 4.477 10 10s-4.477 10-10 10H10c-5.523 0-10-4.477-10-10Z"
                 />
             </svg>
-            <Typography sx={{ mt: 2, textAlign: "center" }} variant={'h2'}>No websites currently match the specified criteria yet, which may indicate that there are no sites requiring attention at this time. However, an alert will be triggered as soon as any website meets these parameters.</Typography>
+            <Typography sx={{ mt: 2, textAlign: "center" }} variant={'h5'}>No websites currently match the specified criteria yet, which may indicate that there are no sites requiring attention at this time. However, an alert will be triggered as soon as any website meets these parameters.</Typography>
         </StyledGridOverlay>
     );
 }

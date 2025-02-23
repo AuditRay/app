@@ -36,13 +36,12 @@ import WebsitesInfoGrid from "@/app/ui/WebsitesInfoGrid";
 import ComponentInfo from "@/app/ui/ComponentInfo";
 import {UpdateInfo} from "@/app/models";
 import Link from "@/app/ui/Link";
-import Grid from '@mui/material/Grid2';
-import {BarChart, Gauge, gaugeClasses, PieChart} from "@mui/x-charts";
-import theme from "@/theme";
-import {CustomGridFilterForm} from "@/app/ui/DataGrid/CustomGridFilterForm";
 import {CustomGridFilterPanel} from "@/app/ui/DataGrid/CustomGridFilterPanel";
-import {GridFilterForm} from "@mui/x-data-grid";
 import Tooltip from "@mui/material/Tooltip";
+import {LicenseInfo} from "@mui/x-license";
+
+
+LicenseInfo.setLicenseKey('d180cacff967bbf4eb0152899dacbe68Tz05MzI0OCxFPTE3NTEwNDc4MDIwMDAsUz1wcm8sTE09c3Vic2NyaXB0aW9uLEtWPTI=');
 
 export type GridRow = {
     id: number|string;
@@ -737,98 +736,6 @@ export default function WebsitesGrid({ workspaceId, viewId }: {workspaceId: stri
             {filtersView && (
                 <UpdateFilterViewModal open={isUpdateOpened} setOpen={setIsUpdateOpened} filtersView={filtersView} filtersModel={filters} columnsModel={columnsVisibility}/>
             )}
-            <Grid container spacing={2} sx={{mb: 3}}>
-                <Grid size={4}>
-                    <Paper
-                        sx={{
-                            p: 2,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: 240,
-                        }}
-                    >
-                        {barChart && (
-                            <BarChart
-                                borderRadius={10}
-                                xAxis={[
-                                    {
-                                        id: 'barCategories',
-                                        data: ['Updated', 'Needs Update', 'Not Secure', 'Not Supported', 'Unknown'],
-                                        scaleType: 'band',
-                                        labelStyle: {
-                                            fontSize: 5,
-                                        },
-                                        colorMap: {
-                                            type: 'ordinal',
-                                            colors: ['green', 'orange', 'red', 'darkkhaki', 'gray'],
-                                        }
-                                    },
-                                ]}
-                                series={[
-                                    {
-                                        data: barChart,
-                                    },
-                                ]}
-                            />
-                        )}
-                    </Paper>
-                </Grid>
-                <Grid size={4}>
-                    <Paper
-                        sx={{
-                            p: 2,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: 240,
-                        }}
-                    >
-                        <PieChart
-                            series={[
-                                {
-                                    data: pieChart || [],
-                                    innerRadius: 30,
-                                    outerRadius: 100,
-                                    paddingAngle: 5,
-                                    cornerRadius: 5,
-                                    startAngle: -45,
-                                },
-                            ]}
-                        />
-                    </Paper>
-                </Grid>
-                <Grid size={4}>
-                    <Paper
-                        sx={{
-                            p: 2,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: 240,
-                        }}
-                    >
-                        <Gauge
-                            value={securityIndex && isNaN(securityIndex) ? 0 : securityIndex}
-                            startAngle={-110}
-                            endAngle={110}
-                            cornerRadius="50%"
-                            sx={{
-                                [`& .${gaugeClasses.valueText}`]: {
-                                    fontSize: 15,
-                                    transform: 'translate(0px, 0px)',
-                                },
-                                [`& .${gaugeClasses.valueArc}`]: {
-                                    fill: 'red',
-                                },
-                                [`& .${gaugeClasses.referenceArc}`]: {
-                                    fill: theme.palette.text.disabled,
-                                },
-                            }}
-                            text={
-                                ({ value, valueMax }) => `Security Index ${value}%`
-                            }
-                        />
-                    </Paper>
-                </Grid>
-            </Grid>
             <DataGridPro
                 autoHeight={true}
                 sx={{ '--DataGrid-overlayHeight': '300px' }}

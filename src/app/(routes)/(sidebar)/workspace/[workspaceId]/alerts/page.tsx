@@ -7,6 +7,8 @@ import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AlertAccordion from "@/app/ui/Alerts/AlertAccordion";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 
 export default async function Alerts({params}: { params: Promise<{ workspaceId: string }> }) {
     const { workspaceId } = await params;
@@ -21,6 +23,11 @@ export default async function Alerts({params}: { params: Promise<{ workspaceId: 
                     maxWidth: 'xl'
                 }}
             >
+                <Box sx={{
+                    mb: 3,
+                }}>
+                    <Typography variant={'h2'} >Alerts</Typography>
+                </Box>
                 {alertInfos.length > 0 && <AlertAccordion alertInfos={alertInfos}/>}
                 {alertInfos.length == 0 && (
                     <Box sx={{textAlign: 'center'}}>
