@@ -9,3 +9,4 @@ export * from './Role';
 export * from './Team';
 export * from './Alert';
 export * from './FieldsTemplate';
+export * from './Folder';

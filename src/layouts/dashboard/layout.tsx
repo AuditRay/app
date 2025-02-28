@@ -11,8 +11,6 @@ import Alert from '@mui/material/Alert';
 import { useTheme } from '@mui/material/styles';
 import { iconButtonClasses } from '@mui/material/IconButton';
 
-import { _contacts, _notifications } from '@/_mock';
-
 import { Logo } from '@/components/logo';
 import { useSettingsContext } from '@/components/settings';
 

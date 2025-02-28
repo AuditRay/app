@@ -16,8 +16,9 @@ export const UploadAvatar: React.FC<Props> = ({
         <>
             <Cropper
                 src={avatarUrl}
-                style={{ height: 400, width: 400 }}
+                style={{ height: 400, width: "100%" }}
                 initialAspectRatio={4 / 3}
+                aspectRatio={4 / 3}
                 minCropBoxHeight={100}
                 minCropBoxWidth={100}
                 guides={false}

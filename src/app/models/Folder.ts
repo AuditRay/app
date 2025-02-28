@@ -3,7 +3,9 @@ import {FieldValue} from "@/app/models/FieldsTemplate";
 
 export type IFolder = {
     id: string;
-    workspace: string | Schema.Types.ObjectId;
+    workspace?: string | Schema.Types.ObjectId;
+    user: string | Schema.Types.ObjectId;
+    websites?: (string | Schema.Types.ObjectId)[];
     name: string;
     image: string;
     fieldValues: FieldValue[];
@@ -12,6 +14,8 @@ export type IFolder = {
 const ModelSchema = new Schema<IFolder>(
     {
         workspace: {type: Schema.Types.ObjectId, ref: 'Workspace'},
+        user: {type: Schema.Types.ObjectId, ref: 'User'},
+        websites: [{type: Schema.Types.ObjectId, ref: 'Website'}],
         name: String,
         image: String,
         fieldValues: [],

@@ -393,7 +393,7 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                             console.log('newTeamData', newTeamData);
                             async function save() {
                                 if(newTeamData.name) {
-                                    await createTeam({
+                                    await createTeam(workspaceId, {
                                         name: newTeamData.name,
                                         members: newTeamData.members,
                                         websites: newTeamData.websites

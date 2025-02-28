@@ -118,6 +118,9 @@ const ModelSchema = new Schema<IWebsite>(
                 ret.user = ret.user?.toString();
                 ret.workspace = ret.workspace?.toString();
                 ret.fieldsTemplate = ret.fieldsTemplate?.toString();
+                if(ret.syncConfig) {
+                    ret.syncConfig.syncTime = dayjs(ret.syncConfig.syncTime).toString();
+                }
                 delete ret._id;
             },
         },

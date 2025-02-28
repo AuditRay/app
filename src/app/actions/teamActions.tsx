@@ -4,15 +4,15 @@ import {getUser} from "@/app/actions/getUser";
 import {revalidatePath} from "next/cache";
 import {connectMongo} from "@/app/lib/database";
 
-export async function createTeam(teamData: Partial<ITeam>) {
+export async function createTeam(workspaceId: string, teamData: Partial<ITeam>) {
     await connectMongo();
     console.log('createTeam');
     const user = await getUser();
-    if(!user.currentSelectedWorkspace) {
+    if(!workspaceId || workspaceId == 'personal') {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
     }
     const workspace = await Workspace.findOne({
-        _id: user.currentSelectedWorkspace,
+        _id: workspaceId,
         $or: [{owner: user.id}, {users: user.id}, {"members.user": user.id}]
     });
     if(!workspace) {

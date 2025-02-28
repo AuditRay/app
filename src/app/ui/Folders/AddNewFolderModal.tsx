@@ -1,6 +1,6 @@
 'use client';
-import {ChangeEvent, useEffect, useState} from 'react';
-import { FileUploadWithPreview } from 'file-upload-with-preview';
+import * as React from 'react';
+import {ChangeEvent, useState} from 'react';
 import 'file-upload-with-preview/dist/style.css';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
@@ -11,19 +11,16 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import CircularProgress from '@mui/material/CircularProgress';
-import { green } from '@mui/material/colors';
-import {Divider, FormControl, Grid, InputLabel, Paper, Select} from "@mui/material";
+import {green} from '@mui/material/colors';
+import {Divider} from "@mui/material";
 import {Field} from "@/app/models";
-import * as React from "react";
 import Typography from "@mui/material/Typography";
-import MenuItem from "@mui/material/MenuItem";
-import {v4 as uuidV4} from "uuid";
-import {createFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import {UploadAvatar} from "@/app/ui/Uploads/UploadAvatar";
 import {ReactCropperElement} from "react-cropper";
 import {signS3UploadFolderImageData} from "@/app/actions/uploadActions";
+import {createFolder} from "@/app/actions/folderActions";
 
-const uploadFileToS3 = (presignedPostData: any, file: File) => {
+const uploadFileToS3 = async (presignedPostData: any, file: File) => {
     // create a form obj
     const formData = new FormData();
 
@@ -35,22 +32,24 @@ const uploadFileToS3 = (presignedPostData: any, file: File) => {
     // append the file
     formData.append("file", file, file.name);
 
+
     // post the data on the s3 url
-    fetch(presignedPostData.url, {
-        method: "POST",
-        body: formData,
-        headers: {
-            "Content-Type": "multipart/form-data"
-        }
-    }).then(response => response.json()) // Adjust if needed
-        .then(data => console.log(data))
-        .catch(error => console.error(error));
+    try {
+        const response = await fetch(presignedPostData.url, {
+            method: "POST",
+            body: formData
+        })
+        return await response.text();
+    } catch (e) {
+        throw new Error('Error uploading file');
+    }
 };
 
 export default function AddNewFolderModal({workspaceId}: {workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
     const [name, setName] = useState<string>('');
     const [nameError, setNameError] = useState<string>('');
+    const [fileError, setFileError] = useState<string>('');
     const [fieldsError, setFieldsError] = useState<string>('');
     const [fields, setFields] = useState<Field[]>([]);
     const [open, setOpen] = useState(false);
@@ -61,6 +60,7 @@ export default function AddNewFolderModal({workspaceId}: {workspaceId: string}) 
     const resetData = () => {
         setName('');
         setNameError('');
+        setUploadFile(null);
         setFields([]);
         setFieldsError('');
     }
@@ -127,8 +127,8 @@ export default function AddNewFolderModal({workspaceId}: {workspaceId: string}) 
                             />
                         )}
                     </Box>
-                    {fieldsError && (
-                        <Typography color={'error'}>{fieldsError}</Typography>
+                    {fileError && (
+                        <Typography color={'error'}>{fileError}</Typography>
                     )}
                     <Divider sx={{mb:2}}/>
                 </DialogContent>
@@ -157,17 +157,33 @@ export default function AddNewFolderModal({workspaceId}: {workspaceId: string}) 
                                     } else {
                                         file = uploadFile
                                     }
+                                    if(!file) {
+                                        setFileError('File is required');
+                                        setIsSaving(false);
+                                        throw new Error('File is required');
+                                    }
                                     if(file) {
                                         const preSignedUpload = await signS3UploadFolderImageData(workspaceId, file.type);
-                                        uploadFileToS3(preSignedUpload, file);
+                                        try {
+                                            await uploadFileToS3(preSignedUpload, file);
+                                        } catch (e) {
+                                            setFileError('Error uploading file, please try again.');
+                                            setIsSaving(false);
+                                            throw new Error('Error uploading file, please try again.');
+                                        }
+                                        const folder = createFolder(workspaceId, {
+                                            name,
+                                            image: preSignedUpload.fields.key
+                                        });
                                         console.log('preSignedUpload', preSignedUpload);
                                     }
                                 }
                                 save().then(() => {
                                     setIsSaving(false);
+                                    handleClose();
                                 }).catch((e) => {
                                     setIsSaving(false);
-                                    setNameError('Error saving the template. Please try again.');
+                                    setNameError('Error saving the folder. Please try again.');
                                 });
                             }}
                         >{isSaving ? 'Saving...' : 'Create'} </Button>
