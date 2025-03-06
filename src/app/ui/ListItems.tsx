@@ -53,7 +53,7 @@ export const MainListItems = ({
             </List>
             <Divider />
             <ListItemButton
-                onClick={() => router.push(`/workspace/${workspaceId}/websites`)} selected={pathname == `/workspace/${workspaceId}/websites`}
+                onClick={() => router.push(`/workspace/${workspaceId}/projects`)} selected={pathname == `/workspace/${workspaceId}/projects`}
             >
                 <ListItemIcon>
                     <LanguageIcon sx={{marginLeft: '6px'}}/>
@@ -82,7 +82,7 @@ export const MainListItems = ({
                     <Collapse in={!!viewId || openWebsites} timeout="auto" unmountOnExit>
                         <List component="div" disablePadding sx={{ml:4, pl: 0, borderLeft: "1px solid #c0c0c0" }}>
                             {filtersViews && filtersViews.map((filterView) => (
-                                <ListItemButton sx={{ pl: 2, m: 0 }} key={filterView.id}  selected={pathname == `/workspace/${workspaceId}/websites/views/${filterView.id}`} onClick={() => router.push(`/workspace/${workspaceId}/websites/views/${filterView.id}`)}>
+                                <ListItemButton sx={{ pl: 2, m: 0 }} key={filterView.id}  selected={pathname == `/workspace/${workspaceId}/projects/lists/${filterView.id}`} onClick={() => router.push(`/workspace/${workspaceId}/projects/lists/${filterView.id}`)}>
                                     <ListItemText  primary={filterView.title}/>
                                 </ListItemButton>
                             ))}

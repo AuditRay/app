@@ -3,31 +3,52 @@ import {IWebsite, IFolder, Folder, Workspace, Website, Team} from "@/app/models"
 import {connectMongo} from "@/app/lib/database";
 import {getUser} from "@/app/actions/getUser";
 import {revalidatePath} from "next/cache";
+import {getWebsitesPage, IWebsitePage, Pagination} from "@/app/actions/websiteActions";
+import {GridPaginationModel} from "@mui/x-data-grid-pro";
 
-export async function getFolder(workspaceId: string, folderId: string): Promise<IFolder & {websites: IWebsite[]} | null> {
+export async function getFolder(
+    workspaceId: string,
+    folderId: string,
+    pagination: GridPaginationModel = { page: 0, pageSize: 12 },
+    filters: {
+        text?: string;
+        name?: string;
+        type?: string[];
+        folder?: string[];
+        team?: string[];
+        tags?: string[];
+        status?: string[];
+    } = {},
+    sort: {
+        field: string;
+        sort: 'asc' | 'desc';
+    } = {field: 'updatedAt', sort: 'desc'}
+): Promise<IFolder & {websitesList: IWebsitePage[], pagination: Pagination} | null> {
     await connectMongo();
     console.log('getFolder');
     const user = await getUser();
     if (folderId === 'all') {
         if (!workspaceId || workspaceId === 'personal') {
-            const websites = await Website.find({user: user.id, workspace: null});
+            const websites = await getWebsitesPage(workspaceId, undefined, pagination, filters, sort);
             return {
                 id: 'all',
-                name: 'All Websites',
+                name: 'All',
                 image: 'https://via.placeholder.com/150',
                 user: '',
                 fieldValues: [],
-                websites: websites.map(website => website._id.toJSON()) as any
+                websitesList: websites.data,
+                pagination: websites.pagination
             }
         } else {
-            const websites = await Website.find({workspace: workspaceId});
+            const websites = await getWebsitesPage(workspaceId, undefined, pagination, filters, sort);
             return {
                 id: 'all',
-                name: 'All Websites',
+                name: 'All',
                 image: 'https://via.placeholder.com/150',
                 fieldValues: [],
                 user: '',
-                websites: websites.map(website => website.toJSON()) as any
+                websitesList: websites.data,
+                pagination: websites.pagination
             }
         }
     } else {
@@ -36,11 +57,11 @@ export async function getFolder(workspaceId: string, folderId: string): Promise<
             return null;
         }
         if (!workspaceId || workspaceId === 'personal') {
-            const websites = await Website.find({_id: {$in: folder.websites}, workspace: null, user: user.id});
-            return folder ? {...folder.toJSON(), websites: websites.map(website => website.toJSON()) as any} : null;
+            const websites = await getWebsitesPage(workspaceId, folder.websites, pagination, filters, sort);
+            return folder ? {...folder.toJSON(), websitesList: websites.data, pagination: websites.pagination} : null;
         } else {
-            const websites = await Website.find({_id: {$in: folder.websites}, workspace: workspaceId});
-            return folder ? {...folder.toJSON(), websites: websites.map(website => website.toJSON()) as any} : null;
+            const websites = await getWebsitesPage(workspaceId, folder.websites, pagination, filters, sort);
+            return folder ? {...folder.toJSON(), websitesList: websites.data, pagination: websites.pagination} : null;
         }
     }
 }

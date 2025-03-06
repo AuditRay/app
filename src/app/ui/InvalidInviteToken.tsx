@@ -12,55 +12,32 @@ import Link from "@/app/ui/Link";
 
 export function InvalidInviteToken() {
     return (
-        <Box sx={{
-            minHeight: '100vh',
-            display: 'flex',
-            bgcolor: 'gray',
-            flexDirection: 'column',
-            justifyContent: 'center',
-        }}>
-            <Box sx={{
+        <Card
+            variant="outlined"
+            sx={{
                 display: 'flex',
-                justifyContent: 'center',
-                color: 'white'
-            }}>
-                <Header></Header>
-            </Box>
-            <Card
-                variant="outlined"
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    width: 'fit-content',
-                    minWidth: '30%',
-                    margin: 'auto',
-                    p: 4
-                }}
-            >
-                <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-                    <LockOutlinedIcon />
-                </Avatar>
-                <Typography component="h1" variant="h5">
-                    Invalid invitation
-                </Typography>
-                <Box sx={{
-                    alignItems: 'center',
-                    mt: 2
-                }}>
-                    <Link href={"/login"} variant="body2">
-                        Already have an account? Log in
-                    </Link>
-                </Box>
-            </Card>
+                flexDirection: 'column',
+                alignItems: 'center',
+                width: 'fit-content',
+                minWidth: '30%',
+                margin: 'auto',
+                p: 4
+            }}
+        >
+            <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+                <LockOutlinedIcon />
+            </Avatar>
+            <Typography component="h1" variant="h5">
+                Invalid invitation
+            </Typography>
             <Box sx={{
-                mt: 3,
-                display: 'flex',
-                justifyContent: 'center',
-                color: 'white'
+                alignItems: 'center',
+                mt: 2
             }}>
-                <Footer></Footer>
+                <Link href={"/login"} variant="body2">
+                    Already have an account? Log in
+                </Link>
             </Box>
-        </Box>
+        </Card>
     )
 }

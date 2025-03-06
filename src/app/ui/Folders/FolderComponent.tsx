@@ -34,6 +34,9 @@ export default function FolderComponent({workspaceId, folder}: {workspaceId: str
             sx={{
                 '&:hover': {
                     'backgroundColor': '#eaedef',
+                    "a": {
+                        'textDecoration': 'none'
+                    }
                 },
                 'backgroundColor': '#DFE3E8'
             }}
@@ -85,7 +88,7 @@ export default function FolderComponent({workspaceId, folder}: {workspaceId: str
                     Delete Folder
                 </MenuItem>
             </Menu>
-            <Link href={`/workspace/${workspaceId}/websites/folder/${folder.id}`} color="inherit" variant="subtitle2" noWrap>
+            <Link href={`/workspace/${workspaceId}/projects/folder/${folder.id}`} color="inherit" variant="subtitle2" noWrap>
                 <Box sx={{ position: 'relative', p: 1 }}>
                     <Tooltip title={folder.name} placement="bottom-end">
                         <Image

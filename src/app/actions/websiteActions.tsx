@@ -1,5 +1,5 @@
 'use server'
-import {IWebsite, Website} from "@/app/models/Website";
+import {IWebsite, Website, WebsiteType} from "@/app/models/Website";
 import urlMetadata from "url-metadata";
 import {CreateWebsiteSchema, CreateWebsiteState} from "@/app/lib/definitions";
 import {connectMongo} from "@/app/lib/database";
@@ -14,14 +14,15 @@ import {detailedDiff} from 'deep-object-diff';
 import OpenAI from 'openai';
 import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
-import {ITeamPopulated, IUpdateRun, IUser, UpdateRun, User} from "@/app/models";
+import {Folder, ITeamPopulated, IUpdateRun, IUser, Team, UpdateRun, User} from "@/app/models";
 import * as fs from "node:fs";
 import {GridFilterModel, GridPaginationModel, GridSortModel, GridFilterItem} from "@mui/x-data-grid-pro";
-import {filterWebsiteTable} from "@/app/lib/utils";
+import {filterWebsitesPage, filterWebsiteTable} from "@/app/lib/utils";
 import {getMonitor, getWebsiteMonitor, newMonitor, removeMonitor} from "@/app/actions/uptimeActions";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {defaultViewsDrupal, defaultViewsWP} from "@/app/views";
+import {Types, ObjectId, Schema} from "mongoose";
 dayjs.extend(relativeTime);
 
 function setupOpenAI() {
@@ -276,6 +277,8 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             website: websiteId,
             status: "In Progress",
             response: "",
+            responseStatus: "",
+            responseDesc: "",
         })
         const savedUpdateRun = await updateRun.save();
         console.log('savedUpdateRun', savedUpdateRun);
@@ -301,29 +304,23 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             console.error('Failed to fetch updates', error);
             savedUpdateRun.set('status', 'Failed');
             savedUpdateRun.set('response', error);
+            if(response) {
+                savedUpdateRun.set('responseStatus', response.status);
+                savedUpdateRun.set('responseDesc', error.message);
+            } else {
+                savedUpdateRun.set('responseStatus', 500);
+                savedUpdateRun.set('responseDesc', error.message);
+            }
         });
 
-
-        if (response && response.status === 404 && website.type.name === "Drupal") {
-            response = await fetch(`${websiteUrl}web/monit/health`, {
-                method: 'POST',
-                headers: requestHeaders,
-                body: new URLSearchParams({
-                    token: website.token,
-                }),
-                cache: 'no-cache',
-            }).catch((error) => {
-                console.error('Failed to fetch updates', error);
-                savedUpdateRun.set('status', 'Failed');
-                savedUpdateRun.set('response', error);
-            });
-        }
 
         if (response && response.status !== 200) {
             console.log('Failed to fetch updates', response.status);
             const responseText = await response.text();
             savedUpdateRun.set('status', 'Failed');
             savedUpdateRun.set('response', responseText);
+            savedUpdateRun.set('responseStatus', response.status);
+            savedUpdateRun.set('responseDesc', 'Failed to fetch updates');
             await savedUpdateRun.save();
             return websiteLatestInfo?.toJSON() ?? null;
         }
@@ -332,10 +329,20 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         try {
             data = await response?.json();
         } catch (error) {
+            console.error('Failed to parse response', error);
+            savedUpdateRun.set('status', 'Failed');
+            if(response) {
+                const responseText = await response.text();
+                savedUpdateRun.set('response', responseText);
+                savedUpdateRun.set('responseStatus', response.status);
+                savedUpdateRun.set('responseDesc', 'Failed to parse response, it seems the response is an HTML page');
+            } else {
+                savedUpdateRun.set('response', 'Failed to parse response');
+                savedUpdateRun.set('responseStatus', 500);
+                savedUpdateRun.set('responseDesc', 'Response Error');
+            }
             return websiteLatestInfo?.toJSON() ?? null;
         }
-
-        console.log('data', data)
 
         const dataSources: Record<string, any> = {
             ...data
@@ -457,6 +464,12 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             const newVersion = added > 0 || deleted > 0 || updatedKeys.includes('frameworkInfo') || updatedKeys.includes('websiteComponentsInfo') || (updated > 2 && updatedKeys.includes('dataSourcesInfo'));
             savedUpdateRun.set('status', 'Success');
             savedUpdateRun.set('response', "");
+            if(response) {
+                savedUpdateRun.set('responseStatus', response.status);
+            } else {
+                savedUpdateRun.set('responseStatus', 200);
+            }
+            savedUpdateRun.set('responseDesc', "Successfully fetched updates");
             await savedUpdateRun.save();
             if (newVersion) {
                 const newWebsiteInfo = new WebsiteInfo(preparedData);
@@ -472,12 +485,24 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
                 const updatedWebsiteInfo = await websiteLatestInfo.save();
                 savedUpdateRun.set('status', 'Success');
                 savedUpdateRun.set('response', "");
+                if(response) {
+                    savedUpdateRun.set('responseStatus', response.status);
+                } else {
+                    savedUpdateRun.set('responseStatus', 200);
+                }
+                savedUpdateRun.set('responseDesc', "Successfully fetched updates");
                 await savedUpdateRun.save();
                 return updatedWebsiteInfo.toJSON();
             }
         } else {
             savedUpdateRun.set('status', 'Success');
             savedUpdateRun.set('response', "");
+            if(response) {
+                savedUpdateRun.set('responseStatus', response.status);
+            } else {
+                savedUpdateRun.set('responseStatus', 200);
+            }
+            savedUpdateRun.set('responseDesc', "Successfully fetched updates");
             await savedUpdateRun.save();
             const newWebsiteInfo = new WebsiteInfo(preparedData);
             const newWebsiteInfoFull = new WebsiteInfoFull(preparedDataFull);
@@ -610,6 +635,7 @@ export type IWebsiteTable = IWebsite & {
     frameWorkUpdateStatus: frameWorkUpdateStatus;
     [key: string]: string | number | string[] | frameWorkUpdateStatus | tableSourceField | UpdateInfo[] | any;
 }
+
 const versionTypeMapping = {
     NOT_CURRENT: 'Needs Update',
     CURRENT: 'Up to Date',
@@ -939,6 +965,264 @@ export async function getWebsitesTable(
         statistics
     };
 }
+
+export type Pagination = {
+    page: number;
+    pageSize: number;
+    nextPage: number;
+    isLastPage: boolean;
+    isFistPage: boolean;
+    previousPage: number;
+    totalPages: number;
+    remainingPages: number;
+}
+
+
+export type IWebsitePage = Partial<IWebsite> & {
+    id: string,
+    siteName: string,
+    favicon: string,
+    siteUrl: string,
+    frameWorkType: string,
+    types: string[],
+    tags?: string[],
+    folders: string[],
+    teams: string[],
+    updatedAt: string,
+    updatedAtText: string,
+    updateType: string,
+    componentsNumber: number,
+    componentsUpdatedNumber: number,
+    componentsWithUpdatesNumber: number,
+    componentsWithSecurityUpdatesNumber: number,
+    frameWorkUpdateStatus: frameWorkUpdateStatus;
+    frameworkVersion?: {
+        status: string,
+        currentVersion: string,
+        recommendedVersion: string,
+        latestVersion: string,
+    };
+    [key: string]: string | number | string[] | frameWorkUpdateStatus | tableSourceField | UpdateInfo[] | any;
+}
+
+export async function getWorkspaceTags(workspaceId: string): Promise<string[]> {
+    await connectMongo();
+    console.log('getWorkspaceTags');
+    if (workspaceId === 'personal') {
+        let user = await getUser();
+        let userId = user.id;
+        const websites = await Website.find({user: userId, workspace: null});
+        const tags = [];
+        for (const website of websites) {
+            if(website.tags) {
+                tags.push(...website.tags);
+            }
+        }
+        return Array.from(new Set(tags));
+    } else {
+        const websites = await Website.find({workspace: workspaceId});
+        const tags = [];
+        for (const website of websites) {
+            if(website.tags) {
+                tags.push(...website.tags);
+            }
+        }
+        return Array.from(new Set(tags));
+    }
+}
+export async function getWebsitesPage(
+    workspaceId: string,
+    websiteIds?: (string | Schema.Types.ObjectId)[],
+    pagination: GridPaginationModel = { page: 0, pageSize: 12 },
+    filters: {
+        text?: string;
+        name?: string;
+        type?: string[];
+        folder?: string[];
+        team?: string[];
+        tags?: string[];
+        status?: string[];
+    } = {},
+    sort: {
+        field: string;
+        sort: 'asc' | 'desc';
+    } = {field: 'updatedAt', sort: 'desc'},
+): Promise<{
+    data: IWebsitePage[];
+    count: number;
+    remaining: number;
+    pagination: Pagination;
+}> {
+    await connectMongo();
+    console.log('getWebsitesPage');
+
+    console.time('getWebsitesPage');
+    let websites = [];
+    if (workspaceId == "personal") {
+        let user = await getUser();
+        let userId = user.id;
+        if (websiteIds?.length) {
+            websites = await Website.find({
+                user: userId,
+                workspace: null,
+                _id: { $in: websiteIds },
+                isDeleted: { $ne: true }
+            });
+        } else {
+            websites = await Website.find({
+                user: userId,
+                workspace: null,
+                isDeleted: {$ne: true}
+            });
+        }
+    } else {
+        if(websiteIds?.length) {
+            websites = await Website.find({
+                workspace: workspaceId,
+                _id: { $in: websiteIds },
+                isDeleted: { $ne: true }
+            });
+        } else {
+            websites = await Website.find({
+                workspace: workspaceId,
+                isDeleted: {$ne: true}
+            });
+        }
+    }
+    const websitesData: IWebsitePage[] = [];
+    const websiteInfos: Record<string, IWebsiteInfo> = {};
+    for (const website of websites) {
+        const websiteInfo = await WebsiteInfo.find({
+            website: website._id
+        }, {
+            frameworkInfo: 1,
+            websiteComponentsInfo: 1,
+            updatedAt: 1,
+            createdAt: 1,
+        }).sort({createdAt: -1}).limit(1);
+
+        if (websiteInfo[0]) {
+            websiteInfos[website._id.toString()] = websiteInfo[0];
+        }
+    }
+    console.timeEnd('getWebsitesPage');
+    console.time('process websitesPage');
+    for (const website of websites) {
+        const websiteObj: IWebsite = website.toJSON();
+        const websiteInfo = websiteInfos[websiteObj.id.toString()];
+        const components: UpdateInfo[] =  (websiteInfo?.websiteComponentsInfo || []).map((component) => {
+            return {
+                ...component,
+                available_releases: []
+            }
+        });
+        const folders = await Folder.find({workspace: workspaceId, websites: websiteObj.id});
+        const teams = await Team.find({workspace: workspaceId, websites: websiteObj.id});
+        const componentsUpdated = components.filter((component) => component.type === 'CURRENT') || [];
+        const componentsWithUpdates = components.filter((component) => component.type === 'NOT_CURRENT') || [];
+        const componentsWithSecurityUpdates = components.filter((component) => component.type === 'NOT_SECURE') || [];
+        const frameWorkUpdateStatus = websiteInfo?.frameworkInfo.type || "UNKNOWN";
+        let status: IWebsiteTable['frameWorkUpdateStatus'] = "Up to Date";
+        if (componentsWithUpdates?.length || frameWorkUpdateStatus === "NOT_CURRENT") {
+            status = "Needs Update";
+        }
+        if (componentsWithSecurityUpdates?.length || frameWorkUpdateStatus === "NOT_SECURE") {
+            status = "Security Update";
+        }
+        if (frameWorkUpdateStatus === "REVOKED") {
+            status = "Revoked";
+        }
+        if (frameWorkUpdateStatus === "UNKNOWN") {
+            status = "Unknown";
+        }
+        if (frameWorkUpdateStatus === "NOT_SUPPORTED") {
+            status = "Not Supported";
+        }
+        const siteData: IWebsitePage = {
+            id: websiteObj.id,
+            siteName: websiteObj.title ? websiteObj.title : websiteObj.url,
+            favicon: websiteObj.favicon,
+            siteUrl: websiteObj.url,
+            frameWorkType: websiteObj.type && ['Drupal', 'Wordpress'].includes(websiteObj.type.name) ? websiteObj.type.name : 'Other',
+            types: websiteObj.type ? [websiteObj.type.name, ...(websiteObj.type.subTypes.map((subType) => subType.name))] : [],
+            tags: websiteObj.tags || [],
+            updatedAtText: websiteInfo?.updatedAt ? dayjs(websiteInfo?.updatedAt).fromNow() : "Never",
+            updatedAt: dayjs(websiteInfo?.updatedAt || '1970-01-01T00:00:00.000Z').format('MMM D, YYYY'),
+            updateType: websiteObj.syncConfig?.enabled ? 'Auto' : 'Manual',
+            componentsNumber: components.length,
+            componentsUpdatedNumber: componentsUpdated.length,
+            componentsWithUpdatesNumber: componentsWithUpdates.length,
+            componentsWithSecurityUpdatesNumber: componentsWithSecurityUpdates.length,
+            frameWorkUpdateStatus: status,
+            folders: folders.map((folder) => folder._id.toString()),
+            teams: teams.map((team) => team._id.toString()),
+        }
+        if (websiteInfo?.frameworkInfo) {
+            siteData.frameworkVersion = {
+                status: versionTypeMapping[websiteInfo.frameworkInfo?.type] || 'Unknown',
+                currentVersion: websiteInfo.frameworkInfo.current_version || 'N/A',
+                recommendedVersion: websiteInfo.frameworkInfo.recommended_version || 'N/A',
+                latestVersion: websiteInfo.frameworkInfo.latest_version || 'N/A'
+            }
+        }
+
+        websitesData.push(siteData);
+    }
+
+    if (Object.keys(filters).length) {
+        const filteredData = websitesData.filter((website) => {
+            return filterWebsitesPage(website, filters);
+        });
+        websitesData.length = 0;
+        websitesData.push(...filteredData);
+    }
+
+    if(sort.field) {
+        websitesData.sort((a, b) => {
+            const field = sort.field;
+            const order = sort.sort;
+            if (a[field].value && b[field].value) {
+                if(a[field].value < b[field].value) {
+                    return order === 'asc' ? -1 : 1;
+                }
+                if(a[field].value > b[field].value) {
+                    return order === 'asc' ? 1 : -1;
+                }
+            } else {
+                if (a[field] < b[field]) {
+                    return order === 'asc' ? -1 : 1;
+                }
+                if (a[field] > b[field]) {
+                    return order === 'asc' ? 1 : -1;
+                }
+            }
+            return -1;
+        });
+    }
+    console.timeEnd('process websitesPage');
+
+    const start = pagination.page * pagination.pageSize < 0 ? 0 : pagination.page * pagination.pageSize;
+    const end = start + pagination.pageSize;
+
+    const totalPages = Math.ceil(websitesData.length / pagination.pageSize);
+    const remainingPages = Math.ceil((websitesData.length - end) / pagination.pageSize);
+    return {
+        data: websitesData.slice(start > websitesData.length ? websitesData.length - pagination.pageSize : start, end > websitesData.length ? websitesData.length : end),
+        count: websitesData.length,
+        remaining: websitesData.length - end,
+        pagination: {
+            page: pagination.page,
+            pageSize: pagination.pageSize,
+            nextPage: pagination.page + 1 < totalPages ? pagination.page + 1 : totalPages,
+            isLastPage: pagination.page + 1 >= totalPages,
+            isFistPage: pagination.page === 0,
+            previousPage: pagination.page - 1 > 0 ? pagination.page - 1 : 0,
+            totalPages: totalPages,
+            remainingPages: remainingPages,
+        }
+    };
+}
+
 
 export async function getWebsites(userId?: string): Promise<IWebsite[]> {
     await connectMongo();

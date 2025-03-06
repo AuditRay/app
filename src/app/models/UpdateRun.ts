@@ -5,6 +5,8 @@ export type IUpdateRun = {
     website: string | Schema.Types.ObjectId;
     status: "In Progress" | "Success" | "Failed";
     response: string;
+    responseStatus: string;
+    responseDesc: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -13,7 +15,9 @@ const ModelSchema = new Schema<IUpdateRun>(
     {
         website: {type: Schema.Types.ObjectId, ref: 'Website'},
         status: String,
-        response: String
+        response: String,
+        responseStatus: String,
+        responseDesc: String,
     },
     {
         timestamps: true,

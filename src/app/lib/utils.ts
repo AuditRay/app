@@ -1,5 +1,5 @@
 import {GridFilterModel} from "@mui/x-data-grid-pro";
-import {IWebsiteTable} from "@/app/actions/websiteActions";
+import {IWebsitePage, IWebsiteTable} from "@/app/actions/websiteActions";
 import { parseDocument } from 'htmlparser2';
 
 // Define types for schema and marks
@@ -395,6 +395,99 @@ export function filterWebsiteTable(website: IWebsiteTable, filters: GridFilterMo
                 break;
             }
         }
+    }
+    return valid;
+}
+
+export function filterWebsitesPage(website: IWebsitePage, filters: {
+    text?: string;
+    name?: string;
+    type?: string[];
+    folder?: string[];
+    team?: string[];
+    tags?: string[];
+    status?: string[];
+}): Boolean {
+    let valid = true;
+    if(filters.text) {
+        if(
+            website.siteName?.toLowerCase().includes(filters.text.toLowerCase()) ||
+            website.siteUrl?.toLowerCase().includes(filters.text.toLowerCase()) ||
+            website.frameWorkType?.toLowerCase().includes(filters.text.toLowerCase()) ||
+            website.frameWorkUpdateStatus?.toLowerCase().includes(filters.text.toLowerCase()) ||
+            website.tags?.join(' ').toLowerCase().includes(filters.text.toLowerCase())
+        ) {
+            valid = true;
+        } else {
+            valid = false;
+        }
+    }
+    if(filters.name && website.siteName?.toLowerCase().includes(filters.name.toLowerCase())) {
+        valid = true;
+    } else if (filters.name && !website.siteName?.toLowerCase().includes(filters.name.toLowerCase())) {
+        valid = false;
+    }
+    if(filters.type && filters.type.length > 0) {
+        let validType = false
+        for(const type of filters.type) {
+            if(website.frameWorkType?.toLowerCase() == type.toLowerCase()) {
+                validType = true;
+                break;
+            }
+        }
+        valid = valid && validType;
+    } else {
+        valid = valid && true;
+    }
+    if(filters.status && filters.status.length > 0) {
+        let validStatus = false;
+        for(const status of filters.status) {
+            if(website.frameWorkUpdateStatus?.toLowerCase() == status.toLowerCase()) {
+                validStatus = true;
+                break;
+            }
+        }
+        valid = valid && validStatus;
+    } else {
+        valid = valid && true;
+    }
+    if(filters.folder && filters.folder.length > 0) {
+        let validFolder = false;
+        for(const folder of filters.folder) {
+            const websiteFolder = website.folders?.find(f => f == folder);
+            if(websiteFolder) {
+                validFolder = true;
+                break;
+            }
+        }
+        valid = valid && validFolder;
+    } else {
+        valid = valid && true;
+    }
+    if(filters.team && filters.team.length > 0) {
+        let validTeams = false;
+        for(const team of filters.team) {
+            const websiteTeam = website.teams?.find(t => t == team);
+            if(websiteTeam) {
+                validTeams = true;
+                break;
+            }
+        }
+        valid = valid && validTeams;
+    } else {
+        valid = valid && true;
+    }
+    if(filters.tags && filters.tags.length > 0) {
+        let validTags = false;
+        for(const tag of filters.tags) {
+            if(website.tags?.includes(tag)) {
+                validTags = true;
+                break;
+            }
+        }
+        valid = valid && validTags;
+    } else {
+        valid = valid && true;
     }
     return valid;
 }

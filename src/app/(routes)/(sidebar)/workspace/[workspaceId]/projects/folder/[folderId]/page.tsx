@@ -1,17 +1,13 @@
 'use server'
-import {Grid2 as Grid, Paper, Box, Card, Tooltip, Stack, IconButton, Menu} from "@mui/material";
+import {Paper, Box} from "@mui/material";
 import Link from '@/app/ui/Link';
-import { Image } from "@/components/image";
 import * as React from "react";
 import AddWebsiteModal from "@/app/ui/Websites/AddWebsiteModal";
-import AddNewFolderModal from "@/app/ui/Folders/AddNewFolderModal";
 import Typography from "@mui/material/Typography";
 import {getFolder, getFolders} from "@/app/actions/folderActions";
-import WebsiteComponent from "@/app/ui/Websites/WebsiteComponent";
-import {IFolder, IWebsite} from "@/app/models";
-import UpdateWebsiteFieldValuesModal from "@/app/ui/FieldsTemplate/UpdateWebsiteFieldValuesModal";
 import UpdateFolderFieldValuesModal from "@/app/ui/FieldsTemplate/UpdateFolderFieldValuesModal";
 import {getWorkspaceFieldTemplate} from "@/app/actions/fieldTemplateActions";
+import WebsitesPageList from "@/app/ui/Websites/WebsitesPageList";
 
 export default async function Folder(
     {searchParams, params}: {
@@ -20,6 +16,7 @@ export default async function Folder(
     }
 ) {
     const { workspaceId, folderId } = await params;
+    const searchParamsData = await searchParams;
     const folder = await getFolder(workspaceId, folderId);
     let folderFields = [];
     const workspaceFieldTemplateData = await getWorkspaceFieldTemplate(workspaceId);
@@ -50,14 +47,14 @@ export default async function Folder(
         >
             <div>
                 <Box sx={{display: 'flex', alignItems: 'center'}}>
-                    <Typography variant={'h2'}>Websites - {folder?.name}</Typography>
+                    <Typography variant={'h2'}>Projects - {folder?.name}</Typography>
                     <Box sx={{ml: 'auto'}}>
                         <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>
                     </Box>
                 </Box>
                 <Box sx={{display: 'flex', alignItems: 'center'}}>
                     <Typography variant={'h5'}>
-                        <Link href={`/workspace/${workspaceId}/websites`} color="inherit" variant="subtitle2" noWrap>
+                        <Link href={`/workspace/${workspaceId}/projects`} color="inherit" variant="subtitle2" noWrap>
                             Back
                         </Link>
                     </Typography>
@@ -81,16 +78,7 @@ export default async function Folder(
                         <UpdateFolderFieldValuesModal folder={folder as any} fieldsTemplateId={workspaceFieldTemplateData.id} fieldsTemplate={workspaceFieldTemplateData}></UpdateFolderFieldValuesModal>
                     </Box>
                 )}
-                <Grid container spacing={2} sx={{mt: 5}}>
-                    {folder?.websites?.length && folder?.websites?.length > 0 && folder?.websites?.map((website, index) => (
-                        <Grid size={{
-                            xs: 12,
-                            md: 6
-                        }} key={`folder-${index}`}>
-                            <WebsiteComponent workspaceId={workspaceId} website={website as any as IWebsite}></WebsiteComponent>
-                        </Grid>
-                    ))}
-                </Grid>
+                <WebsitesPageList workspaceId={workspaceId} folderId={folderId}></WebsitesPageList>
             </div>
         </Paper>
     );

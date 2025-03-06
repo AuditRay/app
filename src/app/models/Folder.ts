@@ -28,6 +28,10 @@ const ModelSchema = new Schema<IFolder>(
             transform: (_, ret) => {
                 ret.workspace = ret.workspace?.toString();
                 ret.user = ret.user.toString();
+                ret.id = ret._id.toString();
+                if(ret.websites) {
+                    ret.websites = ret.websites.map((website: any) => website.toString());
+                }
                 delete ret._id;
             },
         },

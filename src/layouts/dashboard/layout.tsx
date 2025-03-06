@@ -18,33 +18,21 @@ import { NavMobile } from './nav-mobile';
 import { VerticalDivider } from './content';
 import { NavVertical } from './nav-vertical';
 import { layoutClasses } from '@/layouts/core';
-import { NavHorizontal } from './nav-horizontal';
-import { _account } from '../nav-config-account';
 import { MainSection } from '@/layouts/core';
-import { Searchbar } from '../components/searchbar';
 import { MenuButton } from '../components/menu-button';
 import { HeaderSection } from '@/layouts/core';
 import { LayoutSection } from '@/layouts/core';
-import { AccountDrawer } from '../components/account-drawer';
-import { SettingsButton } from '../components/settings-button';
-import { LanguagePopover } from '../components/language-popover';
-import { ContactsPopover } from '../components/contacts-popover';
 import { WorkspacesPopover } from '../components/workspaces-popover';
-import {ICONS, navData as dashboardNavData} from '../nav-config-dashboard';
 import { dashboardLayoutVars, dashboardNavColorVars } from './css-vars';
-import { NotificationsDrawer } from '../components/notifications-drawer';
 
 import type { MainSectionProps } from '@/layouts/core';
 import type { HeaderSectionProps } from '@/layouts/core';
 import type { LayoutSectionProps } from '@/layouts/core';
-import { getFiltersViews } from '@/app/actions/filterViewsActions';
+import {getLists} from '@/app/actions/filterViewsActions';
 import {useParams} from "next/navigation";
 import {IFiltersView, IUser} from "@/app/models";
 import React from "react";
 import {userSessionState} from "@/app/lib/uiStore";
-import {getFullUser, getUser} from "@/app/actions/getUser";
-import {Label} from "@/components/label";
-import {CONFIG} from "@/global-config";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import InputIcon from "@mui/icons-material/Input";
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -53,6 +41,10 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import PersonIcon from '@mui/icons-material/Person';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
+import Link from "@/app/ui/Link";
+import {Logout} from "@mui/icons-material";
+import Typography from "@mui/material/Typography";
+import Tooltip from "@mui/material/Tooltip";
 // ----------------------------------------------------------------------
 
 type LayoutBaseProps = Pick<LayoutSectionProps, 'sx' | 'children' | 'cssVars'>;
@@ -138,13 +130,13 @@ export function DashboardLayout({
       subheader: 'Workspace',
       items: [
         {
-          title: 'Websites',
-          path: `/workspace/${workspaceId}/websites`,
+          title: 'Projects',
+          path: `/workspace/${workspaceId}/projects`,
           icon: <ViewModuleIcon />,
         },
         {
-          title: 'Views',
-          path: `/workspace/${workspaceId}/websites/views`,
+          title: 'Lists',
+          path: `/workspace/${workspaceId}/projects/lists`,
           icon: <DashboardCustomizeIcon />,
           children: []
         },
@@ -154,22 +146,23 @@ export function DashboardLayout({
     settingsMenu,
   ]);
   React.useEffect(() => {
-    getFiltersViews(workspaceId).then((filtersViews) => {
+    getLists(workspaceId).then((lists) => {
       setNavData([
         {
           subheader: 'Workspace',
           items: [
             {
-              title: 'Websites',
-              path: `/workspace/${workspaceId}/websites`,
+              title: 'Projects',
+              path: `/workspace/${workspaceId}/projects`,
               icon: <ViewModuleIcon />,
             },
             {
-              title: 'Views',
-              path: `/workspace/${workspaceId}/websites/views`,
+              title: 'Lists',
+              path: `/workspace/${workspaceId}/projects/lists`,
               icon:  <DashboardCustomizeIcon />,
-              children: filtersViews.map((view) => {
-                return { title: view.title, path: `/workspace/${workspaceId}/websites/views/${view.id}` }
+              disabled: lists.length === 0,
+              children: lists.map((list) => {
+                return { title: list.title, path: `/workspace/${workspaceId}/projects/lists/${list.id}` }
               })
             },
             { title: 'Alerts', path: `/workspace/${workspaceId}/alerts`, icon: <NotificationsIcon />},
@@ -270,15 +263,34 @@ export function DashboardLayout({
         bottomArea: !isNavMini && (
             <>
               <Box sx={{ py: 2.5, px: 4}}>
-                <WorkspacesPopover
-                    data={sessionFullUser?.workspaces?.map(workspace => ({
-                      id: workspace.id,
-                      name: workspace.name
-                    })) || []}
-                    sx={{ color: 'var(--layout-nav-text-primary-color)' }}
-                    bottom={true}
-                />
+                <Tooltip title={"Workspaces"} placement={"top"}>
+                  <WorkspacesPopover
+                      data={sessionFullUser?.workspaces?.map(workspace => ({
+                        id: workspace.id,
+                        name: workspace.name
+                      })) || []}
+                      sx={{ color: 'var(--layout-nav-text-primary-color)' }}
+                      bottom={true}
+                  />
+                </Tooltip>
               </Box>
+              {sessionUser &&
+                <Box sx={{ pb: 2.5, px: 4, display: "flex", gap: 1}}>
+                  <PersonIcon/>
+                  <Tooltip title={sessionUser.email} placement={"top"}>
+                    <Typography variant={'caption'}>
+                      {sessionUser.firstName} {sessionUser.lastName}
+                    </Typography>
+                  </Tooltip>
+                  <Box sx={{ml: 'auto'}}>
+                    <Tooltip title={'Logout'} placement={"top"}>
+                      <Link href={'/logout'} variant="subtitle2">
+                        <Logout fontSize={'small'}/>
+                      </Link>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              }
             </>
         )
       }}

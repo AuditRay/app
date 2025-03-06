@@ -49,14 +49,14 @@ export function LoginForm() {
                 autoComplete="email"
             />
             <Box sx={{ gap: 1.5, display: 'flex', flexDirection: 'column' }}>
-                <Link
-                    href="#"
-                    variant="body2"
-                    color="inherit"
-                    sx={{ alignSelf: 'flex-end' }}
-                >
-                    Forgot password?
-                </Link>
+                {/*<Link*/}
+                {/*    href="#"*/}
+                {/*    variant="body2"*/}
+                {/*    color="inherit"*/}
+                {/*    sx={{ alignSelf: 'flex-end' }}*/}
+                {/*>*/}
+                {/*    Forgot password?*/}
+                {/*</Link>*/}
                 <TextField
                     error={!!state?.errors?.password}
                     helperText={state?.errors?.password}

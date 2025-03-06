@@ -51,11 +51,14 @@ export default async function Websites(
                             sx={{
                                 '&:hover': {
                                     'backgroundColor': '#eaedef',
+                                    "a": {
+                                        'textDecoration': 'none'
+                                    }
                                 },
                                 'backgroundColor': '#DFE3E8'
                             }}
                         >
-                            <Link href={`/workspace/${workspaceId}/websites/folder/all`} color="inherit" variant="subtitle2" noWrap>
+                            <Link href={`/workspace/${workspaceId}/projects/folder/all`} color="inherit" variant="subtitle2" noWrap>
                                 <Box sx={{ position: 'relative', p: 1 }}>
                                     <Tooltip title={'All Websites'} placement="bottom-end">
                                         <Image

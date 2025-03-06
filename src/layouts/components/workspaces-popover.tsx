@@ -40,7 +40,7 @@ export function WorkspacesPopover({ data = [], bottom, sx, ...other }: Workspace
   console.log('workspace', workspace, workspaceId, data, currentWorkspace);
   const handleChangeWorkspace = useCallback(
     (newValue: (typeof data)[0]) => {
-        router.push(`/workspace/${newValue.id}/websites`)
+        router.push(`/workspace/${newValue.id}/projects`)
         onClose();
     },
     [onClose]

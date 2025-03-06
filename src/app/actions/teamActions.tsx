@@ -49,6 +49,7 @@ export async function getTeams(workspaceId: string): Promise<ITeamPopulated[]> {
     if(!workspace) {
         throw new Error('Workspace not found');
     }
+
     const teams = await Team.find({workspace: workspace._id}).populate<{
         members: {
             user: IUser;

@@ -94,7 +94,7 @@ const prepareColumns = (workspaceId: string, viewMore: (title: React.ReactNode |
                 params.value && (
                     <>
                         <Box>
-                            <Link href={`/workspace/${workspaceId}/websites/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
+                            <Link href={`/workspace/${workspaceId}/projects/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
                                 <Box component={'img'}  src={`${params.row.favicon ?? '/tech/other.png'}`} alt={params.value} sx={{width: '20px', verticalAlign: 'middle', mr: '10px'}} />{params.value}
                             </Link>
                             <Link href={params.row.url} target={'_blank'}>
