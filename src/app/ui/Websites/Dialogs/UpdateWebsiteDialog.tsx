@@ -55,13 +55,14 @@ export default function UpdateWebsiteDialog({
     website?: IWebsite,
     workspaceId: string,
     open: boolean,
-    setOpenAction: (open: boolean) => void
+    setOpenAction: (open: boolean, cancel: boolean) => void
 }) {
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [fieldsTemplate, setFieldsTemplate] = useState<string | undefined>();
     const [fieldsTemplateError, setFieldsTemplateError] = useState<string | null>(null);
     const [tags, setTags] = useState<string[] | undefined>([]);
+    const [siteName, setSiteName] = useState<string | undefined>('');
     const [enableSync, setEnableSync] = useState<boolean>(true);
     const [enableUptime, setEnableUptime] = useState<boolean>(false);
     const [syncInterval, setSyncInterval] = useState<number>(1);
@@ -78,9 +79,10 @@ export default function UpdateWebsiteDialog({
     const handleDeleteOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
         setIsOpen(isOpen);
     }
-    const handleClose = () => {
-        setOpenAction(false);
+    const handleClose = (isCancel: boolean = false) => {
+        setOpenAction(false, isCancel);
         setTags([]);
+        setSiteName('');
         setTagsError('');
         setTimeZone('');
         setTimeViews(['hours', 'minutes']);
@@ -98,6 +100,7 @@ export default function UpdateWebsiteDialog({
             setFieldTemplates(fieldTemplates);
             if(!loadedWebsite) return '';
             setTags(loadedWebsite.tags);
+            setSiteName(loadedWebsite.siteName || '');
             setEnableSync(loadedWebsite.syncConfig?.enabled);
             setEnableUptime(loadedWebsite.enableUptimeMonitor || false);
             setSyncInterval(loadedWebsite.syncConfig?.syncInterval || 1);
@@ -133,6 +136,19 @@ export default function UpdateWebsiteDialog({
             >
                 <DialogTitle>Edit Website</DialogTitle>
                 <DialogContent>
+                    <TextField
+                        autoFocus
+                        disabled={isSaving}
+                        margin="dense"
+                        id="name"
+                        name="name"
+                        label="Website Name"
+                        type="name"
+                        value={siteName}
+                        onChange={(e) => setSiteName(e.target.value)}
+                        fullWidth
+                        variant="outlined"
+                    />
                     <Autocomplete
                         multiple
                         id="tags"
@@ -259,7 +275,7 @@ export default function UpdateWebsiteDialog({
                             }}
                         > Delete Website </Button>
                     </Box>
-                    <Button disabled={isSaving} onClick={handleClose}>Cancel</Button>
+                    <Button disabled={isSaving} onClick={() => handleClose(true)}>Cancel</Button>
                     <Box sx={{ m: 1, position: 'relative' }}>
                         <Button
                             disabled={isSaving}
@@ -269,6 +285,7 @@ export default function UpdateWebsiteDialog({
                                 setIsSaving(true);
                                 async function save() {
                                     await updateWebsite(websiteId, {
+                                        siteName,
                                         tags,
                                         enableUptimeMonitor: false,
                                         syncConfig: {

@@ -51,6 +51,7 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
     const [fieldsTemplate, setFieldsTemplate] = useState<string | undefined>();
     const [fieldsTemplateError, setFieldsTemplateError] = useState<string | null>(null);
     const [tags, setTags] = useState<string[] | undefined>([]);
+    const [siteName, setSiteName] = useState<string | undefined>('');
     const [enableSync, setEnableSync] = useState<boolean>(true);
     const [enableUptime, setEnableUptime] = useState<boolean>(false);
     const [syncInterval, setSyncInterval] = useState<number>(1);
@@ -89,6 +90,7 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
             setFieldTemplates(fieldTemplates);
             if(!loadedWebsite) return '';
             setTags(loadedWebsite.tags);
+            setSiteName(loadedWebsite.siteName);
             setEnableSync(loadedWebsite.syncConfig?.enabled);
             setEnableUptime(loadedWebsite.enableUptimeMonitor || false);
             setSyncInterval(loadedWebsite.syncConfig?.syncInterval || 1);
@@ -125,6 +127,19 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
             >
                 <DialogTitle>Edit Website</DialogTitle>
                 <DialogContent>
+                    <TextField
+                        autoFocus
+                        disabled={isSaving}
+                        margin="dense"
+                        id="name"
+                        name="name"
+                        label="Website Name"
+                        type="name"
+                        value={siteName}
+                        onChange={(e) => setSiteName(e.target.value)}
+                        fullWidth
+                        variant="outlined"
+                    />
                     <Autocomplete
                         multiple
                         id="tags"
@@ -261,6 +276,7 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
                                 setIsSaving(true);
                                 async function save() {
                                     await updateWebsite(websiteId, {
+                                        siteName,
                                         tags,
                                         enableUptimeMonitor: false,
                                         syncConfig: {

@@ -14,7 +14,7 @@ import {detailedDiff} from 'deep-object-diff';
 import OpenAI from 'openai';
 import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
 import defaultViews from "@/app/views";
-import {Folder, ITeamPopulated, IUpdateRun, IUser, Team, UpdateRun, User} from "@/app/models";
+import {Folder, IFolder, ITeam, ITeamPopulated, IUpdateRun, IUser, Team, UpdateRun, User} from "@/app/models";
 import * as fs from "node:fs";
 import {GridFilterModel, GridPaginationModel, GridSortModel, GridFilterItem} from "@mui/x-data-grid-pro";
 import {filterWebsitesPage, filterWebsiteTable} from "@/app/lib/utils";
@@ -580,9 +580,10 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
     //     website.markModified('uptimeMonitorInfo');
     // }
     website.set(updateData);
+    console.log('updateData', updateData);
     website.markModified('syncConfig');
     const updatedWebsite = await website.save();
-    revalidatePath(`/website/${websiteId}`);
+    revalidatePath(`/workspace/${website.workspace || 'personal'}/projects/${websiteId}`);
     return updatedWebsite.toJSON();
 }
 
@@ -1055,11 +1056,11 @@ export async function getWebsitesPage(
 }> {
     await connectMongo();
     console.log('getWebsitesPage');
-
     console.time('getWebsitesPage');
+
+    const user = await getUser();
     let websites = [];
     if (workspaceId == "personal") {
-        let user = await getUser();
         let userId = user.id;
         if (websiteIds?.length) {
             websites = await Website.find({
@@ -1116,8 +1117,16 @@ export async function getWebsitesPage(
                 available_releases: []
             }
         });
-        const folders = await Folder.find({workspace: workspaceId, websites: websiteObj.id});
-        const teams = await Team.find({workspace: workspaceId, websites: websiteObj.id});
+        let folders: IFolder[] = [];
+        if (workspaceId === 'personal') {
+            folders = await Folder.find({workspace: null, websites: websiteObj.id, user: user.id});
+        } else {
+            folders = await Folder.find({workspace: workspaceId, websites: websiteObj.id});
+        }
+        let teams: ITeam[] = [];
+        if (workspaceId !== 'personal') {
+          teams = await Team.find({workspace: workspaceId, websites: websiteObj.id});
+        }
         const componentsUpdated = components.filter((component) => component.type === 'CURRENT') || [];
         const componentsWithUpdates = components.filter((component) => component.type === 'NOT_CURRENT') || [];
         const componentsWithSecurityUpdates = components.filter((component) => component.type === 'NOT_SECURE') || [];
@@ -1140,7 +1149,7 @@ export async function getWebsitesPage(
         }
         const siteData: IWebsitePage = {
             id: websiteObj.id,
-            siteName: websiteObj.title ? websiteObj.title : websiteObj.url,
+            siteName: websiteObj.siteName ? websiteObj.siteName : websiteObj.title ? websiteObj.title : websiteObj.url,
             favicon: websiteObj.favicon,
             siteUrl: websiteObj.url,
             frameWorkType: websiteObj.type && ['Drupal', 'Wordpress'].includes(websiteObj.type.name) ? websiteObj.type.name : 'Other',
@@ -1154,8 +1163,8 @@ export async function getWebsitesPage(
             componentsWithUpdatesNumber: componentsWithUpdates.length,
             componentsWithSecurityUpdatesNumber: componentsWithSecurityUpdates.length,
             frameWorkUpdateStatus: status,
-            folders: folders.map((folder) => folder._id.toString()),
-            teams: teams.map((team) => team._id.toString()),
+            folders: folders.map((folder) => folder.id.toString()),
+            teams: teams.map((team) => team.id.toString()),
         }
         if (websiteInfo?.frameworkInfo) {
             siteData.frameworkVersion = {
@@ -1307,7 +1316,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         }
     }
 
-    const {url, tags, syncConfig, workspaceId} = validatedFields.data
+    const {siteName, url, tags, syncConfig, workspaceId} = validatedFields.data
 
     await connectMongo();
 
@@ -1330,6 +1339,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
 
 
     let website = new Website({
+        siteName,
         url,
         tags: tags || [],
         user: user.id,

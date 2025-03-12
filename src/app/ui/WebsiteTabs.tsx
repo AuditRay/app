@@ -185,7 +185,7 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
             <Tabs value={selectedViewId} aria-label="basic tabs example">
                 <Tab value='' label="Updates"
                      onClick={(e: any) => {
-                         router.push(`/workspace/${websiteWorkspaceId}/websites/${website.id}`)
+                         router.push(`/workspace/${websiteWorkspaceId}/projects/${website.id}`)
                      }}
 
                      sx={{mb: 0.4}}
@@ -213,7 +213,7 @@ export default function WebsitesTabs(props: { website: IWebsite, selectedViewId:
                             if (e.target.tagName === 'svg') {
                                 e.preventDefault();
                             } else {
-                                router.push(`/workspace/${websiteWorkspaceId}/websites/${website.id}/${view.id}`)
+                                router.push(`/workspace/${websiteWorkspaceId}/projects/${website.id}/${view.id}`)
                             }
                         }}
                     />

@@ -32,6 +32,7 @@ export interface IWebsite {
     id: string;
     url: string;
     title: string;
+    siteName: string;
     type: WebsiteType;
     user: string | typeof Schema.Types.ObjectId;
     fieldsTemplate?: string | typeof Schema.Types.ObjectId;
@@ -82,6 +83,7 @@ const ModelSchema = new Schema<IWebsite>(
     {
         url: String,
         title: String,
+        siteName: String,
         favicon: String,
         token: String,
         aiSummary: String,

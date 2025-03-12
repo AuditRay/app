@@ -110,10 +110,23 @@ export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) 
                         error={!!formCurrentState?.errors?.url}
                         helperText={formCurrentState?.errors?.url}
                         margin="dense"
-                        id="name"
+                        id="url"
                         name="url"
                         label="Website Url"
                         type="url"
+                        fullWidth
+                        variant="outlined"
+                    />
+                    <TextField
+                        autoFocus
+                        disabled={isSaving}
+                        error={!!formCurrentState?.errors?.siteName}
+                        helperText={formCurrentState?.errors?.siteName}
+                        margin="dense"
+                        id="name"
+                        name="name"
+                        label="Website Name"
+                        type="name"
                         fullWidth
                         variant="outlined"
                     />
