@@ -574,16 +574,32 @@ export async function removeUserFromWorkspace(workspaceId: string, userId: strin
     return workspace.toJSON();
 }
 
-export async function inviteWorkspaceUser(userData: {firstName: string, lastName: string, email: string, role: string}): Promise<IUser> {
+export async function updateWorkspaceMemberRoles(workspaceId: string, userId: string, roles: string[]): Promise<IWorkspace> {
+    await connectMongo();
+    console.log('updateWorkspaceMemberRoles');
+    const workspace = await Workspace.findOne({_id: workspaceId});
+    if(!workspace) {
+        throw new Error('Workspace not found');
+    }
+    const member = workspace.members?.find(member => member.user.toString() === userId);
+    if(member) {
+        member.roles = roles;
+        workspace.markModified('members');
+        await workspace.save();
+    }
+    return workspace.toJSON();
+}
+
+export async function inviteWorkspaceUser(workspaceId: string, userData: {firstName: string, lastName: string, email: string, role: string}): Promise<IUser> {
     await connectMongo();
     console.log('inviteWorkspaceUser');
     const user = await getUser();
     console.log('user', user);
-    if(!user.currentSelectedWorkspace) {
+    if(!workspaceId || workspaceId === 'personal') {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
     }
     const workspace = await Workspace.findOne({
-        _id: user.currentSelectedWorkspace,
+        _id: workspaceId,
         $or: [{owner: user.id}, {users: user.id}, {"members.user": user.id}]
     });
     if(!workspace) {
@@ -591,7 +607,7 @@ export async function inviteWorkspaceUser(userData: {firstName: string, lastName
     }
     const checkUser = await User.findOne({email: userData.email});
     if (checkUser) {
-        //check if use isn't already in workspace then add the user to workspace
+        //check if user isn't already in workspace then add the user to workspace
         if (!workspace.members?.find(member => member.user.toString() === checkUser.id)) {
             if (!workspace.members) {
                 workspace.members = [];

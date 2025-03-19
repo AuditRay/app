@@ -83,6 +83,7 @@ const ModelSchema = new Schema<IWorkspace>(
             versionKey: false,
             virtuals: true,
             transform: (_, ret) => {
+                ret.id = ret._id.toString();
                 ret.owner = ret.owner.toString();
                 ret.users = ret.users.map((user: any) => user.toString());
                 ret.members = ret.members?.map((member: any) => {

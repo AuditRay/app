@@ -78,13 +78,6 @@ export default function Folder() {
                             <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>
                         </Box>
                     </Box>
-                    <Box sx={{display: 'flex', alignItems: 'center'}}>
-                        <Typography variant={'h5'}>
-                            <Link href={`/workspace/${workspaceId}/projects`} color="inherit" variant="subtitle2" noWrap>
-                                Back
-                            </Link>
-                        </Typography>
-                    </Box>
                     {folder?.id != 'all' && workspaceFieldTemplateData && workspaceFieldTemplateData.fields.length > 0 && folderFields && folderFields.length > 0 ? (
                         <>
                             <Box sx={{mt: 2}}>

@@ -22,7 +22,8 @@ import {getMonitor, getWebsiteMonitor, newMonitor, removeMonitor} from "@/app/ac
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {defaultViewsDrupal, defaultViewsWP} from "@/app/views";
-import {Types, ObjectId, Schema} from "mongoose";
+import {Types, ObjectId, Schema, Model} from "mongoose";
+import {getUserTeams} from "@/app/actions/teamActions";
 dayjs.extend(relativeTime);
 
 function setupOpenAI() {
@@ -1058,8 +1059,8 @@ export async function getWebsitesPage(
     console.log('getWebsitesPage');
     console.time('getWebsitesPage');
 
-    const user = await getUser();
-    let websites = [];
+    const user = await getUser(true);
+    let websites: any[] = [];
     if (workspaceId == "personal") {
         let userId = user.id;
         if (websiteIds?.length) {
@@ -1077,17 +1078,66 @@ export async function getWebsitesPage(
             });
         }
     } else {
-        if(websiteIds?.length) {
-            websites = await Website.find({
-                workspace: workspaceId,
-                _id: { $in: websiteIds },
-                isDeleted: { $ne: true }
-            });
+        const userRoles = user.roles?.filter((role) => role.workspace.toString() === workspaceId) || [];
+        let userRole = null;
+        if (userRoles?.length) {
+            userRole = userRoles.find((role) => role.name === "Admin");
+            if (!userRole) {
+                userRole = userRoles[0];
+            }
+        }
+
+        if (!userRole) {
+            return {
+                data: [],
+                count: 0,
+                remaining: 0,
+                pagination: {
+                    page: 0,
+                    pageSize: 0,
+                    nextPage: 0,
+                    isLastPage: true,
+                    isFistPage: true,
+                    previousPage: 0,
+                    totalPages: 0,
+                    remainingPages: 0,
+                }
+            }
+        }
+
+        if(userRole.isWorkspace && (userRole.name == 'Admin' || userRole.name == 'Owner')) {
+            if (websiteIds?.length) {
+                websites = await Website.find({
+                    workspace: workspaceId,
+                    _id: {$in: websiteIds},
+                    isDeleted: {$ne: true}
+                });
+            } else {
+                websites = await Website.find({
+                    workspace: workspaceId,
+                    isDeleted: {$ne: true}
+                });
+            }
         } else {
-            websites = await Website.find({
-                workspace: workspaceId,
-                isDeleted: {$ne: true}
-            });
+            console.log("here");
+            const userTeams = await getUserTeams(user.id, workspaceId);
+            const teamWebsiteIds: string[] = [];
+            for (const team of userTeams) {
+                if(team.websites?.length) {
+                    teamWebsiteIds.push(...team.websites.map((website) => website.toString()));
+                }
+            }
+
+            console.log('teamWebsiteIds', teamWebsiteIds);
+            if (teamWebsiteIds?.length) {
+                websites = await Website.find({
+                    workspace: workspaceId,
+                    _id: {$in: teamWebsiteIds},
+                    isDeleted: {$ne: true}
+                });
+            } else {
+                websites = [];
+            }
         }
     }
     const websitesData: IWebsitePage[] = [];

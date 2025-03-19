@@ -11,49 +11,25 @@ import Typography from '@mui/material/Typography';
 import { CONFIG } from '@/global-config';
 
 import { Label } from '@/components/label';
+import {userSessionState} from "@/app/lib/uiStore";
 
 // ----------------------------------------------------------------------
 
 export function NavUpgrade({ sx, ...other }: BoxProps) {
-    const user = {
-        photoURL: `/assets/images/mock/avatar/avatar-${1}.webp`,
-        displayName: 'Waleed Qadi',
-        email: 'waleed+vardot@waleedq.dev'
-    }
+    const sessionUser = userSessionState((state) => state.user);
   return (
     <Box
       sx={[{ px: 2, py: 5, textAlign: 'center' }, ...(Array.isArray(sx) ? sx : [sx])]}
       {...other}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-        <Box sx={{ position: 'relative' }}>
-          <Avatar src={user?.photoURL} alt={user?.displayName} sx={{ width: 48, height: 48 }}>
-            {user?.displayName?.charAt(0).toUpperCase()}
-          </Avatar>
-
-          <Label
-            color="success"
-            variant="filled"
-            sx={{
-              top: -6,
-              px: 0.5,
-              left: 40,
-              height: 20,
-              position: 'absolute',
-              borderBottomLeftRadius: 2,
-            }}
-          >
-            Free
-          </Label>
-        </Box>
-
         <Box sx={{ mb: 2, mt: 1.5, width: 1 }}>
           <Typography
             variant="subtitle2"
             noWrap
             sx={{ mb: 1, color: 'var(--layout-nav-text-primary-color)' }}
           >
-            {user?.displayName}
+            {sessionUser?.firstName} {sessionUser?.lastName}
           </Typography>
 
           <Typography
@@ -61,7 +37,7 @@ export function NavUpgrade({ sx, ...other }: BoxProps) {
             noWrap
             sx={{ color: 'var(--layout-nav-text-disabled-color)' }}
           >
-            {user?.email}
+            {sessionUser?.email}
           </Typography>
         </Box>
       </Box>

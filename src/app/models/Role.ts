@@ -7,6 +7,9 @@ export interface IRole {
     workspace: typeof Schema.Types.ObjectId | string;
     isWorkspace: boolean;
     isDefault?: boolean;
+    isOwner?: boolean;
+    isAdmin?: boolean;
+    isTeamAdmin?: boolean;
     permissions: Record<string, boolean>
 }
 

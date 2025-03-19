@@ -23,6 +23,8 @@ export default async function Websites(
 ) {
     const { workspaceId } = await params;
     const folders = await getFolders(workspaceId);
+    const user = await getUser(true);
+    const userRole = user.roles?.find(role => role.workspace === workspaceId);
     return (
         <Paper
             sx={{
@@ -34,13 +36,17 @@ export default async function Websites(
         >
             <div>
                 <Box sx={{display: 'flex', alignItems: 'center'}}>
-                    <Typography variant={'h2'}>Websites</Typography>
-                    <Box sx={{ml: 'auto'}}>
-                        <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>
-                    </Box>
-                    <Box sx={{ml: 2}}>
-                        <AddNewFolderModal workspaceId={workspaceId}></AddNewFolderModal>
-                    </Box>
+                    <Typography variant={'h2'}>Projects</Typography>
+                    {userRole?.isAdmin || userRole?.isOwner ? (
+                        <>
+                            <Box sx={{ml: 'auto'}}>
+                                <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>
+                            </Box>
+                            <Box sx={{ml: 2}}>
+                                <AddNewFolderModal workspaceId={workspaceId}></AddNewFolderModal>
+                            </Box>
+                        </>
+                    ) : null}
                 </Box>
                 <Grid container spacing={2} sx={{mt: 5}}>
                     <Grid size={{

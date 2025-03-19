@@ -11,7 +11,7 @@ export const AdminRole = async (workspaceId: string): Promise<IRole> => {
         overrideId: 'default_admin',
         id: 'default_admin',
         name: 'Admin',
-        workspace: '',
+        workspace: workspaceId,
         isWorkspace: true,
         permissions: userPermissions,
         isDefault: true

@@ -12,6 +12,8 @@ import InviteUserModal from "@/app/ui/Users/InviteUserModal";
 import DeleteUserFromWorkspaceModal from "@/app/ui/Users/DeleteUserFromWorkspaceModal";
 import Tooltip from "@mui/material/Tooltip";
 import {userSessionState} from "@/app/lib/uiStore";
+import UpdateUserWorkspaceRoleModal from "@/app/ui/Users/UpdateUserWorkspaceRoleModal";
+import EditIcon from "@mui/icons-material/Edit";
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -67,6 +69,7 @@ export default function UsersSettings({params}: {params: Promise<{workspaceId: s
     const [isPersonal, setIsPersonal] = React.useState(workspaceId == 'personal');
     const [workspaceMembers, setWorkspaceMembers] = React.useState<IMemberPopulated[]>([]);
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
+    const [isEditOpen, setEditIsOpen] = React.useState<boolean>(false);
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
     const [selectedWorkspaceMember, setSelectedWorkspaceMember] = React.useState<IMemberPopulated>();
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
@@ -155,7 +158,20 @@ export default function UsersSettings({params}: {params: Promise<{workspaceId: s
                             {
                                 field: 'ops', headerName: "", minWidth: 230,
                                 renderCell: (params) => (
-                                    <>
+                                    <Box sx={{display: 'flex', gap: 1}}>
+                                        {!params.row.roles?.find((r) => r.id == "owner") && (
+                                            <Box>
+                                                <IconButton onClick={() => {
+                                                    const workspaceMember = workspaceMembers?.find((member) => member.user.id == params.row.user.id )
+                                                    if (workspaceMember) {
+                                                        setSelectedWorkspaceMember({...workspaceMember})
+                                                        setEditIsOpen(true);
+                                                    }
+                                                }}>
+                                                    <Tooltip title={'Edit user role'}><EditIcon></EditIcon></Tooltip>
+                                                </IconButton>
+                                            </Box>
+                                        )}
                                         {params.row.user.id != user?.id && !params.row.roles?.find((r) => r.id == "owner") && (
                                             <Box>
                                                 <IconButton color={"error"} onClick={() => {
@@ -169,9 +185,9 @@ export default function UsersSettings({params}: {params: Promise<{workspaceId: s
                                                 </IconButton>
                                             </Box>
                                         )}
-                                    </>
+                                    </Box>
                                 ),
-                            }
+                            },
                         ]}
                         hideFooter={true}
                         rowSelection={false}
@@ -193,6 +209,9 @@ export default function UsersSettings({params}: {params: Promise<{workspaceId: s
                     />
 
                     <InviteUserModal open={isOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsOpen)} workspaceId={workspaceId}></InviteUserModal>
+                    {selectedWorkspaceMember && isEditOpen && workspaceId != 'personal' && (
+                        <UpdateUserWorkspaceRoleModal open={isEditOpen} setOpen={(isOpen) => handleOpen(isOpen, setEditIsOpen)} member={selectedWorkspaceMember} workspaceId={workspaceId}></UpdateUserWorkspaceRoleModal>
+                    )}
                     {selectedWorkspaceMember && isDeleteOpen && workspaceId != 'personal' && user && user.id !== selectedWorkspaceMember.user.id && (
                         <DeleteUserFromWorkspaceModal open={isDeleteOpen} setOpen={(isOpen) => handleOpen(isOpen, setIsDeleteOpen)} member={selectedWorkspaceMember} workspaceId={workspaceId}></DeleteUserFromWorkspaceModal>
                     )}

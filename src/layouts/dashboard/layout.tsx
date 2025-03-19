@@ -29,8 +29,8 @@ import type { MainSectionProps } from '@/layouts/core';
 import type { HeaderSectionProps } from '@/layouts/core';
 import type { LayoutSectionProps } from '@/layouts/core';
 import {getLists} from '@/app/actions/filterViewsActions';
-import {useParams} from "next/navigation";
-import {IFiltersView, IUser} from "@/app/models";
+import {useParams, usePathname} from "next/navigation";
+import {IFiltersView, IFolder, IUser} from "@/app/models";
 import React from "react";
 import {userSessionState} from "@/app/lib/uiStore";
 import NotificationsIcon from "@mui/icons-material/Notifications";
@@ -45,6 +45,8 @@ import Link from "@/app/ui/Link";
 import {Logout} from "@mui/icons-material";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
+import {Breadcrumbs} from "@mui/material";
+import {getFolderInfo, getWebsiteFolders} from "@/app/actions/folderActions";
 // ----------------------------------------------------------------------
 
 type LayoutBaseProps = Pick<LayoutSectionProps, 'sx' | 'children' | 'cssVars'>;
@@ -68,7 +70,7 @@ export function DashboardLayout({
   layoutQuery = 'lg',
 }: DashboardLayoutProps) {
   const theme = useTheme();
-
+  const pathname = usePathname();
   const settings = useSettingsContext();
 
   const navVars = dashboardNavColorVars(theme, settings.state.navColor, settings.state.navLayout);
@@ -79,17 +81,17 @@ export function DashboardLayout({
   const isNavMini = settings.state.navLayout === 'mini';
   const isNavHorizontal = settings.state.navLayout === 'horizontal';
   const isNavVertical = isNavMini || settings.state.navLayout === 'vertical';
-  const [filterViews, setFilterViews] = React.useState<IFiltersView[]>([]);
-  const params = useParams<{ workspaceId: string, viewId: string }>()
-  const { workspaceId, viewId } = params;
-  const [user, setUser] = React.useState<IUser | null>(null);
+  const params = useParams<{ workspaceId: string, folderId: string, websiteId: string }>()
+  const { workspaceId, folderId, websiteId } = params;
+  const [folder, setFolder] = React.useState<IFolder | null>(null);
+  const [folders, setFolders] = React.useState<IFolder[]>([]);
   const sessionUser = userSessionState((state) => state.user);
   const sessionFullUser = userSessionState((state) => state.fullUser);
-  const setSessionUser = userSessionState((state) => state.setUser);
-  const setSessionFullUser = userSessionState((state) => state.setFullUser);
+  const userWorkspaceRole = userSessionState((state) => state.userWorkspaceRole);
+  const canViewSettings = userWorkspaceRole?.isAdmin || userWorkspaceRole?.isOwner || userWorkspaceRole?.isTeamAdmin;
   const settingsMenu: NavSectionProps['data'][0] = {
     subheader: 'Settings',
-    items: [
+    items: userWorkspaceRole?.isAdmin || userWorkspaceRole?.isOwner  ? [
       {
         title: 'General',
         path: `/workspace/${workspaceId}/settings`,
@@ -120,7 +122,13 @@ export function DashboardLayout({
         path: `/workspace/${workspaceId}/settings/teams`,
         icon: <GroupsIcon />,
       },
-    ],
+    ] : userWorkspaceRole?.isTeamAdmin ? [
+      {
+        title: 'Teams',
+        path: `/workspace/${workspaceId}/settings/teams`,
+        icon: <GroupsIcon />,
+      }
+    ] : []
   }
   const [navData, setNavData] = React.useState<NavSectionProps['data']>([
     /**
@@ -140,14 +148,26 @@ export function DashboardLayout({
           icon: <DashboardCustomizeIcon />,
           children: []
         },
-        { title: 'Alerts', path: `/workspace/${workspaceId}/alerts`, icon: <NotificationsIcon /> },
+        { title: 'Tests', path: `/workspace/${workspaceId}/tests`, icon: <NotificationsIcon /> },
       ],
     },
-    settingsMenu,
+    canViewSettings ? settingsMenu : {
+      subheader: '',
+      items: [],
+    },
   ]);
   React.useEffect(() => {
+    getWebsiteFolders(workspaceId, websiteId).then((folders) => {
+      setFolders(folders);
+    });
+  }, [websiteId])
+  React.useEffect(() => {
+    getFolderInfo(workspaceId, folderId).then((folder) => {
+      console.log("folder", folder);
+        setFolder(folder);
+    });
     getLists(workspaceId).then((lists) => {
-      setNavData([
+      const nav = [
         {
           subheader: 'Workspace',
           items: [
@@ -165,13 +185,26 @@ export function DashboardLayout({
                 return { title: list.title, path: `/workspace/${workspaceId}/projects/lists/${list.id}` }
               })
             },
-            { title: 'Alerts', path: `/workspace/${workspaceId}/alerts`, icon: <NotificationsIcon />},
+            { title: 'Tests', path: `/workspace/${workspaceId}/tests`, icon: <NotificationsIcon />},
           ],
         },
         settingsMenu,
-      ])
+      ]
+      if(isNavMini) {
+        nav.push({
+          subheader: 'Account',
+          items: [
+            {
+              title: 'Logout',
+              path: '/logout',
+              icon: <Logout/>,
+            }
+          ]
+        })
+      }
+      setNavData(nav);
     });
-  }, []);
+  }, [folderId, canViewSettings, isNavMini]);
 
   const renderHeader = () => {
     const headerSlotProps: HeaderSectionProps['slotProps'] = {
@@ -219,13 +252,73 @@ export function DashboardLayout({
           )}
 
           {/** @slot Workspace popover */}
-          {isNavMini && (<WorkspacesPopover
-            data={sessionFullUser?.workspaces?.map(workspace => ({
-              id: workspace.id,
-              name: workspace.name
-            })) || []}
-            sx={{ color: 'var(--layout-nav-text-primary-color)' }}
-          />)}
+          <Breadcrumbs aria-label="breadcrumb">
+            <Box>
+              {sessionFullUser?.workspaces?.length ? (
+                <WorkspacesPopover
+                    data={sessionFullUser?.workspaces?.map(workspace => ({
+                      id: workspace.id,
+                      name: workspace.name
+                    })) || []}
+                    sx={{ color: 'var(--layout-nav-text-primary-color)' }}
+                />
+              ) : (
+                <Typography variant={'h6'}>...</Typography>
+              )}
+            </Box>
+            {pathname.includes('/projects') && (
+                <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/projects`}>
+                  Projects
+                </Link>
+            )}
+            {pathname.includes('/projects/folder') && (
+                <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/projects/folder/${folderId}`}>
+                  {folder?.name || 'Folder'}
+                </Link>
+            )}
+            {pathname.includes('/projects') && websiteId && folders && (
+                <Box>
+                  {folders.map((folder, index) => (
+                        <Link key={`folder-${index}`} underline="hover" color="inherit" href={`/workspace/${workspaceId}/projects/folder/${folder.id}`}>
+                            {folder.name}
+                        </Link>
+                  ))}
+                </Box>
+            )}
+            {pathname.includes('/projects') && websiteId && (
+                <Typography sx={{ color: 'text.primary' }}>Project</Typography>
+            )}
+            {pathname.includes('/tests') && !pathname.includes('/settings') && (
+                <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/tests`}>
+                  Tests
+                </Link>
+            )}
+            {pathname.includes('/settings') && (
+                <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/settings`}>
+                  Settings
+                </Link>
+            )}
+            {pathname.includes('/settings') && pathname.endsWith('/settings') &&  (
+                <Typography sx={{ color: 'text.primary' }}>General</Typography>
+            )}
+            {pathname.includes('/settings') && pathname.endsWith('/tests') &&  (
+                <Typography sx={{ color: 'text.primary' }}>Tests</Typography>
+            )}
+            {pathname.includes('/settings') && pathname.endsWith('/custom-fields') &&  (
+                <Typography sx={{ color: 'text.primary' }}>Custom Fields</Typography>
+            )}
+            {pathname.includes('/settings') && pathname.endsWith('/integrations') &&  (
+                <Typography sx={{ color: 'text.primary' }}>Integrations</Typography>
+            )}
+            {pathname.includes('/settings') && pathname.endsWith('/users') &&  (
+                <Typography sx={{ color: 'text.primary' }}>Users</Typography>
+            )}
+            {pathname.includes('/settings') && pathname.includes('/teams') &&  (
+                <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/settings/teams`}>
+                  Teams
+                </Link>
+            )}
+          </Breadcrumbs>
         </>
       ),
       rightArea: (
@@ -260,20 +353,8 @@ export function DashboardLayout({
         )
       }
       slots={{
-        bottomArea: !isNavMini && (
+        bottomArea: !isNavMini ? (
             <>
-              <Box sx={{ py: 2.5, px: 4}}>
-                <Tooltip title={"Workspaces"} placement={"top"}>
-                  <WorkspacesPopover
-                      data={sessionFullUser?.workspaces?.map(workspace => ({
-                        id: workspace.id,
-                        name: workspace.name
-                      })) || []}
-                      sx={{ color: 'var(--layout-nav-text-primary-color)' }}
-                      bottom={true}
-                  />
-                </Tooltip>
-              </Box>
               {sessionUser &&
                 <Box sx={{ pb: 2.5, px: 4, display: "flex", gap: 1}}>
                   <PersonIcon/>
@@ -292,7 +373,7 @@ export function DashboardLayout({
                 </Box>
               }
             </>
-        )
+        ) :  null
       }}
     />
   );

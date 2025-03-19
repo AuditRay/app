@@ -11,7 +11,7 @@ export const MemberRole = async (workspaceId: string): Promise<IRole> => {
         overrideId: 'default_member',
         id: 'default_member',
         name: 'Member',
-        workspace: '',
+        workspace: workspaceId,
         isWorkspace: true,
         permissions: userPermissions,
         isDefault: true

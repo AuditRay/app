@@ -15,12 +15,12 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
 import {Autocomplete, Chip, FormControl, InputLabel, NativeSelect, Select} from "@mui/material";
 import {createFiltersViews} from "@/app/actions/filterViewsActions";
-import {createWorkspace, inviteWorkspaceUser} from "@/app/actions/workspaceActions";
-import {IRole} from "@/app/models";
+import {createWorkspace, inviteWorkspaceUser, updateWorkspaceMemberRoles} from "@/app/actions/workspaceActions";
+import {IMemberPopulated, IRole, IUser} from "@/app/models";
 import {getWorkspaceAllRoles, getWorkspaceRoles} from "@/app/actions/rolesActions";
 import MenuItem from "@mui/material/MenuItem";
 
-export default function InviteUserModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
+export default function UpdateUserWorkspaceRoleModal({open, setOpen, workspaceId, member}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string, member: IMemberPopulated}) {
     const [isSaving, setIsSaving] = useState(false);
     const [workspaceRoles, setWorkspaceRoles] = useState<IRole[]>([
         {
@@ -48,10 +48,10 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
         email?: string;
         role?: string;
     }>({
-        firstName: '',
-        lastName: '',
-        email: '',
-        role: 'default_member'
+        firstName: member.user.firstName || '',
+        lastName: member.user.lastName || '',
+        email: member.user.email || '',
+        role: member.roles[0].id || 'default_member'
     });
     const [newUserErrorData, setNewUserErrorData] = useState<{
         firstName?: string;
@@ -91,14 +91,11 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                 !isSaving && handleClose();
             }}
         >
-            <DialogTitle> Invite new user to workspace</DialogTitle>
+            <DialogTitle> Update workspace user role</DialogTitle>
             <DialogContent>
-                <DialogContentText>
-                    Please enter user information to invite user to workspace
-                </DialogContentText>
                 <TextField
                     autoFocus
-                    disabled={isSaving}
+                    disabled={true}
                     error={!!newUserErrorData.firstName}
                     helperText={newUserErrorData.firstName}
                     onChange={
@@ -118,7 +115,7 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                 />
                 <TextField
                     autoFocus
-                    disabled={isSaving}
+                    disabled={true}
                     error={!!newUserErrorData.lastName}
                     helperText={newUserErrorData.lastName}
                     onChange={
@@ -138,7 +135,7 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                 />
                 <TextField
                     autoFocus
-                    disabled={isSaving}
+                    disabled={true}
                     error={!!newUserErrorData.email}
                     helperText={newUserErrorData.email}
                     onChange={
@@ -186,30 +183,6 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                         onClick={() => {
                             setIsSaving(true);
                             setNewUserErrorData({});
-                            if(!newUserData.firstName) {
-                                setNewUserErrorData({
-                                    ...newUserErrorData,
-                                    firstName: 'First Name is required'
-                                });
-                                setIsSaving(false);
-                                return;
-                            }
-                            if(!newUserData.lastName) {
-                                setNewUserErrorData({
-                                    ...newUserErrorData,
-                                    lastName: 'Last Name is required'
-                                });
-                                setIsSaving(false);
-                                return;
-                            }
-                            if(!newUserData.email) {
-                                setNewUserErrorData({
-                                    ...newUserErrorData,
-                                    email: 'Last Name is required'
-                                });
-                                setIsSaving(false);
-                                return;
-                            }
                             if(!newUserData.role) {
                                 setNewUserErrorData({
                                     ...newUserErrorData,
@@ -219,13 +192,8 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                                 return;
                             }
                             async function save() {
-                                if(newUserData.firstName && newUserData.lastName && newUserData.email && newUserData.role) {
-                                    await inviteWorkspaceUser(workspaceId, {
-                                        firstName: newUserData.firstName,
-                                        lastName: newUserData.lastName,
-                                        email: newUserData.email,
-                                        role: newUserData.role
-                                    });
+                                if(newUserData.role) {
+                                    await updateWorkspaceMemberRoles(workspaceId, member.user.id, [newUserData.role]);
                                 } else {
                                     throw new Error('Invalid data');
                                 }
@@ -235,10 +203,10 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                                 handleClose();
                             }).catch((e) => {
                                 setIsSaving(false);
-                                setGeneralError('Error inviting user, please try again');
+                                setGeneralError('Error updating user role, please try again');
                             })
                         }}
-                    >{isSaving ? 'Invite...' : 'Invite'} </Button>
+                    >{isSaving ? 'Updating...' : 'Update'} </Button>
                     {isSaving && (
                         <CircularProgress
                             size={24}

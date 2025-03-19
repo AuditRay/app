@@ -1,7 +1,7 @@
 'use client';
 import { create } from 'zustand'
 import React from "react";
-import {IUser} from "@/app/models";
+import {IRole, IUser} from "@/app/models";
 
 type RightDrawerState = {
     rightDrawerIsOpen: boolean,
@@ -25,6 +25,8 @@ export const useRightDrawerStore = create<RightDrawerState>((set) => ({
 type UserSessionState = {
     user: IUser | null,
     fullUser: IUser | null,
+    userWorkspaceRole: IRole | null,
+    setUserWorkspaceRole: (userWorkspaceRole: IRole) => void,
     setUser: (user: IUser) => void,
     setFullUser: (user: IUser) => void,
     clearUser: () => void,
@@ -32,6 +34,8 @@ type UserSessionState = {
 export const userSessionState = create<UserSessionState>((set) => ({
     user: null,
     fullUser: null,
+    userWorkspaceRole: null,
+    setUserWorkspaceRole: (userWorkspaceRole: IRole) =>  set({ userWorkspaceRole }),
     setUser: (user: IUser) => set({ user }),
     setFullUser: (fullUser: IUser) => set({ fullUser }),
     clearUser: () => set({ user: null, fullUser: null }),

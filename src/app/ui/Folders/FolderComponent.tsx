@@ -10,6 +10,7 @@ import AddTeamModal from "@/app/ui/Teams/AddTeamModal";
 import {getTeams} from "@/app/actions/teamActions";
 import RenameFolderModal from "@/app/ui/Folders/RenameFolderModal";
 import DeleteFolderModal from "@/app/ui/Folders/DeleteFolderModal";
+import {userSessionState} from "@/app/lib/uiStore";
 
 const ITEM_HEIGHT = 48;
 
@@ -18,6 +19,7 @@ export default function FolderComponent({workspaceId, folder}: {workspaceId: str
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [isRenameOpen, setIsRenameOpen] = React.useState<boolean>(false);
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
+    const userWorkspaceRole = userSessionState((state) => state.userWorkspaceRole);
     const open = Boolean(anchorEl);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -41,53 +43,58 @@ export default function FolderComponent({workspaceId, folder}: {workspaceId: str
                 'backgroundColor': '#DFE3E8'
             }}
         >
-            <IconButton
-                aria-label="more"
-                id="long-button"
-                sx={{ position: 'absolute', right: 0, top: 0, zIndex: 1 }}
-                aria-controls={open ? 'long-menu' : undefined}
-                aria-expanded={open ? 'true' : undefined}
-                aria-haspopup="true"
-                onClick={handleClick}
-            >
-                <MoreVertIcon />
-            </IconButton>
-            <Menu
-                id="long-menu"
-                MenuListProps={{
-                    'aria-labelledby': 'long-button',
-                }}
-                anchorEl={anchorEl}
-                open={open}
-                onClose={handleClose}
-                slotProps={{
-                    paper: {
-                        style: {
-                            maxHeight: ITEM_HEIGHT * 4.5,
-                            width: '20ch',
-                        },
-                    },
-                }}
-            >
-                <MenuItem onClick={() => {
-                    setIsOpen(true);
-                    handleClose();
-                }}>
-                    Manage Websites
-                </MenuItem>
-                <MenuItem onClick={() => {
-                    setIsRenameOpen(true);
-                    handleClose();
-                }}>
-                    Rename Folder
-                </MenuItem>
-                <MenuItem onClick={() => {
-                    setIsDeleteOpen(true);
-                    handleClose();
-                }} sx={{color: 'danger'}}>
-                    Delete Folder
-                </MenuItem>
-            </Menu>
+
+            {userWorkspaceRole?.isAdmin || userWorkspaceRole?.isOwner ? (
+                <>
+                    <IconButton
+                        aria-label="more"
+                        id="long-button"
+                        sx={{ position: 'absolute', right: 0, top: 0, zIndex: 1 }}
+                        aria-controls={open ? 'long-menu' : undefined}
+                        aria-expanded={open ? 'true' : undefined}
+                        aria-haspopup="true"
+                        onClick={handleClick}
+                    >
+                        <MoreVertIcon />
+                    </IconButton>
+                    <Menu
+                        id="long-menu"
+                        MenuListProps={{
+                            'aria-labelledby': 'long-button',
+                        }}
+                        anchorEl={anchorEl}
+                        open={open}
+                        onClose={handleClose}
+                        slotProps={{
+                            paper: {
+                                style: {
+                                    maxHeight: ITEM_HEIGHT * 4.5,
+                                    width: '20ch',
+                                },
+                            },
+                        }}
+                    >
+                        <MenuItem onClick={() => {
+                            setIsOpen(true);
+                            handleClose();
+                        }}>
+                            Manage Websites
+                        </MenuItem>
+                        <MenuItem onClick={() => {
+                            setIsRenameOpen(true);
+                            handleClose();
+                        }}>
+                            Rename Folder
+                        </MenuItem>
+                        <MenuItem onClick={() => {
+                            setIsDeleteOpen(true);
+                            handleClose();
+                        }} sx={{color: 'danger'}}>
+                            Delete Folder
+                        </MenuItem>
+                    </Menu>
+                </>
+            ) : null}
             <Link href={`/workspace/${workspaceId}/projects/folder/${folder.id}`} color="inherit" variant="subtitle2" noWrap>
                 <Box sx={{ position: 'relative', p: 1 }}>
                     <Tooltip title={folder.name} placement="bottom-end">

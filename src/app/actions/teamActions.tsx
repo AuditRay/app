@@ -34,10 +34,11 @@ export async function createTeam(workspaceId: string, teamData: Partial<ITeam>) 
     }
 }
 
-export async function getTeams(workspaceId: string): Promise<ITeamPopulated[]> {
+export async function getTeams(workspaceId: string, checkAdmin: boolean = false): Promise<ITeamPopulated[]> {
     await connectMongo();
     console.log('getTeams');
     const user = await getUser();
+    const userWorkspaceRole = user.roles?.find((role) => role.workspace == workspaceId);
     if(workspaceId == 'personal') {
         throw new Error('Workspace not selected, you can not invite users to personal workspace');
     }
@@ -55,7 +56,7 @@ export async function getTeams(workspaceId: string): Promise<ITeamPopulated[]> {
             user: IUser;
             role: string;
             websites?: string[];
-        }
+        }[]
     }>({
         path:     'members',
         populate: [
@@ -69,16 +70,28 @@ export async function getTeams(workspaceId: string): Promise<ITeamPopulated[]> {
             user: IUser;
             role: string;
             websites?: IWebsite[];
-        }
+        }[]
     }>('websites').populate<{
         owner: IUser;
         members: {
             user: IUser;
             role: string;
             websites?: IWebsite[];
-        }
+        }[]
     }>('owner');
 
+    if(checkAdmin && !(userWorkspaceRole?.isAdmin || userWorkspaceRole?.isOwner)) {
+        console.log('checkAdmin');
+        const filteredTeams = [];
+        for (const team of teams) {
+            if (team.owner.id == user.id) {
+                filteredTeams.push(team);
+            } else if (team.members.find((m) => m.user.id == user.id && m.role == 'team_admin')) {
+                filteredTeams.push(team);
+            }
+        }
+        return filteredTeams.map(team => team.toJSON()) as any as ITeamPopulated[];
+    }
     return teams.map(team => team.toJSON()) as any as ITeamPopulated[];
 }
 

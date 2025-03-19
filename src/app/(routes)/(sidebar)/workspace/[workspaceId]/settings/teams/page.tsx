@@ -81,14 +81,14 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
     const [isEditOpen, setIsEditOpen] = React.useState<boolean>(false);
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
     const sessionUser = userSessionState((state) => state.user);
-
+    const userWorkspaceRole = userSessionState((state) => state.userWorkspaceRole);
     const router = useRouter();
     const getInitials = (firstName: string, lastName: string) => {
         return firstName?.charAt(0) + lastName?.charAt(0);
     }
     const handleOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
         //reload
-        getTeams(workspaceId).then((teams) => {
+        getTeams(workspaceId, true).then((teams) => {
             setWorkspaceTeams(teams);
         })
         setSelectedWorkspaceTeam(undefined);
@@ -101,7 +101,7 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
         }
         setIsLoading(true);
         setUser(sessionUser);
-        getTeams(workspaceId).then((teams) => {
+        getTeams(workspaceId, true).then((teams) => {
             setWorkspaceTeams(teams);
             console.log('teams', teams);
             setIsLoading(false);
@@ -127,9 +127,11 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
                         alignItems: 'center'
                     }}>
                         <Typography variant={'h2'} >Teams</Typography>
-                        <Box sx={{ml: 'auto'}}>
-                            <Button onClick={() => setIsOpen(true)} variant={'contained'}>Add New Team</Button>
-                        </Box>
+                        {userWorkspaceRole?.isAdmin || userWorkspaceRole?.isOwner ? (
+                            <Box sx={{ml: 'auto'}}>
+                                <Button onClick={() => setIsOpen(true)} variant={'contained'}>Add New Team</Button>
+                            </Box>
+                        ) : null}
                     </Box>
                     <DataGrid
                         autoHeight
@@ -178,7 +180,7 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
                                 field: 'ops', headerName: "", minWidth: 230,
                                 renderCell: (params) => (
                                     <>
-                                        {params.row.id != user?.id && (
+                                        {params.row.id != user?.id && (userWorkspaceRole?.isOwner || userWorkspaceRole?.isAdmin) && (
                                             <Box>
                                                 <IconButton onClick={() => {
                                                     router.push(`/workspace/${workspaceId}/settings/teams/${params.row.id}`);

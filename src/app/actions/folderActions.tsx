@@ -6,6 +6,56 @@ import {revalidatePath} from "next/cache";
 import {getWebsitesPage, IWebsitePage, Pagination} from "@/app/actions/websiteActions";
 import {GridPaginationModel} from "@mui/x-data-grid-pro";
 
+export async function getWebsiteFolders(workspaceId: string, websiteId: string): Promise<IFolder[]> {
+    await connectMongo();
+    console.log('getWebsiteFolders');
+    if (!workspaceId || workspaceId === 'personal') {
+        const folders = await Folder.find({
+            workspace: null,
+            websites: websiteId
+        });
+        return folders.length ? folders.map(folder => folder.toJSON()) : [{
+            id: 'all',
+            name: 'All',
+            image: 'https://via.placeholder.com/150',
+            user: '',
+            fieldValues: [],
+        }]
+    } else {
+        const folders = await Folder.find({
+            workspace: workspaceId,
+            websites: websiteId
+        });
+        return folders.length ? folders.map(folder => folder.toJSON()) : [{
+            id: 'all',
+            name: 'All',
+            image: 'https://via.placeholder.com/150',
+            user: '',
+            fieldValues: [],
+        }]
+    }
+}
+
+export async function getFolderInfo(
+    workspaceId: string,
+    folderId: string
+): Promise<IFolder | null> {
+    await connectMongo();
+    console.log('getFolderInfo');
+    if (folderId === 'all') {
+        return {
+            id: 'all',
+            name: 'All',
+            image: 'https://via.placeholder.com/150',
+            user: '',
+            fieldValues: [],
+        }
+    } else {
+        const folder = await Folder.findOne({_id: folderId, workspace: workspaceId});
+        return folder ? folder.toJSON() : null;
+    }
+}
+
 export async function getFolder(
     workspaceId: string,
     folderId: string,

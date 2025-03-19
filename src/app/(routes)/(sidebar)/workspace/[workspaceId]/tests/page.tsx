@@ -26,12 +26,12 @@ export default async function Alerts({params}: { params: Promise<{ workspaceId: 
                 <Box sx={{
                     mb: 3,
                 }}>
-                    <Typography variant={'h2'} >Alerts</Typography>
+                    <Typography variant={'h2'} >Tests</Typography>
                 </Box>
                 {alertInfos.length > 0 && <AlertAccordion alertInfos={alertInfos}/>}
                 {alertInfos.length == 0 && (
                     <Box sx={{textAlign: 'center'}}>
-                        You don&apos;t have any new alerts
+                        You don&apos;t have any new tests
                     </Box>
                 )}
             </Paper>
