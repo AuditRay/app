@@ -8,12 +8,17 @@ import mime from "mime";
 export const extensionToMime = async (ext: string) => mime.getType(ext);
 export const mimeToExtension = async (type: string) => mime.getExtension(type);
 
+const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID || '';
+const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY || '';
+const S3_REGION = process.env.S3_REGION || 'eu-west-1';
+const S3_BUCKET = process.env.S3_BUCKET || 'monit-dev-assets';
+
 export async function signS3UploadFolderImagePreSignedUrl(workspaceId: string, contentType: string) {
     const s3Client = new S3Client({
-        region: 'eu-west-1',
+        region: S3_REGION,
         credentials:{
-            accessKeyId: 'AKIA5L5AJ4DUESKISIWO',
-            secretAccessKey: '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'
+            accessKeyId: S3_ACCESS_KEY_ID,
+            secretAccessKey: S3_SECRET_ACCESS_KEY
         }
     });
 
@@ -21,7 +26,7 @@ export async function signS3UploadFolderImagePreSignedUrl(workspaceId: string, c
 
     const Key = `uploads/${workspaceId}/folders/${Date.now()}-${uuid4()}.${extension}`;
     const command = new PutObjectCommand({
-        Bucket: 'monit-dev-assets',
+        Bucket: S3_BUCKET,
         ContentType: contentType,
         Key,
     })
@@ -29,25 +34,25 @@ export async function signS3UploadFolderImagePreSignedUrl(workspaceId: string, c
 }
 
 export async function signS3UploadFolderImageData(workspaceId: string, contentType: string) {
+
     const client = new S3Client({
-        region: 'eu-west-1',
+        region: S3_REGION,
         credentials:{
-            accessKeyId: 'AKIA5L5AJ4DUESKISIWO',
-            secretAccessKey: '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'
+            accessKeyId: S3_ACCESS_KEY_ID,
+            secretAccessKey: S3_SECRET_ACCESS_KEY
         }
     });
-
     const extension = await mimeToExtension(contentType);
 
     const Key = `uploads/${workspaceId}/folders/${Date.now()}-${uuid4()}.${extension}`;
     const command = new PutObjectCommand({
-        Bucket: 'monit-dev-assets',
+        Bucket: S3_BUCKET,
         ContentType: contentType,
         Key,
     })
     return await createPresignedPost(client, {
         Expires: 600,
-        Bucket: 'monit-dev-assets',
+        Bucket: S3_BUCKET,
         Key,
         Conditions: [
             ['content-length-range', 100, 100000000], // 100Byte - X (default 100MB)
