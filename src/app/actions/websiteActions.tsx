@@ -298,7 +298,7 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             method: 'POST',
             headers: requestHeaders,
             body: new URLSearchParams({
-                token: website.token,
+                token: website.token
             }),
             cache: 'no-cache',
         }).catch((error) => {
@@ -314,6 +314,28 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             }
         });
 
+        if (response && response.status !== 200) {
+            response = await fetch(healthUrl, {
+                method: 'POST',
+                headers: requestHeaders,
+                body: new URLSearchParams({
+                    token: website.token,
+                    plugins: 'none'
+                }),
+                cache: 'no-cache',
+            }).catch((error) => {
+                console.error('Failed to fetch updates', error);
+                savedUpdateRun.set('status', 'Failed');
+                savedUpdateRun.set('response', error);
+                if(response) {
+                    savedUpdateRun.set('responseStatus', response.status);
+                    savedUpdateRun.set('responseDesc', error.message);
+                } else {
+                    savedUpdateRun.set('responseStatus', 500);
+                    savedUpdateRun.set('responseDesc', error.message);
+                }
+            });
+        }
 
         if (response && response.status !== 200) {
             console.log('Failed to fetch updates', response.status);

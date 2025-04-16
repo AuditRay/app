@@ -17,11 +17,10 @@ import {createTeam} from "@/app/actions/teamActions";
 import {IRole, IUser, IUserInternal, IWebsite} from "@/app/models";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid2";
-import {getWorkspaceTeamRoles} from "@/app/actions/rolesActions";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import {userSessionState} from "@/app/lib/uiStore";
 import MenuItem from "@mui/material/MenuItem";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
@@ -29,7 +28,7 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
     const [workspaceUsers, setWorkspaceUsers] = useState<IUserInternal[]>([]);
     const [workspaceRoles, setWorkspaceRoles] = useState<IRole[]>([]);
     const [workspaceWebsites, setWorkspaceWebsites] = useState<IWebsite[]>([]);
-    const sessionUser = userSessionState((state) => state.user);
+    const sessionUser = useUserStateStore((state) => state.sessionUser);
     const [newTeamData, setNewTeamData] = useState<{
         name?: string;
         members?: {

@@ -13,15 +13,15 @@ import Typography from "@mui/material/Typography";
 import {deleteFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import {disconnectJiraToken, updateJiraConfig} from "@/app/actions/workspaceActions";
 import TextField from "@mui/material/TextField";
-import {userSessionState} from "@/app/lib/uiStore";
 import {useParams} from "next/navigation";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 export default function ConfigJiraIntegrationModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {
     const [isSaving, setIsSaving] = useState(false);
     const [hiddenFields, setHiddenFields] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
     const { workspaceId } = useParams<{ workspaceId: string; }>()
-    const sessionUser = userSessionState((state) => state.fullUser);
+    const sessionUser = useUserStateStore((state) => state.sessionFullUser);
     const handleClose = () => {
         setOpen(false);
         setHiddenFields('');

@@ -16,7 +16,7 @@ import EditRoleModal from "@/app/ui/Roles/EditRoleModal";
 import {getWorkspaceAllRoles, updateRole} from "@/app/actions/rolesActions";
 import {buildWorkspaceBasePermissions, PermissionsValue} from "@/app/premissions";
 import CircularProgress from "@mui/material/CircularProgress";
-import {userSessionState} from "@/app/lib/uiStore";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -75,7 +75,7 @@ export default function RolesSettings({params}: { params: Promise<{ workspaceId:
     const [tabValue, setTabValue] = React.useState<string>('');
     const [selectedWorkspaceRole, setSelectedWorkspaceRole] = React.useState<IRole>();
     const [savingRoles, setSavingRoles] = React.useState<string[]>(['']);
-    const sessionUser = userSessionState((state) => state.user);
+    const sessionUser = useUserStateStore((state) => state.sessionUser);
     const [workspacePermissions, setWorkspacePermissions] = React.useState<PermissionsValue[]>();
     const [workspaceGroupedPermissions, setWorkspaceGroupedPermissions] = React.useState<Record<string, PermissionsValue[]>>();
     const [workspaceGroups, setWorkspaceGroups] = React.useState<{

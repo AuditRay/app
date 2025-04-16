@@ -24,7 +24,6 @@ import {updateAlert} from "@/app/actions/alertsActions";
 import Grid from "@mui/material/Grid2";
 import MenuItem from "@mui/material/MenuItem";
 import * as React from "react";
-import {userSessionState} from "@/app/lib/uiStore";
 import AlertsWebsitesPreviewGrid from "@/app/ui/Alerts/AlertsWebsitesPreviewGrid";
 import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
@@ -35,6 +34,7 @@ import {getTeam, getTeams} from "@/app/actions/teamActions";
 import {Channel} from "@slack/web-api/dist/types/response/ConversationsListResponse";
 import {getSlackChannels} from "@/app/actions/integrations/slackActions";
 import JiraTicketConfig from "@/app/ui/Alerts/JiraTicketConfig";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 export default function EditTeamAlertModal({alert, open, setOpen, workspaceId, teamId}: {alert: IAlert, open: boolean, setOpen: (open: boolean) => void, workspaceId: string, teamId: string}) {
     const [isSaving, setIsSaving] = useState(false);
@@ -72,7 +72,7 @@ export default function EditTeamAlertModal({alert, open, setOpen, workspaceId, t
     const [isSlackChannelsLoading, setIsSlackChannelsLoading] = React.useState<Boolean>(false);
     const [isLoadingData, setIsLoadingData] = React.useState<Boolean>(true);
     const [notificationUserOptions, setNotificationUserOptions] = useState<notificationUserOptionsType[]>([]);
-    const sessionUser = userSessionState((state) => state.fullUser);
+    const sessionUser = useUserStateStore((state) => state.sessionFullUser);
     useEffect(() => {
         if(!open) return;
         setSlackEvent(undefined);

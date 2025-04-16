@@ -24,9 +24,9 @@ import PermissionsAccessCheck from "@/app/ui/PermissionsAccessCheck";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid2";
 import Link from "@/app/ui/Link";
-import {userSessionState} from "@/app/lib/uiStore";
 import {getWorkspace} from "@/app/actions/workspaceActions";
 import {useParams} from "next/navigation";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) {
     const [state, action, isPending] = useActionState(createWebsite, undefined)
@@ -55,7 +55,7 @@ export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) 
         setFormCurrentState(undefined);
         setOpen(false);
     }
-    const sessionUser = userSessionState((state) => state.user);
+    const sessionUser = useUserStateStore((state) => state.sessionUser);
     useEffect(() => {
         getFieldsTemplates(workspaceId).then((fieldTemplates) => {
             setFieldTemplates(fieldTemplates);

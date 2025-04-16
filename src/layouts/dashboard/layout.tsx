@@ -32,7 +32,6 @@ import {getLists} from '@/app/actions/filterViewsActions';
 import {useParams, usePathname} from "next/navigation";
 import {IFiltersView, IFolder, IUser} from "@/app/models";
 import React from "react";
-import {userSessionState} from "@/app/lib/uiStore";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import InputIcon from "@mui/icons-material/Input";
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -47,6 +46,7 @@ import Typography from "@mui/material/Typography";
 import Tooltip from "@mui/material/Tooltip";
 import {Breadcrumbs} from "@mui/material";
 import {getFolderInfo, getWebsiteFolders} from "@/app/actions/folderActions";
+import {useUserStateStore} from "@/providers/user-store-provider";
 // ----------------------------------------------------------------------
 
 type LayoutBaseProps = Pick<LayoutSectionProps, 'sx' | 'children' | 'cssVars'>;
@@ -85,51 +85,15 @@ export function DashboardLayout({
   const { workspaceId, folderId, websiteId } = params;
   const [folder, setFolder] = React.useState<IFolder | null>(null);
   const [folders, setFolders] = React.useState<IFolder[]>([]);
-  const sessionUser = userSessionState((state) => state.user);
-  const sessionFullUser = userSessionState((state) => state.fullUser);
-  const userWorkspaceRole = userSessionState((state) => state.userWorkspaceRole);
+
+  const sessionUser = useUserStateStore((state) => state.sessionUser);
+  const sessionFullUser = useUserStateStore((state) => state.sessionFullUser);
+  const userWorkspaceRole = useUserStateStore((state) => state.sessionUserWorkspaceRole);
   const canViewSettings = userWorkspaceRole?.isAdmin || userWorkspaceRole?.isOwner || userWorkspaceRole?.isTeamAdmin;
-  const settingsMenu: NavSectionProps['data'][0] = {
-    subheader: 'Settings',
-    items: userWorkspaceRole?.isAdmin || userWorkspaceRole?.isOwner  ? [
-      {
-        title: 'General',
-        path: `/workspace/${workspaceId}/settings`,
-        icon: <SettingsIcon />,
-      },
-      {
-        title: 'Tests',
-        path: `/workspace/${workspaceId}/settings/tests`,
-        icon: <NotificationsIcon />,
-      },
-      {
-        title: 'Custom Fields',
-        path: `/workspace/${workspaceId}/settings/custom-fields`,
-        icon: <InputIcon />,
-      },
-      {
-        title: 'Integrations',
-        path: `/workspace/${workspaceId}/settings/integrations`,
-        icon: <ExtensionIcon />,
-      },
-      {
-        title: 'Users',
-        path: `/workspace/${workspaceId}/settings/users`,
-        icon: <PersonIcon />,
-      },
-      {
-        title: 'Teams',
-        path: `/workspace/${workspaceId}/settings/teams`,
-        icon: <GroupsIcon />,
-      },
-    ] : userWorkspaceRole?.isTeamAdmin ? [
-      {
-        title: 'Teams',
-        path: `/workspace/${workspaceId}/settings/teams`,
-        icon: <GroupsIcon />,
-      }
-    ] : []
-  }
+  const [settingsMenu, setSettingsMenu] = React.useState<NavSectionProps['data'][0]>({
+    subheader: '',
+    items: [],
+  });
   const [navData, setNavData] = React.useState<NavSectionProps['data']>([
     /**
      * Overview
@@ -148,7 +112,7 @@ export function DashboardLayout({
           icon: <DashboardCustomizeIcon />,
           children: []
         },
-        { title: 'Tests', path: `/workspace/${workspaceId}/tests`, icon: <NotificationsIcon /> },
+        { title: 'Tests History', path: `/workspace/${workspaceId}/tests-history`, icon: <NotificationsIcon /> },
       ],
     },
     canViewSettings ? settingsMenu : {
@@ -161,6 +125,63 @@ export function DashboardLayout({
       setFolders(folders);
     });
   }, [websiteId])
+  React.useEffect(() => {
+    console.log("workspaceId settings", workspaceId, userWorkspaceRole, canViewSettings);
+    if(!workspaceId) return;
+    const settings = {
+      subheader: 'Settings',
+      items: userWorkspaceRole?.isAdmin || userWorkspaceRole?.isOwner  ? [
+        {
+          title: 'General',
+          path: `/workspace/${workspaceId}/settings`,
+          icon: <SettingsIcon />,
+        },
+        {
+          title: 'Tests',
+          path: `/workspace/${workspaceId}/settings/tests`,
+          icon: <NotificationsIcon />,
+        },
+        {
+          title: 'Custom Fields',
+          path: `/workspace/${workspaceId}/settings/custom-fields`,
+          icon: <InputIcon />,
+        },
+        {
+          title: 'Integrations',
+          path: `/workspace/${workspaceId}/settings/integrations`,
+          icon: <ExtensionIcon />,
+        },
+        {
+          title: 'Users',
+          path: `/workspace/${workspaceId}/settings/users`,
+          icon: <PersonIcon />,
+        },
+        {
+          title: 'Teams',
+          path: `/workspace/${workspaceId}/settings/teams`,
+          icon: <GroupsIcon />,
+        },
+      ] : userWorkspaceRole?.isTeamAdmin ? [
+        {
+          title: 'Teams',
+          path: `/workspace/${workspaceId}/settings/teams`,
+          icon: <GroupsIcon />,
+        }
+      ] : [
+        {
+          title: 'Tests',
+          path: `/workspace/${workspaceId}/settings/tests`,
+          icon: <NotificationsIcon />,
+        },
+        {
+          title: 'Custom Fields',
+          path: `/workspace/${workspaceId}/settings/custom-fields`,
+          icon: <InputIcon />,
+        }
+      ]
+    }
+    setSettingsMenu(settings)
+  }, [workspaceId, userWorkspaceRole, canViewSettings])
   React.useEffect(() => {
     getFolderInfo(workspaceId, folderId).then((folder) => {
       console.log("folder", folder);
@@ -185,7 +206,7 @@ export function DashboardLayout({
                 return { title: list.title, path: `/workspace/${workspaceId}/projects/lists/${list.id}` }
               })
             },
-            { title: 'Tests', path: `/workspace/${workspaceId}/tests`, icon: <NotificationsIcon />},
+            { title: 'Tests History', path: `/workspace/${workspaceId}/tests-history`, icon: <NotificationsIcon />},
           ],
         },
         settingsMenu,
@@ -204,7 +225,7 @@ export function DashboardLayout({
       }
       setNavData(nav);
     });
-  }, [folderId, canViewSettings, isNavMini]);
+  }, [folderId, canViewSettings, isNavMini, workspaceId, settingsMenu]);
 
   const renderHeader = () => {
     const headerSlotProps: HeaderSectionProps['slotProps'] = {
@@ -288,9 +309,9 @@ export function DashboardLayout({
             {pathname.includes('/projects') && websiteId && (
                 <Typography sx={{ color: 'text.primary' }}>Project</Typography>
             )}
-            {pathname.includes('/tests') && !pathname.includes('/settings') && (
-                <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/tests`}>
-                  Tests
+            {pathname.includes('/tests-history') && !pathname.includes('/settings') && (
+                <Link underline="hover" color="inherit" href={`/workspace/${workspaceId}/tests-history`}>
+                  Tests History
                 </Link>
             )}
             {pathname.includes('/settings') && (

@@ -30,6 +30,7 @@ type UserSessionState = {
     setUser: (user: IUser) => void,
     setFullUser: (user: IUser) => void,
     clearUser: () => void,
+    clearUserWorkspaceRole: () => void,
 }
 export const userSessionState = create<UserSessionState>((set) => ({
     user: null,
@@ -39,6 +40,7 @@ export const userSessionState = create<UserSessionState>((set) => ({
     setUser: (user: IUser) => set({ user }),
     setFullUser: (fullUser: IUser) => set({ fullUser }),
     clearUser: () => set({ user: null, fullUser: null }),
+    clearUserWorkspaceRole: () => set({ userWorkspaceRole: null }),
 }))
 
 export default useRightDrawerStore;

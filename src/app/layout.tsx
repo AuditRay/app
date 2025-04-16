@@ -23,19 +23,21 @@ export default async function RootLayout({
     return (
         <html lang="en" dir="ltr" suppressHydrationWarning>
           <body className={roboto.className}>
-              <SettingsProvider
-                  defaultSettings={defaultSettings}
-              >
-                  <AppRouterCacheProvider options={{ key: 'css' }}>
-                      <ThemeProvider
-                          defaultMode={themeConfig.defaultMode}
-                          modeStorageKey={themeConfig.modeStorageKey}
-                      >
-                          <CssBaseline />
-                            {children}
-                      </ThemeProvider>
-                  </AppRouterCacheProvider>
-              </SettingsProvider>
+              <UserStateStoreProvider>
+                  <SettingsProvider
+                      defaultSettings={defaultSettings}
+                  >
+                      <AppRouterCacheProvider options={{ key: 'css' }}>
+                          <ThemeProvider
+                              defaultMode={themeConfig.defaultMode}
+                              modeStorageKey={themeConfig.modeStorageKey}
+                          >
+                              <CssBaseline />
+                              {children}x
+                          </ThemeProvider>
+                      </AppRouterCacheProvider>
+                  </SettingsProvider>
+              </UserStateStoreProvider>
           </body>
         </html>
     );

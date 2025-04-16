@@ -11,9 +11,9 @@ import {getWorkspaceMembers} from "@/app/actions/workspaceActions";
 import InviteUserModal from "@/app/ui/Users/InviteUserModal";
 import DeleteUserFromWorkspaceModal from "@/app/ui/Users/DeleteUserFromWorkspaceModal";
 import Tooltip from "@mui/material/Tooltip";
-import {userSessionState} from "@/app/lib/uiStore";
 import UpdateUserWorkspaceRoleModal from "@/app/ui/Users/UpdateUserWorkspaceRoleModal";
 import EditIcon from "@mui/icons-material/Edit";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -73,7 +73,7 @@ export default function UsersSettings({params}: {params: Promise<{workspaceId: s
     const [isLoading, setIsLoading] = React.useState<boolean>(false);
     const [selectedWorkspaceMember, setSelectedWorkspaceMember] = React.useState<IMemberPopulated>();
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
-    const sessionUser = userSessionState((state) => state.user);
+    const sessionUser = useUserStateStore((state) => state.sessionUser);
 
     const handleOpen = function (isOpen: boolean, setIsOpen: (isOpen: boolean) => void) {
         //reload

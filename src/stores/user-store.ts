@@ -1,22 +1,26 @@
 // src/stores/counter-store.ts
 import { createStore } from 'zustand/vanilla'
-import {IUser} from "@/app/models";
+import {IRole, IUser} from "@/app/models";
 
 type UserStateState = {
-    user: IUser | null,
-    fullUser: IUser | null
+    sessionUser: IUser | null,
+    sessionFullUser: IUser | null
+    sessionUserWorkspaceRole: IRole | null,
 }
 
 type UserStateActions = {
-    setUser: (user: IUser) => void,
-    setFullUser: (user: IUser) => void,
+    setSessionUserWorkspaceRole: (userWorkspaceRole: IRole) => void,
+    setSessionUser: (user: IUser) => void,
+    setSessionFullUser: (user: IUser) => void,
     clearUser: () => void,
+    clearSessionUserWorkspaceRole: () => void,
 }
 export type UserStateStore = UserStateState & UserStateActions
 
 export const defaultInitState: UserStateState = {
-    user: null,
-    fullUser: null
+    sessionUser: null,
+    sessionFullUser: null,
+    sessionUserWorkspaceRole: null
 }
 
 
@@ -25,8 +29,10 @@ export const createUserStore = (
 ) => {
     return createStore<UserStateStore>()((set) => ({
         ...initState,
-        setUser: (user: IUser) => set({ user }),
-        setFullUser: (fullUser: IUser) => set({ fullUser }),
-        clearUser: () => set({ user: null, fullUser: null }),
+        setSessionUserWorkspaceRole: (userWorkspaceRole: IRole) =>  set({ sessionUserWorkspaceRole: userWorkspaceRole }),
+        setSessionUser: (user: IUser) => set({ sessionUser: user }),
+        setSessionFullUser: (fullUser: IUser) => set({ sessionFullUser: fullUser }),
+        clearUser: () => set({ sessionUser: null, sessionFullUser: null }),
+        clearSessionUserWorkspaceRole: () => set({ sessionUserWorkspaceRole: null }),
     }))
 }

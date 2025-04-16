@@ -5,23 +5,11 @@ import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import {getWebsitesListing} from "@/app/actions/websiteActions";
-import {useEffect} from "react";
 import CircularProgress from '@mui/material/CircularProgress';
 import { green } from '@mui/material/colors';
-import {Autocomplete, Divider, FormControl, IconButton, InputLabel, Select} from "@mui/material";
-import {getWorkspaceUsers} from "@/app/actions/workspaceActions";
-import {createTeam} from "@/app/actions/teamActions";
-import {IFolder, IRole, IUser, IUserInternal, IWebsite} from "@/app/models";
-import Typography from "@mui/material/Typography";
-import Grid from "@mui/material/Grid2";
-import {getWorkspaceTeamRoles} from "@/app/actions/rolesActions";
-import Tooltip from "@mui/material/Tooltip";
-import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import {userSessionState} from "@/app/lib/uiStore";
-import MenuItem from "@mui/material/MenuItem";
+import {Divider} from "@mui/material";
+import {IFolder} from "@/app/models";
 import {updateFolder} from "@/app/actions/folderActions";
 
 export default function RenameFolderModal({open, setOpen, workspaceId, folder}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string, folder: IFolder}) {

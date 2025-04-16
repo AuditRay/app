@@ -3,10 +3,10 @@
 
 import {logout} from "@/app/actions/logout";
 import {useEffect} from "react";
-import {userSessionState} from "@/app/lib/uiStore";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 export default function Logout() {
-    const clearUser = userSessionState((state) => state.clearUser);
+    const clearUser = useUserStateStore((state) => state.clearUser);
     useEffect(() => {
         logout().then(() => {
             clearUser();

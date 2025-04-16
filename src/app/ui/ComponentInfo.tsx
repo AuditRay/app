@@ -6,11 +6,11 @@ import {Box, Chip, LinearProgress, Link} from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import {IWebsiteInfo, UpdateInfo} from "@/app/models/WebsiteInfo";
 import Typography from "@mui/material/Typography";
-import {userSessionState} from "@/app/lib/uiStore";
 import JiraTicketModal from "@/app/ui/Integration/jira/JiraTicketModal";
 import Button from "@mui/material/Button";
 import { useParams } from 'next/navigation'
 import {jiraType} from "@/app/models";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 export type WebsiteInfoRow = Partial<UpdateInfo>
 const columns: GridColDef[] = [
@@ -69,7 +69,7 @@ export default function ComponentInfo(
         status: false,
         token: ''
     });
-    const sessionUser = userSessionState((state) => state.fullUser);
+    const sessionUser = useUserStateStore((state) => state.sessionFullUser);
 
     React.useEffect(() => {
         const currentWorkspace = sessionUser?.workspaces?.find(workspace => workspace.id === params.workspaceId);

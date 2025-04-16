@@ -4,7 +4,6 @@ import {Box, Card, CardActions, CardContent, CardMedia, Grid2 as Grid, IconButto
 import Typography from "@mui/material/Typography";
 import {IUser, IWorkspace} from "@/app/models";
 import Button from "@mui/material/Button";
-import {userSessionState} from "@/app/lib/uiStore";
 import CircleIcon from '@mui/icons-material/Circle';
 import DisconnectIntegrationModal from "@/app/ui/Integration/jira/DisconnectIntegrationModal";
 import Tooltip from "@mui/material/Tooltip";
@@ -12,6 +11,7 @@ import {getFullUser} from "@/app/actions/getUser";
 import {getJiraResources} from "@/app/actions/workspaceActions";
 import ConfigJiraIntegrationModal from "@/app/ui/Integration/jira/ConfigJiraIntegrationModal";
 import DisconnectSlackIntegrationModal from "@/app/ui/Integration/slack/DisconnectSlackIntegrationModal";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 
 
@@ -35,8 +35,8 @@ export default function IntegrationsSettings({params}: { params: Promise<{ works
         status: false,
         access_token: ''
     });
-    const setSessionFullUser = userSessionState((state) => state.setFullUser);
-    const sessionUser = userSessionState((state) => state.fullUser);
+    const setSessionFullUser = useUserStateStore((state) => state.setSessionFullUser);
+    const sessionUser = useUserStateStore((state) => state.sessionFullUser);
 
     React.useEffect(() => {
         setIsLoading(true);

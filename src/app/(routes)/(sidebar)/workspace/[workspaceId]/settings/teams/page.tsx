@@ -15,12 +15,9 @@ import Avatar from "@mui/material/Avatar";
 import Tooltip from "@mui/material/Tooltip";
 import EditTeamModal from "@/app/ui/Teams/EditTeamModal";
 import {deepOrange} from "@mui/material/colors";
-import {userSessionState} from "@/app/lib/uiStore";
-import {GridRenderCellParams} from "@mui/x-data-grid-pro";
 import Link from "@/app/ui/Link";
-import LaunchIcon from "@mui/icons-material/Launch";
-import {GridRow} from "@/app/ui/WebsitesGrid";
 import {useRouter} from "next/navigation";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 const StyledGridOverlay = styled('div')(({ theme }) => ({
     display: 'flex',
@@ -80,8 +77,8 @@ export default function TeamsSettings({params}: { params: Promise<{ workspaceId:
     const [selectedWorkspaceTeam, setSelectedWorkspaceTeam] = React.useState<ITeamPopulated>();
     const [isEditOpen, setIsEditOpen] = React.useState<boolean>(false);
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
-    const sessionUser = userSessionState((state) => state.user);
-    const userWorkspaceRole = userSessionState((state) => state.userWorkspaceRole);
+    const sessionUser = useUserStateStore((state) => state.sessionUser);
+    const userWorkspaceRole = useUserStateStore((state) => state.sessionUserWorkspaceRole);
     const router = useRouter();
     const getInitials = (firstName: string, lastName: string) => {
         return firstName?.charAt(0) + lastName?.charAt(0);

@@ -20,7 +20,6 @@ import {
     Select
 } from "@mui/material";
 import {IAlert, IUser, IUserInternal, IWorkspace} from "@/app/models";
-import {userSessionState} from "@/app/lib/uiStore";
 import {createAlert} from "@/app/actions/alertsActions";
 import Grid from "@mui/material/Grid2";
 import MenuItem from "@mui/material/MenuItem";
@@ -34,6 +33,7 @@ import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import {getSlackChannels} from "@/app/actions/integrations/slackActions";
 import {Channel} from "@slack/web-api/dist/types/response/ConversationsListResponse";
+import {useUserStateStore} from "@/providers/user-store-provider";
 export type notificationUserOptionsType = { id: string, label: string, type: 'user' | 'team', members: IUserInternal[] };
 export default function AddAlertModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
@@ -44,7 +44,7 @@ export default function AddAlertModal({open, setOpen, workspaceId}: {open: boole
     const [slackChannels, setSlackChannels] = useState<Channel[]>();
     const [filters, setFilters] = React.useState<GridFilterModel>({items: []});
     const [isSlackChannelsLoading, setIsSlackChannelsLoading] = React.useState<Boolean>(false);
-    const sessionUser = userSessionState((state) => state.fullUser);
+    const sessionUser = useUserStateStore((state) => state.sessionFullUser);
     useEffect(() => {
         if(!open) return;
         setSlackEvent(undefined);

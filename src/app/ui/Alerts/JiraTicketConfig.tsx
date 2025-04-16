@@ -17,22 +17,8 @@ import {
     createJiraTicket, getJiraProjects, getJiraIssues, getJiraUsers, getJiraResources, jiraIssueType, getJiraIssueFields
 } from "@/app/actions/workspaceActions";
 import * as React from "react";
-import {userSessionState} from "@/app/lib/uiStore";
 import { useParams } from 'next/navigation'
 import MenuItem from "@mui/material/MenuItem";
-import {getTicketDetails} from "@/app/actions/aiActions";
-import StarterKit from "@tiptap/starter-kit";
-import {
-    MenuButtonBold,
-    MenuButtonItalic,
-    MenuControlsContainer,
-    MenuDivider,
-    MenuSelectHeading,
-    RichTextEditor,
-    type RichTextEditorRef,
-} from "mui-tiptap";
-import { useRef } from "react";
-import { convertSchemaToHtml } from "@/app/lib/utils";
 import dayjs, {Dayjs} from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
@@ -42,6 +28,7 @@ import JiraSelect from "@/app/ui/Integration/jira/fields/JiraSelect";
 import JiraText from "@/app/ui/Integration/jira/fields/JiraText";
 import JiraDescription from "@/app/ui/Integration/jira/fields/JiraDescription";
 import JiraNumber from "@/app/ui/Integration/jira/fields/JiraNumber";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 
 dayjs.extend(utc);
@@ -166,7 +153,7 @@ export default function JiraTicketConfig({open, setOpen, config, setConfig}: {op
         setOpen(false);
     }
 
-    const sessionUser = userSessionState((state) => state.fullUser);
+    const sessionUser = useUserStateStore((state) => state.sessionFullUser);
     const prepareJiraIntegration = async (jiraResourceId?: string) => {
         setIsIssueTypeFieldsLoading(true);
         const resources: (jiraResource & { scope: string[] })[] = await getJiraResources(params.workspaceId);

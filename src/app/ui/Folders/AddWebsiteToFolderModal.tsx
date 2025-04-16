@@ -20,14 +20,14 @@ import Grid from "@mui/material/Grid2";
 import {getWorkspaceTeamRoles} from "@/app/actions/rolesActions";
 import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
-import {userSessionState} from "@/app/lib/uiStore";
 import MenuItem from "@mui/material/MenuItem";
 import {updateFolder} from "@/app/actions/folderActions";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 export default function AddWebsiteToFolderModal({open, setOpen, workspaceId, folder}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string, folder: IFolder}) {
     const [isSaving, setIsSaving] = useState(false);
     const [workspaceWebsites, setWorkspaceWebsites] = useState<IWebsite[]>([]);
-    const sessionUser = userSessionState((state) => state.user);
+    const sessionUser = useUserStateStore((state) => state.sessionUser);
     const folderWebsiteIds = folder.websites?.map((w) => w.toString());
     const [addWebsitesData, setAddWebsitesData] = useState<string[]>(folderWebsiteIds || []);
     const [generalError, setGeneralError] = useState<string>('');

@@ -10,7 +10,7 @@ import AddTeamModal from "@/app/ui/Teams/AddTeamModal";
 import {getTeams} from "@/app/actions/teamActions";
 import RenameFolderModal from "@/app/ui/Folders/RenameFolderModal";
 import DeleteFolderModal from "@/app/ui/Folders/DeleteFolderModal";
-import {userSessionState} from "@/app/lib/uiStore";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 const ITEM_HEIGHT = 48;
 
@@ -19,7 +19,7 @@ export default function FolderComponent({workspaceId, folder}: {workspaceId: str
     const [isOpen, setIsOpen] = React.useState<boolean>(false);
     const [isRenameOpen, setIsRenameOpen] = React.useState<boolean>(false);
     const [isDeleteOpen, setIsDeleteOpen] = React.useState<boolean>(false);
-    const userWorkspaceRole = userSessionState((state) => state.userWorkspaceRole);
+    const userWorkspaceRole = useUserStateStore((state) => state.sessionUserWorkspaceRole);
     const open = Boolean(anchorEl);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);

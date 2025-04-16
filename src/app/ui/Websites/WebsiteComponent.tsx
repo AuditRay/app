@@ -11,14 +11,14 @@ import UpdateWebsiteDialog from "@/app/ui/Websites/Dialogs/UpdateWebsiteDialog";
 import WebsiteTokenDialog from "@/app/ui/Websites/Dialogs/WebsiteTokenDialog";
 import WebsiteRunsDialog from "@/app/ui/Websites/Dialogs/WebsiteRunsDialog";
 import UpdateWebsiteInfoDialog from "@/app/ui/Websites/Dialogs/UpdateWebsiteInfoDialog";
-import {userSessionState} from "@/app/lib/uiStore";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 const ITEM_HEIGHT = 48;
 
 export default function WebsiteComponent({workspaceId, website}: {workspaceId: string, website: IWebsitePage}) {
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
-    const userWorkspaceRole = userSessionState((state) => state.userWorkspaceRole);
+    const userWorkspaceRole = useUserStateStore((state) => state.sessionUserWorkspaceRole);
     const open = Boolean(anchorEl);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);

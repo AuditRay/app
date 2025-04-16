@@ -55,7 +55,17 @@ export async function getFullUser(userId: string) {
     console.log('getFullUser');
     const user = (await User.findOne({_id: userId}))?.toJSON();
     if(user) {
-        user.workspaces = await getWorkspaces(user.id);
+        const workspaces = await getWorkspaces(userId);
+        user.workspaces = [
+            {
+                id: 'personal',
+                name: 'Personal',
+                owner: userId,
+                users: [userId],
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            },
+            ...workspaces
+        ];
         const roles: IRole[] = [];
         for (const workspace of user.workspaces) {
             const memberRoles = workspace.members?.find(member => member.user.toString() === user.id)?.roles;

@@ -3,11 +3,9 @@ import * as React from "react";
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
 import {Autocomplete, Box, Divider} from "@mui/material";
-import {userSessionState} from "@/app/lib/uiStore";
 import {getWorkspace, updateWorkspace} from "@/app/actions/workspaceActions";
 import {IWorkspace} from "@/app/models";
 import Button from "@mui/material/Button";
-import {updateFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import CircularProgress from "@mui/material/CircularProgress";
 import {green} from "@mui/material/colors";
 

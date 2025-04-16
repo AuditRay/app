@@ -17,7 +17,6 @@ import {
     createJiraTicket, getJiraProjects, getJiraIssues, getJiraUsers, getJiraResources, jiraIssueType, getJiraIssueFields
 } from "@/app/actions/workspaceActions";
 import * as React from "react";
-import {userSessionState} from "@/app/lib/uiStore";
 import { useParams } from 'next/navigation'
 import MenuItem from "@mui/material/MenuItem";
 import {getTicketDetails} from "@/app/actions/aiActions";
@@ -42,6 +41,7 @@ import JiraSelect from "@/app/ui/Integration/jira/fields/JiraSelect";
 import JiraText from "@/app/ui/Integration/jira/fields/JiraText";
 import JiraDescription from "@/app/ui/Integration/jira/fields/JiraDescription";
 import JiraNumber from "@/app/ui/Integration/jira/fields/JiraNumber";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 
 dayjs.extend(utc);
@@ -176,7 +176,7 @@ export default function JiraTicketModal({open, setOpen, context}: {open: boolean
         }
     }
 
-    const sessionUser = userSessionState((state) => state.fullUser);
+    const sessionUser = useUserStateStore((state) => state.sessionFullUser);
     const prepareJiraIntegration = async (jiraResourceId?: string) => {
         setIsIssueTypeFieldsLoading(true);
         const resources: (jiraResource & { scope: string[] })[] = await getJiraResources(params.workspaceId);

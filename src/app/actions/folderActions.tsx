@@ -51,8 +51,13 @@ export async function getFolderInfo(
             fieldValues: [],
         }
     } else {
-        const folder = await Folder.findOne({_id: folderId, workspace: workspaceId});
-        return folder ? folder.toJSON() : null;
+        if(!workspaceId || workspaceId === 'personal') {
+            const folder = await Folder.findOne({_id: folderId});
+            return folder ? folder.toJSON() : null;
+        } else {
+            const folder = await Folder.findOne({_id: folderId, workspace: workspaceId});
+            return folder ? folder.toJSON() : null;
+        }
     }
 }
 

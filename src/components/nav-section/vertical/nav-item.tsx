@@ -12,6 +12,8 @@ import { createNavItem } from '../utils';
 import { navItemStyles, navSectionClasses } from '../styles';
 
 import type { NavItemProps } from '../types';
+import Link from "@/app/ui/Link";
+import NextLink from "next/link";
 
 // ----------------------------------------------------------------------
 
@@ -55,6 +57,7 @@ export const NavItem = forwardRef<HTMLButtonElement, NavItemProps>((props, ref) 
     variant: navItem.rootItem ? 'rootItem' : 'subItem',
   };
 
+
   return (
     <ItemRoot
       ref={ref}
@@ -70,45 +73,46 @@ export const NavItem = forwardRef<HTMLButtonElement, NavItemProps>((props, ref) 
       {...other}
     >
       {icon && (
-        <ItemIcon {...ownerState} className={navSectionClasses.item.icon} sx={slotProps?.icon}>
-          {navItem.renderIcon}
-        </ItemIcon>
+          <ItemIcon {...ownerState} className={navSectionClasses.item.icon} sx={slotProps?.icon}>
+            {navItem.renderIcon}
+          </ItemIcon>
       )}
 
       {title && (
-        <ItemTexts {...ownerState} className={navSectionClasses.item.texts} sx={slotProps?.texts}>
-          <ItemTitle {...ownerState} className={navSectionClasses.item.title} sx={slotProps?.title}>
-            {title}
-          </ItemTitle>
+          <ItemTexts {...ownerState} className={navSectionClasses.item.texts} sx={slotProps?.texts}>
+            <ItemTitle {...ownerState} className={navSectionClasses.item.title} sx={slotProps?.title}>
+              {title}
+            </ItemTitle>
 
-          {caption && (
-            <Tooltip title={caption} placement="top-start">
-              <ItemCaptionText
-                {...ownerState}
-                className={navSectionClasses.item.caption}
-                sx={slotProps?.caption}
-              >
-                {caption}
-              </ItemCaptionText>
-            </Tooltip>
-          )}
-        </ItemTexts>
+            {caption && (
+                <Tooltip title={caption} placement="top-start">
+                  <ItemCaptionText
+                      {...ownerState}
+                      className={navSectionClasses.item.caption}
+                      sx={slotProps?.caption}
+                  >
+                    {caption}
+                  </ItemCaptionText>
+                </Tooltip>
+            )}
+          </ItemTexts>
       )}
 
       {info && (
-        <ItemInfo {...ownerState} className={navSectionClasses.item.info} sx={slotProps?.info}>
-          {navItem.renderInfo}
-        </ItemInfo>
+          <ItemInfo {...ownerState} className={navSectionClasses.item.info} sx={slotProps?.info}>
+            {navItem.renderInfo}
+          </ItemInfo>
       )}
 
       {hasChild && (
-        <ItemArrow
-          {...ownerState}
-          icon={open ? 'eva:arrow-ios-downward-fill' : 'eva:arrow-ios-forward-fill'}
-          className={navSectionClasses.item.arrow}
-          sx={slotProps?.arrow}
-        />
+          <ItemArrow
+              {...ownerState}
+              icon={open ? 'eva:arrow-ios-downward-fill' : 'eva:arrow-ios-forward-fill'}
+              className={navSectionClasses.item.arrow}
+              sx={slotProps?.arrow}
+          />
       )}
+
     </ItemRoot>
   );
 });
@@ -125,7 +129,7 @@ const shouldForwardProp = (prop: string) =>
 /**
  * @slot root
  */
-const ItemRoot = styled(ButtonBase, { shouldForwardProp })<StyledState>(({
+const ItemRoot = styled(Link, { shouldForwardProp })<StyledState>(({
   active,
   open,
   theme,
@@ -182,13 +186,19 @@ const ItemRoot = styled(ButtonBase, { shouldForwardProp })<StyledState>(({
   return {
     textAlign: 'left',
     width: '100%',
+    display: 'inline-flex',
     paddingTop: 'var(--nav-item-pt)',
     paddingLeft: 'var(--nav-item-pl)',
     paddingRight: 'var(--nav-item-pr)',
     paddingBottom: 'var(--nav-item-pb)',
     borderRadius: 'var(--nav-item-radius)',
+    justifyContent: 'center',
+    alignItems: 'center',
     color: 'var(--nav-item-color)',
-    '&:hover': { backgroundColor: 'var(--nav-item-hover-bg)' },
+    '&:hover': {
+      textDecoration: 'none',
+      backgroundColor: 'var(--nav-item-hover-bg)'
+    },
     variants: [
       { props: { variant: 'rootItem' }, style: rootItemStyles },
       { props: { variant: 'subItem' }, style: subItemStyles },
