@@ -236,7 +236,7 @@ export default function WebsitePage() {
                                         </Typography>
                                     </Box>
                                 </Box>
-                                <ViewGrid ViewItems={formattedData} website={website}/>
+                                <ViewGrid ViewItems={formattedData} website={website} isLoading={!isLoaded}/>
                             </div>
                         ) : (
                             <div>

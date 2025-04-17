@@ -46,6 +46,7 @@ export interface IWebsite {
     metadata: any;
     technologies: WebsiteTechnology[];
     fieldValues: FieldValue[];
+    dataSourcesToPull: string[];
     isDeleted: boolean;
     enableUptimeMonitor: boolean;
     uptimeMonitorInfo?: {
@@ -93,6 +94,7 @@ const ModelSchema = new Schema<IWebsite>(
         workspace: {type: Schema.Types.ObjectId, ref: 'Workspace'},
         fieldsTemplate: {type: Schema.Types.ObjectId, ref: 'FieldsTemplate'},
         fieldValues: [],
+        dataSourcesToPull: [String],
         type: {},
         technologies: [],
         metadata: {},

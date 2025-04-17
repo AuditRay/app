@@ -16,7 +16,7 @@ import {deleteFieldsTemplate} from "@/app/actions/fieldTemplateActions";
 import {removeUserFromWorkspace} from "@/app/actions/workspaceActions";
 import {fetchUpdates} from "@/app/actions/websiteActions";
 
-export default function UpdateWebsiteInfoDialog({websiteId, open, setOpenAction}: {websiteId: string, open: boolean, setOpenAction: (open: boolean) => void}) {
+export default function UpdateWebsiteInfoDialog({websiteId, open, setOpenAction, skipReloadAfter}: {skipReloadAfter?: boolean, websiteId: string, open: boolean, setOpenAction: (open: boolean) => void}) {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -54,7 +54,7 @@ export default function UpdateWebsiteInfoDialog({websiteId, open, setOpenAction}
 
                                 async function updateWebsiteInfo() {
                                     await fetchUpdates(websiteId, true);
-                                    window.location.reload();
+                                    if(!skipReloadAfter) window.location.reload();
                                 }
 
                                 updateWebsiteInfo().then(() => {

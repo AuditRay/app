@@ -62,6 +62,7 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
     const [timeViews, setTimeViews] = useState<('hours' | 'minutes' | 'seconds')[]>(['hours', 'minutes']);
     const [timeZone, setTimeZone] = useState('');
     const [tagsError, setTagsError] = useState<string | null>(null);
+    const [dataSourcesToPull, setDataSourcesToPull] = useState<string[]>([]);
     const [generalError, setGeneralError] = useState<string | null>(null);
     const [fieldTemplates, setFieldTemplates] = useState<IFieldsTemplate[]>([]);
     const handleOpen = () => {
@@ -172,6 +173,45 @@ export default function EditWebsiteModal({websiteId, website, workspaceId}: {web
                             />
                         )}
                     />
+                    <Box>
+                        <Typography variant={'subtitle2'} sx={{mt:2}}>Sync Sources</Typography>
+                    </Box>
+                    <Grid container>
+                        <Grid size={12}>
+                            <FormControlLabel
+                                label="Site Audit"
+                                control={<Checkbox
+                                    id={"site-audit"}
+                                    name={"site-audit"}
+                                    checked={dataSourcesToPull.includes('monit_site_audit')} onChange={
+                                    (e) => {
+                                        if(!dataSourcesToPull.includes('monit_site_audit') &&  e.target.checked) {
+                                            setDataSourcesToPull([...dataSourcesToPull, 'monit_site_audit']);
+                                        } else if (!e.target.checked) {
+                                            setDataSourcesToPull(dataSourcesToPull.filter((item) => item !== 'monit_site_audit'));
+                                        }
+                                    }
+                                }/>}
+                            />
+                        </Grid>
+                        <Grid size={12}>
+                            <FormControlLabel
+                                label="Security Review"
+                                control={<Checkbox
+                                    id={"security-review"}
+                                    name={"security-review"}
+                                    checked={dataSourcesToPull.includes('monit_security_review')} onChange={
+                                    (e) => {
+                                        if(!dataSourcesToPull.includes('monit_security_review') &&  e.target.checked) {
+                                            setDataSourcesToPull([...dataSourcesToPull, 'monit_security_review']);
+                                        } else if (!e.target.checked) {
+                                            setDataSourcesToPull(dataSourcesToPull.filter((item) => item !== 'monit_security_review'));
+                                        }
+                                    }
+                                }/>}
+                            />
+                        </Grid>
+                    </Grid>
                     <Box>
                         <Typography variant={'subtitle2'} sx={{mt:2}}>Sync configuration</Typography>
                     </Box>

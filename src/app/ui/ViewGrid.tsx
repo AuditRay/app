@@ -75,7 +75,7 @@ const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
     },
 }));
 
-export default function ViewGrid(props: { ViewItems: DataSources['data'], website: IWebsite }) {
+export default function ViewGrid(props: { ViewItems: DataSources['data'], website: IWebsite, isLoading?: boolean }) {
     const [open, setOpen] = React.useState(false);
     const [data, setData] = React.useState<GridRow | null>(null);
     const openRightDrawer = useRightDrawerStore((state) => state.openRightDrawer);
@@ -94,7 +94,7 @@ export default function ViewGrid(props: { ViewItems: DataSources['data'], websit
                 }}
                 checkboxSelection={false}
                 rowSelection={false}
-                loading={props.ViewItems.length === 0}
+                loading={props.isLoading}
                 rows={props.ViewItems}
                 getRowClassName={(params) => `status-${params.row.status}`}
                 columns={columns(viewDetails)}

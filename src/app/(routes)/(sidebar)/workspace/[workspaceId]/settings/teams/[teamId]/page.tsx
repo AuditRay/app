@@ -5,6 +5,7 @@ import {IAlert, IRole, ITeam, ITeamPopulated, IUserInternal, IWebsite} from "@/a
 import {useCallback, useEffect, useState} from "react";
 import {getTeam, updateTeam} from "@/app/actions/teamActions";
 import {Autocomplete, Box, FormControl, IconButton, InputLabel, LinearProgress, Select, Tab, Tabs} from "@mui/material";
+import { createFilterOptions } from '@mui/material/Autocomplete';
 import Grid from "@mui/material/Grid2";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
@@ -70,6 +71,10 @@ const StyledGridOverlay = styled('div')(({ theme }) => ({
         fill: theme.palette.mode === 'light' ? '#E8EAED' : '#1D2126',
     },
 }));
+
+const filterOptions = createFilterOptions({
+    stringify: (option: IWebsite) => `${option.title} ${option.siteName} ${option.url}`,
+});
 
 function CustomNoRowsOverlay() {
     return (
@@ -236,6 +241,7 @@ export default function TeamSettingsPage({params}: { params: Promise<{ workspace
                 if(newTeamData.members) {
                     for(let i = 0; i < newTeamData.members.length; i++) {
                         const member = newTeamData.members[i];
+                        console.log('member', member);
                         if(member.user == '') {
                             setNewTeamErrorData({
                                 ...newTeamErrorData,
@@ -315,6 +321,7 @@ export default function TeamSettingsPage({params}: { params: Promise<{ workspace
                 </Tabs>
             </Box>
             <TabPanel value={value} index={0}>
+                {newTeamErrorData.members && <Typography color={'error'}>{newTeamErrorData.members}</Typography>}
                 <Grid container key={`member-owner`} columnSpacing={3} >
                     <Grid size={6}>
                         {ownerUser && <Autocomplete
@@ -480,7 +487,7 @@ export default function TeamSettingsPage({params}: { params: Promise<{ workspace
                                 ...(newTeamData.members || []),
                                 {
                                     user: '',
-                                    role: '',
+                                    role: 'team_member',
                                     websites: []
                                 }
                             ]
@@ -518,6 +525,7 @@ export default function TeamSettingsPage({params}: { params: Promise<{ workspace
                                             websites: newWebsites
                                         });
                                     }}
+                                    filterOptions={filterOptions}
                                     isOptionEqualToValue={(option, value) => !!workspaceUsers.find((user) => user.id == option.id)}
                                     value={workspaceWebsites.find((ws) => website == ws.id)}
                                     getOptionLabel={(option) => option.title || option.url}

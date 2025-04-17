@@ -48,7 +48,7 @@ export default function WebsiteComponent({workspaceId, website}: {workspaceId: s
             {editOpen && <UpdateWebsiteDialog open={editOpen} setOpenAction={setEditOpen} websiteId={website.id} workspaceId={workspaceId} />}
             {tokenOpen && <WebsiteTokenDialog open={tokenOpen} setOpenAction={setTokenOpen} websiteId={website.id} />}
             {runsOpen && <WebsiteRunsDialog open={runsOpen} setOpenAction={setRunsOpen} websiteId={website.id} />}
-            {updateInfoOpen && <UpdateWebsiteInfoDialog open={updateInfoOpen} setOpenAction={setUpdateInfoOpen} websiteId={website.id} />}
+            {updateInfoOpen && <UpdateWebsiteInfoDialog open={updateInfoOpen} setOpenAction={setUpdateInfoOpen} websiteId={website.id} skipReloadAfter={true} />}
             <IconButton
                 aria-label="more"
                 id="long-button"

@@ -21,6 +21,11 @@ import Tooltip from "@mui/material/Tooltip";
 import DeleteForeverIcon from "@mui/icons-material/DeleteForever";
 import MenuItem from "@mui/material/MenuItem";
 import {useUserStateStore} from "@/providers/user-store-provider";
+import {createFilterOptions} from "@mui/material/Autocomplete";
+
+const filterOptions = createFilterOptions({
+    stringify: (option: IWebsite) => `${option.title} ${option.siteName} ${option.url}`,
+});
 
 export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolean, setOpen: (open: boolean) => void, workspaceId: string}) {
     const [isSaving, setIsSaving] = useState(false);
@@ -116,16 +121,23 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                 <DialogContentText>
                     Please enter team information to add team to workspace
                 </DialogContentText>
+                {newTeamErrorData.name}
                 <TextField
                     autoFocus
                     disabled={isSaving}
                     error={!!newTeamErrorData.name}
                     helperText={newTeamErrorData.name}
                     onChange={
-                        (e) => setNewTeamData({
-                            ...newTeamData,
-                            name: e.target.value
-                        })
+                        (e) => {
+                            setNewTeamErrorData({
+                                ...newTeamErrorData,
+                                name: '',
+                            })
+                            setNewTeamData({
+                                ...newTeamData,
+                                name: e.target.value
+                            })
+                        }
                     }
                     value={newTeamData.name}
                     margin="dense"
@@ -288,7 +300,7 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                                 ...(newTeamData.members || []),
                                 {
                                     user: '',
-                                    role: '',
+                                    role: 'team_member',
                                     websites: []
                                 }
                             ]
@@ -325,7 +337,8 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                                     }}
                                     isOptionEqualToValue={(option, value) => !!workspaceUsers.find((user) => user.id == option.id)}
                                     value={workspaceWebsites.find((ws) => website == ws.id)}
-                                    getOptionLabel={(option) => option.url}
+                                    filterOptions={filterOptions}
+                                    getOptionLabel={(option) => option.title || option.url}
                                     renderInput={(params) => <TextField margin="dense" {...params} fullWidth label="Website" />}
                                 />
                             </Grid>
@@ -380,7 +393,18 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                         variant={'contained'}
                         onClick={() => {
                             setIsSaving(true);
-                            setNewTeamErrorData({});
+
+                            setNewTeamErrorData({
+                                name:'',
+                                members: '',
+                                websites: '',
+                            });
+                            setNewTeamErrorData({
+                                name:'',
+                                members: '',
+                                websites: '',
+                            });
+                            console.log('newTeamData', newTeamErrorData);
                             if(!newTeamData.name) {
                                 setNewTeamErrorData({
                                     ...newTeamErrorData,
@@ -389,7 +413,27 @@ export default function AddTeamModal({open, setOpen, workspaceId}: {open: boolea
                                 setIsSaving(false);
                                 return;
                             }
-                            console.log('newTeamData', newTeamData);
+                            if(newTeamData.members) {
+                                for(let i = 0; i < newTeamData.members.length; i++) {
+                                    const member = newTeamData.members[i];
+                                    if(member.user == '') {
+                                        setNewTeamErrorData({
+                                            ...newTeamErrorData,
+                                            members: 'Please select user for all members'
+                                        });
+                                        setIsSaving(false);
+                                        return;
+                                    }
+                                    if(member.role == '') {
+                                        setNewTeamErrorData({
+                                            ...newTeamErrorData,
+                                            members: 'Please select role for all members'
+                                        });
+                                        setIsSaving(false);
+                                        return;
+                                    }
+                                }
+                            }
                             async function save() {
                                 if(newTeamData.name) {
                                     await createTeam(workspaceId, {

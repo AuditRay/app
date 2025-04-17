@@ -1,5 +1,5 @@
 'use server'
-import {IWebsite, Website, WebsiteType} from "@/app/models/Website";
+import {IWebsite, Website} from "@/app/models/Website";
 import urlMetadata from "url-metadata";
 import {CreateWebsiteSchema, CreateWebsiteState} from "@/app/lib/definitions";
 import {connectMongo} from "@/app/lib/database";
@@ -13,17 +13,16 @@ import {WebsiteInfoFull} from "@/app/models/WebsiteInfoFull";
 import {detailedDiff} from 'deep-object-diff';
 import OpenAI from 'openai';
 import {DefaultView, WebsiteView} from "@/app/models/WebsiteView";
-import defaultViews from "@/app/views";
-import {Folder, IFolder, ITeam, ITeamPopulated, IUpdateRun, IUser, Team, UpdateRun, User} from "@/app/models";
-import * as fs from "node:fs";
-import {GridFilterModel, GridPaginationModel, GridSortModel, GridFilterItem} from "@mui/x-data-grid-pro";
+import {defaultViewsDrupal, defaultViewsWP} from "@/app/views";
+import {Folder, IFolder, ITeam, IUpdateRun, IUser, Team, UpdateRun, User} from "@/app/models";
+import {GridFilterModel, GridPaginationModel, GridSortModel} from "@mui/x-data-grid-pro";
 import {filterWebsitesPage, filterWebsiteTable} from "@/app/lib/utils";
-import {getMonitor, getWebsiteMonitor, newMonitor, removeMonitor} from "@/app/actions/uptimeActions";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import {defaultViewsDrupal, defaultViewsWP} from "@/app/views";
-import {Types, ObjectId, Schema, Model} from "mongoose";
+import {Schema} from "mongoose";
 import {getUserTeams} from "@/app/actions/teamActions";
+import {getSiteInfoStatus} from "@/app/lib/siteInfo";
+
 dayjs.extend(relativeTime);
 
 function setupOpenAI() {
@@ -289,17 +288,25 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
         if(website.type.name === 'WordPress') {
             healthUrl = `${websiteUrl}wp-json/monit/v1/health`;
         }
+        const plugins = website.dataSourcesToPull?.length ? website.dataSourcesToPull : [];
         // Fetch updates from the website url using fetch library on the route /monit/health,
         // try to use the website.url if it's not working then website.url/web, use post method with body as form data
         //TODO: remove body from the request
         const requestHeaders = new Headers();
         requestHeaders.append("Authorization", website.token);
+        const bodyParams = new URLSearchParams({
+            token: website.token,
+        });
+        if(plugins.length && !plugins.includes('none')) {
+            bodyParams.append('plugins', plugins.join(','));
+        } else if (plugins.length && plugins.includes('none')) {
+            bodyParams.append('plugins', 'none');
+        }
+        console.log("bodyParams", bodyParams.entries());
         let response = await fetch(healthUrl, {
             method: 'POST',
             headers: requestHeaders,
-            body: new URLSearchParams({
-                token: website.token
-            }),
+            body: bodyParams,
             cache: 'no-cache',
         }).catch((error) => {
             console.error('Failed to fetch updates', error);
@@ -497,15 +504,22 @@ export async function fetchUpdates(websiteId: string, sync: boolean = false): Pr
             if (newVersion) {
                 const newWebsiteInfo = new WebsiteInfo(preparedData);
                 const newWebsiteInfoFull = new WebsiteInfoFull(preparedDataFull);
-                await newWebsiteInfo.save();
+                const savedNewWebsiteInfo = await newWebsiteInfo.save();
                 await newWebsiteInfoFull.save();
-                // generateWebsiteAIUpdatesSummary(websiteId).then(() => {
-                //     revalidatePath(`/website/${websiteId}`);
-                // });
-                return newWebsiteInfo.toJSON();
+                const websiteInfoStatus = await getSiteInfoStatus(savedNewWebsiteInfo._id.toString());
+                savedNewWebsiteInfo.set('websiteInfoStatus', websiteInfoStatus);
+                savedNewWebsiteInfo.markModified('websiteInfoStatus');
+                const updatedWebsiteInfo = await savedNewWebsiteInfo.save();
+                return updatedWebsiteInfo.toJSON();
             } else {
                 websiteLatestInfo.set('updatedAt', new Date());
-                const updatedWebsiteInfo = await websiteLatestInfo.save();
+                let updatedWebsiteInfo = await websiteLatestInfo.save();
+                if (!updatedWebsiteInfo.websiteInfoStatus) {
+                    const websiteInfoStatus = await getSiteInfoStatus(updatedWebsiteInfo._id.toString());
+                    updatedWebsiteInfo.set('websiteInfoStatus', websiteInfoStatus);
+                    updatedWebsiteInfo.markModified('websiteInfoStatus');
+                    updatedWebsiteInfo = await updatedWebsiteInfo.save();
+                }
                 savedUpdateRun.set('status', 'Success');
                 savedUpdateRun.set('response', "");
                 if(response) {
@@ -603,7 +617,6 @@ export async function updateWebsite(websiteId: string, updateData: Partial<IWebs
     //     website.markModified('uptimeMonitorInfo');
     // }
     website.set(updateData);
-    console.log('updateData', updateData);
     website.markModified('syncConfig');
     const updatedWebsite = await website.save();
     revalidatePath(`/workspace/${website.workspace || 'personal'}/projects/${websiteId}`);
@@ -1168,14 +1181,22 @@ export async function getWebsitesPage(
         const websiteInfo = await WebsiteInfo.find({
             website: website._id
         }, {
+            _id: 1,
             frameworkInfo: 1,
-            websiteComponentsInfo: 1,
+            websiteInfoStatus: 1,
             updatedAt: 1,
             createdAt: 1,
         }).sort({createdAt: -1}).limit(1);
 
         if (websiteInfo[0]) {
-            websiteInfos[website._id.toString()] = websiteInfo[0];
+            if(!websiteInfo[0].websiteInfoStatus) {
+                const websiteInfoStatus = await getSiteInfoStatus(websiteInfo[0]._id.toString());
+                websiteInfo[0].set('websiteInfoStatus', websiteInfoStatus);
+                websiteInfo[0].markModified('websiteInfoStatus');
+                websiteInfos[website._id.toString()] = await websiteInfo[0].save({ timestamps: false });
+            } else {
+                websiteInfos[website._id.toString()] = websiteInfo[0];
+            }
         }
     }
     console.timeEnd('getWebsitesPage');
@@ -1183,12 +1204,6 @@ export async function getWebsitesPage(
     for (const website of websites) {
         const websiteObj: IWebsite = website.toJSON();
         const websiteInfo = websiteInfos[websiteObj.id.toString()];
-        const components: UpdateInfo[] =  (websiteInfo?.websiteComponentsInfo || []).map((component) => {
-            return {
-                ...component,
-                available_releases: []
-            }
-        });
         let folders: IFolder[] = [];
         if (workspaceId === 'personal') {
             folders = await Folder.find({workspace: null, websites: websiteObj.id, user: user.id});
@@ -1198,26 +1213,6 @@ export async function getWebsitesPage(
         let teams: ITeam[] = [];
         if (workspaceId !== 'personal') {
           teams = await Team.find({workspace: workspaceId, websites: websiteObj.id});
-        }
-        const componentsUpdated = components.filter((component) => component.type === 'CURRENT') || [];
-        const componentsWithUpdates = components.filter((component) => component.type === 'NOT_CURRENT') || [];
-        const componentsWithSecurityUpdates = components.filter((component) => component.type === 'NOT_SECURE') || [];
-        const frameWorkUpdateStatus = websiteInfo?.frameworkInfo.type || "UNKNOWN";
-        let status: IWebsiteTable['frameWorkUpdateStatus'] = "Up to Date";
-        if (componentsWithUpdates?.length || frameWorkUpdateStatus === "NOT_CURRENT") {
-            status = "Needs Update";
-        }
-        if (componentsWithSecurityUpdates?.length || frameWorkUpdateStatus === "NOT_SECURE") {
-            status = "Security Update";
-        }
-        if (frameWorkUpdateStatus === "REVOKED") {
-            status = "Revoked";
-        }
-        if (frameWorkUpdateStatus === "UNKNOWN") {
-            status = "Unknown";
-        }
-        if (frameWorkUpdateStatus === "NOT_SUPPORTED") {
-            status = "Not Supported";
         }
         const siteData: IWebsitePage = {
             id: websiteObj.id,
@@ -1230,20 +1225,20 @@ export async function getWebsitesPage(
             updatedAtText: websiteInfo?.updatedAt ? dayjs(websiteInfo?.updatedAt).fromNow() : "Never",
             updatedAt: dayjs(websiteInfo?.updatedAt || '1970-01-01T00:00:00.000Z').format('MMM D, YYYY'),
             updateType: websiteObj.syncConfig?.enabled ? 'Auto' : 'Manual',
-            componentsNumber: components.length,
-            componentsUpdatedNumber: componentsUpdated.length,
-            componentsWithUpdatesNumber: componentsWithUpdates.length,
-            componentsWithSecurityUpdatesNumber: componentsWithSecurityUpdates.length,
-            frameWorkUpdateStatus: status,
+            componentsNumber: websiteInfo?.websiteInfoStatus.componentsNumber,
+            componentsUpdatedNumber: websiteInfo?.websiteInfoStatus.componentsUpdatedNumber,
+            componentsWithUpdatesNumber: websiteInfo?.websiteInfoStatus.componentsWithUpdatesNumber,
+            componentsWithSecurityUpdatesNumber:websiteInfo?.websiteInfoStatus.componentsWithSecurityUpdatesNumber,
+            frameWorkUpdateStatus: websiteInfo?.websiteInfoStatus.frameworkUpdateStatusText,
             folders: folders.map((folder) => folder.id.toString()),
             teams: teams.map((team) => team.id.toString()),
         }
-        if (websiteInfo?.frameworkInfo) {
+        if (websiteInfo?.websiteInfoStatus) {
             siteData.frameworkVersion = {
-                status: versionTypeMapping[websiteInfo.frameworkInfo?.type] || 'Unknown',
-                currentVersion: websiteInfo.frameworkInfo.current_version || 'N/A',
-                recommendedVersion: websiteInfo.frameworkInfo.recommended_version || 'N/A',
-                latestVersion: websiteInfo.frameworkInfo.latest_version || 'N/A'
+                status: websiteInfo?.websiteInfoStatus.frameworkUpdateStatusText,
+                currentVersion: websiteInfo?.websiteInfoStatus.frameworkCurrentVersion,
+                recommendedVersion: websiteInfo?.websiteInfoStatus.frameworkRecommendedVersion,
+                latestVersion: websiteInfo?.websiteInfoStatus.frameworkLatestVersion
             }
         }
 
@@ -1332,10 +1327,17 @@ export async function getWebsitesListing(workspaceId: string): Promise<IWebsite[
         throw new Error('User not found');
     }
     if (workspaceId === 'personal') {
-        const websites = await Website.find({user: user.id, workspace: null}, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
+        const websites = await Website.find({
+            user: user.id,
+            workspace: null,
+            isDeleted: {$ne: true}
+        }, {_id: 1, title: 1, url: 1, type: 1, favicon: 1});
         return websites.map(website => website.toJSON());
     }
-    const websites = await Website.find({workspace: workspaceId}, {
+    const websites = await Website.find({
+        workspace: workspaceId,
+        isDeleted: {$ne: true}
+    }, {
         _id: 1,
         title: 1,
         url: 1,

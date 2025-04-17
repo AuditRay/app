@@ -113,6 +113,7 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                     name="firstName"
                     label="First Name"
                     type="text"
+                    required={true}
                     fullWidth
                     variant="outlined"
                 />
@@ -133,6 +134,7 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                     name="lastName"
                     label="Last Name"
                     type="text"
+                    required={true}
                     fullWidth
                     variant="outlined"
                 />
@@ -153,16 +155,18 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                     name="email"
                     label="Email"
                     type="email"
+                    required={true}
                     fullWidth
                     variant="outlined"
                 />
                 <FormControl fullWidth margin={"dense"}>
                     <InputLabel>
-                        Role
+                        Role *
                     </InputLabel>
                     <Select
                         labelId="role-select-label"
                         id="role-select"
+                        required={true}
                         value={workspaceRoles.find((role) => role.id == newUserData.role)?.id}
                         label="Role"
                         onChange={(e) => {
@@ -206,6 +210,14 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                                 setNewUserErrorData({
                                     ...newUserErrorData,
                                     email: 'Last Name is required'
+                                });
+                                setIsSaving(false);
+                                return;
+                            }
+                            if(!newUserData.email.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
+                                setNewUserErrorData({
+                                    ...newUserErrorData,
+                                    email: 'Email is invalid'
                                 });
                                 setIsSaving(false);
                                 return;

@@ -1,4 +1,5 @@
 import {Model, model, models, Schema} from 'mongoose';
+import {IWebsiteTable} from "@/app/actions/websiteActions";
 
 export type UpdateInfo = {
     title: string;
@@ -41,6 +42,20 @@ export type DataSources = {
     }[]
 }
 
+export type WebsiteInfoStatus = {
+    componentsNumber: number;
+    componentsUpdated: UpdateInfo[];
+    componentsUpdatedNumber: number;
+    componentsWithUpdates: UpdateInfo[];
+    componentsWithUpdatesNumber: number;
+    componentsWithSecurityUpdates: UpdateInfo[];
+    componentsWithSecurityUpdatesNumber: number;
+    frameworkUpdateStatus: UpdateInfo['type'];
+    frameworkUpdateStatusText: IWebsiteTable['frameWorkUpdateStatus'];
+    frameworkCurrentVersion: string;
+    frameworkRecommendedVersion: string;
+    frameworkLatestVersion: string;
+}
 export interface IWebsiteInfo {
     id: string;
     website: typeof Schema.Types.ObjectId;
@@ -48,6 +63,7 @@ export interface IWebsiteInfo {
     frameworkInfo: UpdateInfo;
     websiteComponentsInfo: UpdateInfo[];
     dataSourcesInfo: DataSources[];
+    websiteInfoStatus: WebsiteInfoStatus;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -70,6 +86,7 @@ const ModelSchema = new Schema<IWebsiteInfo>(
         frameworkInfo: {},
         websiteComponentsInfo: {},
         dataSourcesInfo: {},
+        websiteInfoStatus: {}
     },
     {
         timestamps: true,
