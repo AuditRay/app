@@ -17,6 +17,10 @@ import { Iconify } from '@/components/iconify';
 import { CustomPopover } from '@/components/custom-popover';
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
 import {useParams, useRouter} from "next/navigation";
+import AddWorkspaceModal from "@/app/ui/AddWorkspaceModal";
+import * as React from "react";
+import { Divider } from '@mui/material';
+import DomainAddIcon from "@mui/icons-material/DomainAdd";
 // ----------------------------------------------------------------------
 
 export type WorkspacesPopoverProps = ButtonBaseProps & {
@@ -31,6 +35,8 @@ export function WorkspacesPopover({ data = [], bottom, sx, ...other }: Workspace
   const mediaQuery = 'sm';
     const router = useRouter();
   const { open, anchorEl, onClose, onOpen } = usePopover();
+
+  const [isAddWorkspaceModalOpen, setIsAddWorkspaceModalOpen] = React.useState(false);
   const params = useParams<{ workspaceId: string }>()
   const { workspaceId } = params;
   const currentWorkspace = data.find((workspace) => workspace.id === workspaceId);
@@ -109,21 +115,6 @@ export function WorkspacesPopover({ data = [], bottom, sx, ...other }: Workspace
       }}
     >
       <MenuList sx={{ width: 240 }}>
-          <MenuItem
-              key='personal'
-              selected={'personal' === workspace?.id}
-              onClick={() => handleChangeWorkspace({
-                  id: 'personal',
-                    name: 'Personal'
-              })}
-              sx={{ height: 48 }}
-          >
-
-              <WorkspacesIcon />
-              <Box component="span" sx={{ flexGrow: 1, fontWeight: 'fontWeightMedium' }}>
-                  Personal
-              </Box>
-          </MenuItem>
         {data.map((option) => (
           <MenuItem
             key={option.id}
@@ -138,7 +129,20 @@ export function WorkspacesPopover({ data = [], bottom, sx, ...other }: Workspace
             </Box>
           </MenuItem>
         ))}
+        <Divider />
+        <MenuItem
+            key='add-workspace'
+            onClick={() => setIsAddWorkspaceModalOpen(true)}
+            sx={{ height: 48 }}
+        >
+
+          <DomainAddIcon />
+          <Box component="span" sx={{ flexGrow: 1, fontWeight: 'fontWeightMedium' }}>
+            Add new workspace
+          </Box>
+        </MenuItem>
       </MenuList>
+      <AddWorkspaceModal open={isAddWorkspaceModalOpen} setOpen={setIsAddWorkspaceModalOpen}/>
     </CustomPopover>
   );
 

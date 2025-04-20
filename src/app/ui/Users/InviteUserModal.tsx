@@ -209,7 +209,7 @@ export default function InviteUserModal({open, setOpen, workspaceId}: {open: boo
                             if(!newUserData.email) {
                                 setNewUserErrorData({
                                     ...newUserErrorData,
-                                    email: 'Last Name is required'
+                                    email: 'Email is required'
                                 });
                                 setIsSaving(false);
                                 return;

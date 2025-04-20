@@ -1,4 +1,4 @@
-'use server'
+'use client'
 import {getUser} from "@/app/actions/getUser";
 import {Grid2 as Grid, Paper, Box, Card, Tooltip, Stack} from "@mui/material";
 import Link from '@/app/ui/Link';
@@ -15,16 +15,26 @@ import {getFolders} from "@/app/actions/folderActions";
 import { fabClasses } from '@mui/material/Fab';
 import {useTheme} from "@mui/material/styles";
 import FolderComponent from "@/app/ui/Folders/FolderComponent";
-export default async function Websites(
-    {searchParams, params}: {
-        searchParams: Promise<Record<string, string>>,
-        params: Promise<{ workspaceId: string }>
+import {useUserStateStore} from "@/providers/user-store-provider";
+import {useParams} from "next/navigation";
+import {IFolder} from "@/app/models";
+import {LoadingScreen} from "@/components/loading-screen";
+export default function Websites() {
+    const { workspaceId } = useParams<{
+        workspaceId: string
+    }>()
+    const [folders, setFolders] = React.useState<IFolder[]>([]);
+    const [isLoading, setIsLoading] = React.useState<boolean>(true);
+    const userWorkspaceRole = useUserStateStore((state) => state.sessionUserWorkspaceRole);
+    const load = async () => {
+        const folders = await getFolders(workspaceId);
+        setFolders(folders);
+        setIsLoading(false);
     }
-) {
-    const { workspaceId } = await params;
-    const folders = await getFolders(workspaceId);
-    const user = await getUser(true);
-    const userRole = user.roles?.find(role => role.workspace === workspaceId);
+    React.useEffect(() => {
+        setIsLoading(true);
+        load().then();
+    }, []);
     return (
         <Paper
             sx={{
@@ -34,64 +44,70 @@ export default async function Websites(
                 maxWidth: 'xl'
             }}
         >
-            <div>
-                <Box sx={{display: 'flex', alignItems: 'center'}}>
-                    <Typography variant={'h2'}>Projects</Typography>
-                    {userRole?.isAdmin || userRole?.isOwner ? (
-                        <>
-                            <Box sx={{ml: 'auto'}}>
-                                <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>
-                            </Box>
-                            <Box sx={{ml: 2}}>
-                                <AddNewFolderModal workspaceId={workspaceId}></AddNewFolderModal>
-                            </Box>
-                        </>
-                    ) : null}
+            {isLoading ? (
+                <Box sx={{height: '100%', pt: "20%"}}>
+                    <LoadingScreen />
                 </Box>
-                <Grid container spacing={2} sx={{mt: 5}}>
-                    <Grid size={{
-                        xs: 12,
-                        md: 3
-                    }}>
-                        <Card
-                            sx={{
-                                '&:hover': {
-                                    'backgroundColor': '#eaedef',
-                                    "a": {
-                                        'textDecoration': 'none'
-                                    }
-                                },
-                                'backgroundColor': '#DFE3E8'
-                            }}
-                        >
-                            <Link href={`/workspace/${workspaceId}/projects/folder/all`} color="inherit" variant="subtitle2" noWrap>
-                                <Box sx={{ position: 'relative', p: 1 }}>
-                                    <Tooltip title={'All Websites'} placement="bottom-end">
-                                        <Image
-                                            alt={'All'}
-                                            src={'/assets/all_folder.png'}
-                                            ratio="1/1"
-                                            sx={{ borderRadius: 1.5, p: 2 }}
-                                        />
-                                    </Tooltip>
+            ) : (
+                <div>
+                    <Box sx={{display: 'flex', alignItems: 'center'}}>
+                        <Typography variant={'h2'}>Projects</Typography>
+                        {userWorkspaceRole?.isAdmin || userWorkspaceRole?.isOwner ? (
+                            <>
+                                <Box sx={{ml: 'auto'}}>
+                                    <AddWebsiteModal workspaceId={workspaceId}></AddWebsiteModal>
                                 </Box>
-                                <Stack spacing={2.5} sx={{ p: 3, pt: 2, textAlign: 'center' }}>
-                                        All
-                                </Stack>
-                            </Link>
-                        </Card>
-                    </Grid>
-
-                    {folders.length > 0 && folders.map((folder, index) => (
+                                <Box sx={{ml: 2}}>
+                                    <AddNewFolderModal workspaceId={workspaceId}></AddNewFolderModal>
+                                </Box>
+                            </>
+                        ) : null}
+                    </Box>
+                    <Grid container spacing={2} sx={{mt: 5}}>
                         <Grid size={{
                             xs: 12,
                             md: 3
-                        }} key={`folder-${index}`}>
-                            <FolderComponent folder={folder} workspaceId={workspaceId}></FolderComponent>
+                        }}>
+                            <Card
+                                sx={{
+                                    '&:hover': {
+                                        'backgroundColor': '#eaedef',
+                                        "a": {
+                                            'textDecoration': 'none'
+                                        }
+                                    },
+                                    'backgroundColor': '#DFE3E8'
+                                }}
+                            >
+                                <Link href={`/workspace/${workspaceId}/projects/folder/all`} color="inherit" variant="subtitle2" noWrap>
+                                    <Box sx={{ position: 'relative', p: 1 }}>
+                                        <Tooltip title={'All Websites'} placement="bottom-end">
+                                            <Image
+                                                alt={'All'}
+                                                src={'/assets/all_folder.png'}
+                                                ratio="1/1"
+                                                sx={{ borderRadius: 1.5, p: 2 }}
+                                            />
+                                        </Tooltip>
+                                    </Box>
+                                    <Stack spacing={2.5} sx={{ p: 3, pt: 2, textAlign: 'center' }}>
+                                            All
+                                    </Stack>
+                                </Link>
+                            </Card>
                         </Grid>
-                    ))}
-                </Grid>
-            </div>
+
+                        {folders.length > 0 && folders.map((folder, index) => (
+                            <Grid size={{
+                                xs: 12,
+                                md: 3
+                            }} key={`folder-${index}`}>
+                                <FolderComponent folder={folder} workspaceId={workspaceId}></FolderComponent>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </div>
+            )}
         </Paper>
     );
 }

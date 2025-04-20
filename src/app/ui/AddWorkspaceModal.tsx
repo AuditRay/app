@@ -16,6 +16,8 @@ import { green } from '@mui/material/colors';
 import {Autocomplete, Chip} from "@mui/material";
 import {createFiltersViews} from "@/app/actions/filterViewsActions";
 import {createWorkspace} from "@/app/actions/workspaceActions";
+import {getFullUser} from "@/app/actions/getUser";
+import {useUserStateStore} from "@/providers/user-store-provider";
 
 export default function AddWorkspaceModal({open, setOpen}: {open: boolean, setOpen: (open: boolean) => void}) {
     const [state, action, isPending] = useActionState(createWebsite, undefined)
@@ -44,6 +46,10 @@ export default function AddWorkspaceModal({open, setOpen}: {open: boolean, setOp
     useEffect(() => {
         console.log('isPending', isSaving);
     }, [isSaving]);
+
+    const {
+        refreshSessionFullUser,
+    } = useUserStateStore((state => state));
     return (
         <Dialog
             open={open}
@@ -99,6 +105,7 @@ export default function AddWorkspaceModal({open, setOpen}: {open: boolean, setOp
                                 await createWorkspace({
                                     name: name
                                 });
+                                await refreshSessionFullUser();
                             }
                             save().then(() => {
                                 setIsSaving(false);

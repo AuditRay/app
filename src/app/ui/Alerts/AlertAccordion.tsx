@@ -11,7 +11,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import AlertWebsitePreviewGrid from "@/app/ui/Alerts/AlertWebsitePreviewGrid";
 import RightDrawer from "@/app/ui/RightDrawer";
 
-export default function AlertAccordion({alertInfos}: { alertInfos: IAlertInfo[]}) {
+export default function AlertAccordion({alertInfos, workspaceId}: { alertInfos: IAlertInfo[], workspaceId: string }) {
     const [isLoadingData, setIsLoadingData] = React.useState<Record<string, boolean>>();
     const [loadedData, setLoadedData] = React.useState<Record<string, IAlertInfo & {data: any}>>({});
     return (
@@ -64,7 +64,7 @@ export default function AlertAccordion({alertInfos}: { alertInfos: IAlertInfo[]}
                     <AccordionDetails>
                         {isLoadingData?.[alertInfo.id] ? (<CircularProgress />) : (
                             <Box>
-                                {loadedData[alertInfo.id]?.data && <AlertWebsitePreviewGrid gridData={loadedData[alertInfo.id].data} />}
+                                {loadedData[alertInfo.id]?.data && <AlertWebsitePreviewGrid gridData={loadedData[alertInfo.id].data} workspaceId={workspaceId} />}
                             </Box>
                         )}
                     </AccordionDetails>

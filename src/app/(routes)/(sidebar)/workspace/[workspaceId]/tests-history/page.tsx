@@ -43,7 +43,7 @@ export default function Alerts() {
             }}>
                 <Typography variant={'h2'} >Tests History</Typography>
             </Box>
-            {alertInfos.length > 0 && <AlertAccordion alertInfos={alertInfos}/>}
+            {alertInfos.length > 0 && <AlertAccordion alertInfos={alertInfos} workspaceId={workspaceId}/>}
             {alertInfos.length == 0 && (
                 <Box sx={{textAlign: 'center'}}>
                     You don&apos;t have any new tests

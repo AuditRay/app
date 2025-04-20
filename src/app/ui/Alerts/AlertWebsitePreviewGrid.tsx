@@ -67,7 +67,15 @@ const prepareColumnsVisibility = (headers?: { id: string, label: string}[]) => {
     return cols;
 }
 
-const prepareColumns = (viewMore: (title: React.ReactNode | string, content: React.ReactNode | string) => void, headers?: { id: string, label: string, type?: string}[], websites: IWebsite[] = []): GridColDef[] => {
+const prepareColumns = (
+    viewMore: (
+        title: React.ReactNode | string,
+        content: React.ReactNode | string
+    ) => void,
+    headers?: { id: string, label: string, type?: string}[],
+    websites: IWebsite[] = [],
+    workspaceId?: string,
+): GridColDef[] => {
 
     const cols: GridColDef[] = [
         { field: 'siteName', headerName: 'Website Name', flex: 1, minWidth: 450,
@@ -79,9 +87,15 @@ const prepareColumns = (viewMore: (title: React.ReactNode | string, content: Rea
                 params.value && (
                     <>
                         <Box>
-                            <Link href={`/websites/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
-                                <Box component={'img'}  src={`${params.row.favicon ?? '/tech/other.png'}`} alt={params.value} sx={{width: '20px', verticalAlign: 'middle', mr: '10px'}} />{params.value}
-                            </Link>
+                            {workspaceId ? (
+                                <Link href={`/workspace/${workspaceId ? workspaceId : 'personal'}/projects/${params.row.id}`} sx={{textDecoration: 'none', color: 'inherit'}}>
+                                    <Box component={'img'}  src={`${params.row.favicon ?? '/tech/other.png'}`} alt={params.value} sx={{width: '20px', verticalAlign: 'middle', mr: '10px'}} />{params.value}
+                                </Link>
+                            ) : (
+                                <>
+                                    <Box component={'img'}  src={`${params.row.favicon ?? '/tech/other.png'}`} alt={params.value} sx={{width: '20px', verticalAlign: 'middle', mr: '10px'}} />{params.value}
+                                </>
+                            )}
                             <Link href={params.row.url} target={'_blank'}>
                                 <LaunchIcon fontSize={'small'} sx={{verticalAlign: 'middle', ml: '5px'}}></LaunchIcon>
                             </Link>
@@ -580,7 +594,7 @@ export default function AlertWebsitePreviewGrid(
         setWebsites(WebsiteRows);
         setExtraHeader(extraHeaders);
         setColumnsVisibility(prepareColumnsVisibility(extraHeaders));
-        setColumns(prepareColumns(openRightDrawer, extraHeaders, []));
+        setColumns(prepareColumns(openRightDrawer, extraHeaders, [], workspaceId));
         setIsWebsitesLoading(false);
         return {
             websites: WebsiteRows,
@@ -589,7 +603,7 @@ export default function AlertWebsitePreviewGrid(
         }
     }
     useEffect(() => {
-        setColumns(prepareColumns(openRightDrawer, [], []))
+        setColumns(prepareColumns(openRightDrawer, [], [], workspaceId))
         if (extraHeader.length) {
             setColumnsVisibility(prepareColumnsVisibility(extraHeader));
         }
@@ -597,7 +611,7 @@ export default function AlertWebsitePreviewGrid(
             filters: filters
         }).then((data) => {
             setColumnsVisibility(prepareColumnsVisibility(data?.extraHeaders));
-            setColumns(prepareColumns(openRightDrawer, data?.extraHeaders, websiteListing))
+            setColumns(prepareColumns(openRightDrawer, data?.extraHeaders, websiteListing, workspaceId))
         });
     }, [workspaceId]);
 
