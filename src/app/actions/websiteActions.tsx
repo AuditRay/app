@@ -1111,6 +1111,11 @@ export async function getWebsitesPage(
                 workspace: null,
                 isDeleted: {$ne: true}
             });
+            console.log('getWebsitesPage personal', websites, websites.length, {
+                user: userId,
+                workspace: null,
+                isDeleted: {$ne: true}
+            });
         }
     } else {
         const userRoles = user.roles?.filter((role) => role.workspace.toString() === workspaceId) || [];
@@ -1229,7 +1234,7 @@ export async function getWebsitesPage(
             componentsUpdatedNumber: websiteInfo?.websiteInfoStatus.componentsUpdatedNumber,
             componentsWithUpdatesNumber: websiteInfo?.websiteInfoStatus.componentsWithUpdatesNumber,
             componentsWithSecurityUpdatesNumber:websiteInfo?.websiteInfoStatus.componentsWithSecurityUpdatesNumber,
-            frameWorkUpdateStatus: websiteInfo?.websiteInfoStatus.frameworkUpdateStatusText,
+            frameWorkUpdateStatus: websiteInfo?.websiteInfoStatus.frameworkUpdateStatusText || "Unknown",
             folders: folders.map((folder) => folder.id.toString()),
             teams: teams.map((team) => team.id.toString()),
         }
@@ -1242,9 +1247,11 @@ export async function getWebsitesPage(
             }
         }
 
+        console.log("websitesDataaaaa", websitesData);
         websitesData.push(siteData);
     }
 
+    console.log("filtersaaaa", filters);
     if (Object.keys(filters).length) {
         const filteredData = websitesData.filter((website) => {
             return filterWebsitesPage(website, filters);
@@ -1277,6 +1284,7 @@ export async function getWebsitesPage(
     }
     console.timeEnd('process websitesPage');
 
+    console.log('websitesData', websitesData);
     const start = pagination.page * pagination.pageSize < 0 ? 0 : pagination.page * pagination.pageSize;
     const end = start + pagination.pageSize;
 
@@ -1376,6 +1384,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
     const validatedFields = CreateWebsiteSchema.safeParse({
         url: formData.get('url'),
         tags: formData.get('tags'),
+        workspaceId: formData.get('workspaceId'),
         syncConfig: {
             enabled: formData.get('sync-enabled') === 'on',
             syncInterval: parseInt(formData.get('sync-interval') as string) || 1,
@@ -1412,22 +1421,29 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
     };
 
 
+    const workspace = (!workspaceId || workspaceId == 'personal') ? null : workspaceId;
     let website = new Website({
         siteName,
         url,
         tags: tags || [],
         user: user.id,
         syncConfig,
-        workspace: workspaceId ? workspaceId : null
+        workspace
     });
 
     const checkWebsite = await Website.findOne({
         url: website.url,
-        user: workspaceId ? null : user.id,
-        workspace: workspaceId ? workspaceId : null,
+        user: workspace ? null : user.id,
+        workspace,
         isDeleted: { $ne: true }
     })
     if (checkWebsite) {
+        console.log('Website already exists', {
+            url: website.url,
+            user: workspace ? null : user.id,
+            workspace,
+            isDeleted: { $ne: true }
+        });
         return {
             errors: {
                 url: ['Website already exists'],
@@ -1438,6 +1454,7 @@ export async function createWebsite(state: CreateWebsiteState, formData: FormDat
         website = await website.save();
         const token = await createKey(website.id);
         website.set("token", token);
+        console.log("token", token, website._id);
         await website.save();
     } catch (error) {
         if ((error as any).code === 11000) {

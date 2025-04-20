@@ -9,6 +9,14 @@ const nextConfig = {
             patterns: [
                 {
                     from: './node_modules/webappalyzer-js/categories.json',
+                    to: './server/app/api/cron/categories.json',
+                },
+                {
+                    from: './node_modules/webappalyzer-js/technologies',
+                    to: './server/app/api/cron/technologies',
+                },
+                {
+                    from: './node_modules/webappalyzer-js/categories.json',
                     to: './server/vendor-chunks/categories.json',
                 },
                 {

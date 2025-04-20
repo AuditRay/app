@@ -1,19 +1,13 @@
-'use client'
-import {getUser} from "@/app/actions/getUser";
+'use client';
+
 import {Grid2 as Grid, Paper, Box, Card, Tooltip, Stack} from "@mui/material";
 import Link from '@/app/ui/Link';
 import { Image } from "@/components/image";
 import * as React from "react";
-import {countWebsites} from "@/app/actions/websiteActions";
-import WebsitesGrid from "@/app/ui/WebsitesGrid";
 import AddWebsiteModal from "@/app/ui/Websites/AddWebsiteModal";
-import {getFiltersView} from "@/app/actions/filterViewsActions";
-import RightDrawer from "@/app/ui/RightDrawer";
 import AddNewFolderModal from "@/app/ui/Folders/AddNewFolderModal";
 import Typography from "@mui/material/Typography";
 import {getFolders} from "@/app/actions/folderActions";
-import { fabClasses } from '@mui/material/Fab';
-import {useTheme} from "@mui/material/styles";
 import FolderComponent from "@/app/ui/Folders/FolderComponent";
 import {useUserStateStore} from "@/providers/user-store-provider";
 import {useParams} from "next/navigation";

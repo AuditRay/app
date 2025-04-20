@@ -134,9 +134,9 @@ export default function WebsitesPageList({workspaceId, folderId, filterId}: {wor
     React.useEffect(() => {
         if(!workspaceId) return;
         const load = async () => {
-            const tags = await getWorkspaceTags(workspaceId);
-            const teams = await getTeams(workspaceId);
-            const folders = await getFolders(workspaceId);
+            const tags = await getWorkspaceTags(workspaceId).catch(() => []);
+            const teams = await getTeams(workspaceId).catch(() =>[]);
+            const folders = await getFolders(workspaceId).catch(() =>[]);
             if(tags) {
                 setWorkspaceTags(tags);
             } else {

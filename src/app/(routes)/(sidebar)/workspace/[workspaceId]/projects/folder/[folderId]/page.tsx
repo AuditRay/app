@@ -1,10 +1,9 @@
 'use client'
 import {Paper, Box} from "@mui/material";
-import Link from '@/app/ui/Link';
 import * as React from "react";
 import AddWebsiteModal from "@/app/ui/Websites/AddWebsiteModal";
 import Typography from "@mui/material/Typography";
-import {getFolder, getFolders} from "@/app/actions/folderActions";
+import {getFolder} from "@/app/actions/folderActions";
 import UpdateFolderFieldValuesModal from "@/app/ui/FieldsTemplate/UpdateFolderFieldValuesModal";
 import {getWorkspaceFieldTemplate} from "@/app/actions/fieldTemplateActions";
 import WebsitesPageList from "@/app/ui/Websites/WebsitesPageList";

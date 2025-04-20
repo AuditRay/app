@@ -17,7 +17,6 @@ import { Iconify } from '@/components/iconify';
 import { CustomPopover } from '@/components/custom-popover';
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
 import {useParams, useRouter} from "next/navigation";
-import AddWorkspaceModal from "@/app/ui/AddWorkspaceModal";
 import * as React from "react";
 import { Divider } from '@mui/material';
 import DomainAddIcon from "@mui/icons-material/DomainAdd";
@@ -142,7 +141,6 @@ export function WorkspacesPopover({ data = [], bottom, sx, ...other }: Workspace
           </Box>
         </MenuItem>
       </MenuList>
-      <AddWorkspaceModal open={isAddWorkspaceModalOpen} setOpen={setIsAddWorkspaceModalOpen}/>
     </CustomPopover>
   );
 

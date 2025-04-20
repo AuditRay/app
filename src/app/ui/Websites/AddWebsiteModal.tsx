@@ -25,12 +25,10 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid2";
 import Link from "@/app/ui/Link";
 import {getWorkspace} from "@/app/actions/workspaceActions";
-import {useParams} from "next/navigation";
 import {useUserStateStore} from "@/providers/user-store-provider";
 
 export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) {
     const [state, action, isPending] = useActionState(createWebsite, undefined)
-    const params = useParams<{ workspaceId: string; }>()
     const [open, setOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [tags, setTags] = useState<string[]>([]);
@@ -60,8 +58,8 @@ export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) 
         getFieldsTemplates(workspaceId).then((fieldTemplates) => {
             setFieldTemplates(fieldTemplates);
         })
-        if(sessionUser?.currentSelectedWorkspace) {
-            getWorkspace(sessionUser.currentSelectedWorkspace.toString()).then((workspace) => {
+        if(workspaceId && workspaceId !== 'personal') {
+            getWorkspace(workspaceId).then((workspace) => {
                 setTimeZone(workspace.timezone);
             });
         }
@@ -92,8 +90,8 @@ export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) 
                         setIsSaving(true);
                         e.append('tags', JSON.stringify(tags));
                         e.append('syncConfig', JSON.stringify(syncConfig));
-                        if(params.workspaceId) {
-                            e.append('workspaceId', params.workspaceId);
+                        if(workspaceId) {
+                            e.append('workspaceId', workspaceId);
                         }
                         setTimeout(() => action(e));
                     }
@@ -109,6 +107,10 @@ export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) 
                         disabled={isSaving}
                         error={!!formCurrentState?.errors?.url}
                         helperText={formCurrentState?.errors?.url}
+                        onChange={(e) => {
+                            setFormCurrentState({...formCurrentState, url: e.target.value});
+                        }}
+                        value={formCurrentState?.url}
                         margin="dense"
                         id="url"
                         name="url"
@@ -122,6 +124,10 @@ export default function AddWebsiteModal({ workspaceId }: {workspaceId: string}) 
                         disabled={isSaving}
                         error={!!formCurrentState?.errors?.siteName}
                         helperText={formCurrentState?.errors?.siteName}
+                        onChange={(e) => {
+                            setFormCurrentState({...formCurrentState, siteName: e.target.value});
+                        }}
+                        value={formCurrentState?.siteName}
                         margin="dense"
                         id="name"
                         name="name"

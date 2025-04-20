@@ -26,6 +26,15 @@ export const CreateWebsiteSchema = z.object({
 })
 
 export type CreateWebsiteState = | {
+    url?: string,
+    siteName?: string,
+    workspaceId?: string,
+    tags?: string[],
+    syncConfig?: {
+        enabled?: boolean,
+        syncInterval?: number,
+        intervalUnit?: string,
+    }
     errors?: {
         url?: string[]
         siteName?: string[]

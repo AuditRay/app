@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import {Paper, Box} from "@mui/material";
 import * as React from "react";
 import Typography from "@mui/material/Typography";

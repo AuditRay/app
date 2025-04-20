@@ -72,6 +72,9 @@ export async function getWorkspaces(userId?: string): Promise<IWorkspace[]> {
 export async function getWorkspace(workspaceId?: string): Promise<IWorkspace> {
     await connectMongo();
     console.log('getWorkspace');
+    if(!workspaceId || workspaceId === 'personal') {
+        throw new Error('Workspace not found');
+    }
     const workspace = await Workspace.findOne({_id: workspaceId});
     if (!workspace) {
         throw new Error('Workspace not found');
